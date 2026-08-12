@@ -110,7 +110,7 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr
   // runs after per-draw state lambdas have mutated the material rasterstate.
 
   ////////////////////////////////////////
-  // set dynamic depth-write (always)
+  // set dynamic depth-write (only for pipelines that DECLARED it dynamic)
   //
   // The material's writemaskZ is only half the answer: an RTG whose depth
   // attachment was flipped to DEPTH_READ_ONLY_OPTIMAL (FBI::transitionDepth-
@@ -119,15 +119,22 @@ void VkFxInterface::_bindPipeline(VkCommandBuffer cmdbuf, vkpipelinestate_rawptr
   // material bakes writemaskZ=true, so the mask has to be ANDed with the pass
   // here rather than branched per-material. Outside a read-only pass this
   // reproduces exactly what the pipeline baked (same effective rasterstate
-  // resolution _fetchPipeline* used). Must be issued unconditionally: the
-  // pipeline declares DEPTH_WRITE_ENABLE dynamic in every pass.
+  // resolution _fetchPipeline* used).
+  //
+  // The GATE is not an optimization: issuing vkCmdSetDepthWriteEnable while a
+  // pipeline that bakes depth-write statically is bound is itself invalid
+  // (VUID-vkCmd*-None-08608, which this call reported on every classic, indexed,
+  // indirect and mesh draw before the gate existed). Today only the mesh path
+  // declares the state; the other paths keep their baked value.
   ////////////////////////////////////////
 
-  auto rtg_impl        = fbi->_active_rtgroup->_impl.getShared<VkRtGroupImpl>();
-  auto eff_rasterstate = _effectiveRasterState();
-  bool depth_writemask = eff_rasterstate ? eff_rasterstate->_writemaskZ : false;
-  VkBool32 depth_write = (depth_writemask and not rtg_impl->_depthReadOnlyMode) ? VK_TRUE : VK_FALSE;
-  _contextVK->_vkCmdSetDepthWriteEnableEXT(cmdbuf, depth_write);
+  if (pipeline->_dynamicDepthWrite) {
+    auto rtg_impl        = fbi->_active_rtgroup->_impl.getShared<VkRtGroupImpl>();
+    auto eff_rasterstate = _effectiveRasterState();
+    bool depth_writemask = eff_rasterstate ? eff_rasterstate->_writemaskZ : false;
+    VkBool32 depth_write = (depth_writemask and not rtg_impl->_depthReadOnlyMode) ? VK_TRUE : VK_FALSE;
+    _contextVK->_vkCmdSetDepthWriteEnableEXT(cmdbuf, depth_write);
+  }
 
   ////////////////////////////////////////
   // upload ubo data and push constants

@@ -15,8 +15,15 @@ struct ComputeInterface {
   ComputeInterface() {}
   virtual ~ComputeInterface() {}
 
-  // Dispatch phase management - suspends render pass if active, resumes on end
-  virtual void beginDispatchPhase() {}
+  // Dispatch phase management - suspends render pass if active, resumes on end.
+  //
+  // `label` NAMES the phase for the always-on per-pass GPU timer (gpupassstats.h):
+  // a labeled OUTERMOST phase gets a GPU timestamp bracket around its command
+  // buffer and a row on the HUD's GPU page. nullptr (the default) = untimed, which
+  // is what the offline cook loops must stay: an erosion/relax node opens and closes
+  // hundreds of phases per frame and would spend the whole per-frame slice budget on
+  // work no frame is waiting for. Label the phases a RENDERED FRAME pays for.
+  virtual void beginDispatchPhase(const char* label = nullptr) {}
   virtual void endDispatchPhase() {}
 
   virtual void dispatchCompute( const FxComputeShader* shader,

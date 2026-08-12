@@ -94,14 +94,16 @@ vertex_interface vface_streak_ssbo_ST
 // difference, which is the one thing an eye-for-eye parity gate cannot distinguish
 // from a genuine bug.
 ///////////////////////////////////////////////////////////////
-libblock lib_ptc_ssbo_vtx {
-
+typeblock typ_ptc_ssbo_vtx {
   struct PtcVtx {
     vec3 wpos;
     vec4 clr;
     vec2 uv0;
     vec4 uv1;
   };
+}
+
+libblock lib_ptc_ssbo_vtx : typ_ptc_ssbo_vtx {
 
   PtcVtx computeSpriteVtx() {
     PtcVtx rval;

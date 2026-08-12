@@ -13,6 +13,7 @@
 #include <ork/lev2/gfx/material_freestyle.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/rtgroup.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
 #include <ork/dataflow/module.inl>
 #include <ork/dataflow/plug_data.inl>
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
@@ -76,6 +77,34 @@ MaterialBase::MaterialBase() {
         LW,              //
         ork::fvec2(clamped_unitage, ptcl->mfRandom)));
   };
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////
+// PRE-PASS material init (render thread, NO render pass active — called from the particle
+// drawable's onGpuUpdate fan-out). gpuInit LOADS THE SHADER FILE: it JITs the passes and
+// takes a process-lifetime program id off the vulkan pipeline-key counter. Running that
+// lazily from _render put it inside the recording color pass — the anti-pattern that
+// surfaced as a program-id budget assert on the session's first NEW shader file. Idempotent:
+// the first frame the drawable is in the scenegraph pays for it, every later frame no-ops.
+///////////////////////////////////////////////////////////////////////////////////////////////////
+void MaterialBase::gpuInitIfNeeded(ork::lev2::Context* ctx) {
+  if (_pipeline)
+    return;
+  auto RCFD = ctx->topRenderContextFrameData();
+  if (nullptr == RCFD) {
+    // no frame data on the context stack (a fan-out entry that never pushed one): synthesize.
+    // Only the pipeline PERMUTATION is derived from it, and particle materials assign
+    // _technique per draw (see MaterialBase::pipeline), so the permutation is inert here.
+    RCFD = std::make_shared<RenderContextFrameData>(ctx);
+  }
+  RenderContextInstData RCID(RCFD);
+  Timer gpu_init_timer;
+  gpu_init_timer.Start();
+  gpuInit(RCID);
+  OrkAssert(_pipeline);
+  printf(
+      "[particles] %s pre-pass gpuInit time<%f>\n", //
+      GetClass()->Name().c_str(),
+      gpu_init_timer.SecsSinceStart());
 }
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -694,6 +723,7 @@ void FreestyleParticleMaterial::describeX(class_t* clazz) {
   clazz->floatProperty("emission_smoothing", float_range{0, 2}, &FreestyleParticleMaterial::_emission_smoothing);
   clazz->floatProperty("emission_lum_power", float_range{0.1f, 2}, &FreestyleParticleMaterial::_emission_lum_power);
   clazz->directProperty("emission_tint", &FreestyleParticleMaterial::_emission_tint);
+  clazz->floatProperty("soft_fade_distance", float_range{0, 50}, &FreestyleParticleMaterial::_soft_fade_distance);
 }
 ///////////////////////////////////////////////////////////////////////////////
 FreestyleParticleMaterial::FreestyleParticleMaterial() {
@@ -753,6 +783,12 @@ void FreestyleParticleMaterial::gpuInit(const RenderContextInstData& RCID) {
   _param_cookie               = _material->param("ColorMap");
   _param_gridDim              = _material->param("GridDim");
   auto parammodcolor          = _material->param("modcolor");
+  // scene depth + soft-particle fade knobs — ABSENT unless the shader asked for
+  // them (the heat pair declares DepthMap; ctx.soft_fade() additionally declares
+  // SoftFadeDistance/NearFar). Null param = that feature isn't in this shader.
+  auto param_depthmap  = _material->param("DepthMap");
+  auto param_nearfar   = _material->param("NearFar");
+  auto param_softfade  = _material->param("SoftFadeDistance");
 
   auto pipeline_cache      = _material->pipelineCache();
   _pipeline                = pipeline_cache->findPipeline(RCID);
@@ -782,18 +818,22 @@ void FreestyleParticleMaterial::gpuInit(const RenderContextInstData& RCID) {
     heat_rs->setWriteMaskZ(false);
     pipeline_heat->_rasterstate  = heat_rs;
     pipeline_heat->_material_ptr = _material.get();
-    // scene-depth occlusion: the generated heat FS declares DepthMap and
-    // manually depth-tests (no depth attachment on the aux RTG); bind it
-    // from the per-frame RCFD "DEPTH_MAP" property (the same read-only
-    // prepass depth the color pass exposes for water translucency).
-    if (auto param_depth = _material->param("DepthMap"))
-      pipeline_heat->bindParam(param_depth, "RCFD_DEPTH_MAP"_crcsh);
     AuxTekSet heatset;
     heatset._tek_sprites = tek_sprites_heat;
     heatset._tek_streaks = tek_streaks_heat;
     heatset._pipeline    = pipeline_heat;
     _aux_teks["heat"_crcu] = heatset;
   }
+
+  // 4x4 white = depth 1.0 = infinitely far: the always-legal stand-in the
+  // depth samplers fall back to when no prepass filled the real one.
+  _farDepth     = context->TXI()->createColorTextureV3(fvec3(1, 1, 1), 4, 4);
+  _depth_source = _farDepth;
+
+  FxPipeline::varval_generator_t gen_depth = [=]() -> FxPipeline::varval_t {
+    FxPipeline::varval_t rval = _depth_source ? _depth_source : _farDepth;
+    return rval;
+  };
 
   // bind the SAME param set on every pipeline this material drives
   auto bind_params = [&](fxpipeline_ptr_t pipe) {
@@ -804,6 +844,15 @@ void FreestyleParticleMaterial::gpuInit(const RenderContextInstData& RCID) {
     pipe->bindParam(fxparameterM, "RCFD_M"_crcsh);
     pipe->bindParam(fxparameterInvDim, "CPD_Rtg_InvDim"_crcsh);
     pipe->bindParam(fxparameterGradMap, _gradient_texture);
+    // the per-frame scene depth: the heat pair manually depth-tests against it
+    // (the aux RTG carries no depth attachment) and the soft-particle fade
+    // reconstructs linear scene depth from it. NOT the RCFD_DEPTH_MAP provider —
+    // update() picks the texture, because with no prepass the real one is still
+    // a write-target attachment and binding it faults.
+    if (param_depthmap)
+      pipe->bindParam(param_depthmap, gen_depth);
+    if (param_nearfar)
+      pipe->bindParam(param_nearfar, "RCFD_MONOCAM_NEAR_FAR"_crcsh);
   };
   bind_params(_pipeline);
   if (pipeline_heat)
@@ -842,12 +891,21 @@ void FreestyleParticleMaterial::gpuInit(const RenderContextInstData& RCID) {
     FxPipeline::varval_t rval = _gradientAlphaIntensity;
     return rval;
   };
+  // A8: the fade distance rides the uniform, never the generated shader text —
+  // a negative value is the shader's "fade off" sentinel, which is also how
+  // update() REFUSES the fade when its depth precondition is unmet.
+  FxPipeline::varval_generator_t gen_softfade = [=]() -> FxPipeline::varval_t {
+    FxPipeline::varval_t rval = _soft_fade_refused ? -1.0f : _soft_fade_distance;
+    return rval;
+  };
   auto bind_generators = [&](fxpipeline_ptr_t pipe) {
     pipe->bindParam(_param_cookie, gen_tex);
     pipe->bindParam(parammodcolor, gen_clr);
     pipe->bindParam(_param_gridDim, gen_dim);
     pipe->bindParam(fxparameterColorFactor, gen_cfac);
     pipe->bindParam(fxparameterAlphaFactor, gen_afac);
+    if (param_softfade)
+      pipe->bindParam(param_softfade, gen_softfade);
   };
   bind_generators(_pipeline);
   if (pipeline_heat)
@@ -864,6 +922,38 @@ void FreestyleParticleMaterial::update(const RenderContextInstData& RCID) {
   auto FXI     = context->FXI();
   auto FBI     = context->FBI();
   auto GBI     = context->GBI();
+  ///////////////////////////////
+  // SCENE DEPTH, and the soft-particle fade's PRECONDITION on it. DEPTH_MAP only
+  // holds a valid, SAMPLEABLE scene depth when the DEPTH PREPASS ran — that pass
+  // is what fills the single-sample image (the MSAA resolve is a depth-WRITE-pass
+  // operation) and what lets the color pass transition depth to read-only. The
+  // prepass is an engine invariant, but a pass can still reach here with
+  // _useDepthPrepass false (a bake or probe rig that never declared it): depth is
+  // then the color pass's write target, binding it faults outright, and a fade
+  // computed from it would dissolve everything or nothing. So substitute the far stand-in
+  // (fade becomes a no-op, the heat pair's manual test occludes nothing) and
+  // refuse the fade BY NAME — same contract as the forward node's SSAO refusal.
+  ///////////////////////////////
+  auto pbrcommon     = RCID.rcfd()->_pbrcommon;
+  bool depth_usable  = pbrcommon and pbrcommon->_useDepthPrepass;
+  _depth_source      = _farDepth;
+  if (depth_usable) {
+    if (auto try_depth = RCID.rcfd()->tryUserProperty<texture_ptr_t>("DEPTH_MAP"_crcu))
+      _depth_source = try_depth.value();
+    else
+      depth_usable = false;
+  }
+  _soft_fade_refused = (_soft_fade_distance > 0.0f) and (not depth_usable);
+  if (_soft_fade_refused and not _soft_fade_warned) {
+    _soft_fade_warned = true;
+    printf(
+        "[PTC:SOFTFADE] ERROR FreestyleParticleMaterial soft_fade_distance<%g> needs the "
+        "DEPTH PREPASS (the fade samples DEPTH_MAP); the prepass is OFF for this pass, so the "
+        "fade is REFUSED — sprites render with HARD intersection edges rather than fading "
+        "against undefined depth. Enable pbr_common.useDepthPrepass.\n",
+        _soft_fade_distance);
+    fflush(stdout);
+  }
   ///////////////////////////////
   // re-bake the ramp every update (live gradient edits — GradientMaterial recipe)
   ///////////////////////////////

@@ -67,6 +67,30 @@ public:
 
   // Scenegraph node name. Empty ⇒ "hypermesh_<entref>".
   std::string _nodename;
+
+  // NOT A SHADOW CASTER. A hypermesh joins the depth_prepass layer by default
+  // (early-z), and that layer IS the sun-cascade caster set — so a drawable that
+  // is on it pays a full depth pass PER BAND whether or not its shadow can be
+  // seen. Ankle-high scatter (a grass tussock) is the case this exists for: its
+  // blade shadows read as noise at any distance the cascades reach, and at five
+  // bands it was paying six dispatches a frame to produce them. Same spelling
+  // and same meaning as SceneGraphComponent's node-level skip_auto_dpp, which is
+  // what the grass CARPET already uses; the drawable still RECEIVES shadows
+  // (receiving samples the atlas and never depended on caster membership).
+  bool _skipAutoDpp = false;
+
+  // MUTUALLY-EXCLUSIVE PRESENTATION SETS. Hypermeshes carrying the same non-empty
+  // _visgroup are one switchable set: a host sends SET_VISGROUP{group,enable} and
+  // every member's scenegraph node flips together. Empty = ungrouped (always on).
+  //
+  // _visible is the LAUNCH state, and it is load-bearing rather than cosmetic: a
+  // scenegraph node that comes up disabled is skipped by Scene::gpuUpdate AND
+  // Scene::preRender, so a hidden member never runs its lazy bootstrap — no mesh
+  // materialization, no instance cull, no impostor atlas, no section bake. Two
+  // alternative barks can therefore sit co-resident in a scene at ZERO cost until
+  // one is asked for (it pays its build on the frame it is first enabled).
+  std::string _visgroup;
+  bool        _visible = true;
 };
 
 using hypermeshcomponentdata_ptr_t = std::shared_ptr<HypermeshComponentData>;
@@ -131,6 +155,11 @@ struct HypermeshSystem final : public System {
   // materials (live in all cached pipelines) — gameplay drives a material UBO param
   // by name in the zero-Python player.
   DeclareToken(SET_PARAM);
+  // SET_VISGROUP — DataTable {group:string, enable:int}: enables/disables the
+  // scenegraph node of every hosted component declaring that _visgroup. The write
+  // rides the SceneGraphSystem render-op queue, so the render thread never reads
+  // a node's enable while the update thread is changing it.
+  DeclareToken(SET_VISGROUP);
 
   HypermeshSystem(const HypermeshSystemData& data, Simulation* pinst);
   ~HypermeshSystem();

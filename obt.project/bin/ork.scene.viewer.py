@@ -24,7 +24,7 @@ from orkengine import lev2
 from orkengine import ecs
 
 from ork.hypergraph.ecs.scene.resolve import (
-  resolve_scene_file, load_scene_class, list_scene_files,
+  resolve_scene_file, load_scene_class, list_scene_files, portable_scene_path,
 )
 
 
@@ -98,10 +98,6 @@ def parse_args():
                  help="render at the display's backing (Retina) scale; default is LoDPI to save fillrate")
   p.add_argument("--vr", action="store_true",
                  help="VR: present on the HMD through the active XR runtime (player only; needs ORKID_VR_DRIVER=openxr + a live runtime, else NoVR desktop fallback)")
-  p.add_argument("--devkeys", action="store_true",
-                 help="player dev keys [E/G/T/H/M/B/R] + key legend (thin passthrough; DEFAULT ON when not in VR — owner ruling jul30)")
-  p.add_argument("--no-devkeys", dest="no_devkeys", action="store_true",
-                 help="suppress the default-on dev keys")
   p.add_argument("--physics-debug", dest="physics_debug", action="store_true",
                  help="Bullet debug wireframe ON from startup (thin passthrough; the VR/offscreen path — no keyboard needed)")
   p.add_argument("--offscreen", action="store_true",
@@ -163,6 +159,10 @@ def main():
 
   scene = scene_class()
   sd    = ecs.SceneData()
+  # The scene's SOURCE, reflected into the .ecs — the identity a host keys its
+  # per-scene state on (the player's saved editor values). Token form, so the
+  # composed .ecs stays correct on any checkout.
+  sd.scene_script_path = portable_scene_path(scene_path)
   scene.build(sd)
   js    = sd.serializeJson()
   ezapp.mainThreadEnd()
@@ -224,10 +224,7 @@ def main():
     # passthrough — the player owns the runtime check + NoVR fallback. One playback path.
     if args.vr:
       cmd += ["--vr"]
-    # physics-debug instrumentation (player only): both thin passthroughs.
-    # dev keys default ON outside VR (owner ruling jul30); --no-devkeys opts out
-    if (args.devkeys or not args.vr) and not args.no_devkeys:
-      cmd += ["--devkeys"]
+    # physics-debug instrumentation (player only): a thin passthrough.
     if args.physics_debug:
       cmd += ["--physics-debug"]
     # OFFSCREEN (headless, player only): with --movie record a clip; without, render

@@ -42,7 +42,26 @@ void pyinit_gfx_drawables(py::module& module_lev2) {
                            .def_property(
                                "tag",
                                [](drawable_ptr_t drw) -> uint64_t { return drw->_tag; },
-                               [](drawable_ptr_t drw, uint64_t t) { drw->_tag = t; });
+                               [](drawable_ptr_t drw, uint64_t t) { drw->_tag = t; })
+                           // SUN-CULLSET caster family, as a token (terrain /
+                           // instanced / other). Producers stamp their own; a
+                           // scene overrides when it knows better which family a
+                           // caster belongs to. An unknown token is an error —
+                           // a silently-ignored family would put the drawable in
+                           // a cullset nobody authored.
+                           .def_property(
+                               "shadowFamily",
+                               [](drawable_ptr_t drw) -> std::string { //
+                                 return shadowFamilyToken(drw->_shadowFamily);
+                               },
+                               [](drawable_ptr_t drw, std::string tok) {
+                                 ShadowFamily fam;
+                                 if (not shadowFamilyFromToken(tok, fam))
+                                   throw std::runtime_error(
+                                       "Drawable.shadowFamily: unknown caster family token <" + tok +
+                                       "> (known: terrain / instanced / other)");
+                                 drw->_shadowFamily = fam;
+                               });
   type_codec->registerStdCodec<drawable_ptr_t>(drawable_type);
   /////////////////////////////////////////////////////////////////////////////////
   auto cbdrawable_type = //

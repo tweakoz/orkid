@@ -35,7 +35,7 @@ AUDIO = os.path.join(BIN, 'ork.vet.audio.py')
 # their cases run, so a fresh checkout needs no manual make_corpus.py step. The
 # tracked types (mesh/movie) are deliberately absent -- their committed binaries
 # must stay byte-stable, so this suite never regenerates them.
-GENERATED = ('audio',)
+GENERATED = ('audio', 'foliage', 'atlas')
 
 
 def c(*parts):
@@ -59,6 +59,29 @@ CASES = [
     ('render.speckle',     [IMAGE, c('image', 'render_speckle.png'), '--kind', 'render'], 'FAIL'),
     ('render.grossspeckle', [IMAGE, c('image', 'render_grossspeckle.png'), '--kind', 'render'], 'FAIL'),
     ('render.magenta',     [IMAGE, c('image', 'render_magenta.png'), '--kind', 'render'], 'FAIL'),
+
+    # foliage: the clean twin carries a bright SKY BAND, sky seen through a
+    # trunk GAP, and real specular GLINTS -- all bright, all desaturated, none
+    # of them cotton. It must PASS while each whitening twin FAILs. The glint
+    # and puff stamps share placement/footprint/peak: only the radial profile
+    # differs, so the separation is the signature, not the brightness.
+    ('foliage.clean',      [IMAGE, c('foliage', 'clean.png'), '--kind', 'foliage'], 'PASS'),
+    ('foliage.clean.region', [IMAGE, c('foliage', 'clean.png'), '--kind', 'foliage',
+                              '--region', '0,205,282,512'], 'PASS'),
+    ('foliage.puffs',      [IMAGE, c('foliage', 'cotton_puffs.png'), '--kind', 'foliage'], 'FAIL'),
+    ('foliage.puffs.region', [IMAGE, c('foliage', 'cotton_puffs.png'), '--kind', 'foliage',
+                              '--region', '0,205,282,512'], 'FAIL'),
+    ('foliage.wholecanopy', [IMAGE, c('foliage', 'cotton_wholecanopy.png'),
+                             '--kind', 'foliage'], 'FAIL'),
+
+    # impostor atlas: one mutant per check. whitebg -> bg_excess_lum,
+    # specklebg -> bg_bright_frac (a MEAN cannot see it), blackbg -> mip_drift
+    # (its background is dark, so both bleed checks pass and only the mip chain
+    # shows the defect).
+    ('atlas.clean',        [IMAGE, c('atlas', 'clean.png'), '--kind', 'impostor-atlas'], 'PASS'),
+    ('atlas.whitebg',      [IMAGE, c('atlas', 'whitebg.png'), '--kind', 'impostor-atlas'], 'FAIL'),
+    ('atlas.specklebg',    [IMAGE, c('atlas', 'specklebg.png'), '--kind', 'impostor-atlas'], 'FAIL'),
+    ('atlas.blackbg',      [IMAGE, c('atlas', 'blackbg.png'), '--kind', 'impostor-atlas'], 'FAIL'),
 
     ('hmap.clean',         [HMAP, c('hmap', 'clean.png')], 'PASS'),
     ('hmap.clean.golden',  [HMAP, c('hmap', 'clean.png'), '--golden', c('hmap', 'clean.png')], 'PASS'),

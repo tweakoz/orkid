@@ -262,7 +262,7 @@ struct Device {
   virtual void gpuUpdate(RenderContextFrameData& RCFD)              = 0;
   virtual void __composite(Context* targ, Texture* twoeyetex) const = 0;
 
-  // Per-eye handoff for the runtime-owned dual-mono presentation path. Hands the two
+  // Per-eye handoff for the runtime-owned per-eye presentation path. Hands the two
   //  FINAL per-eye COLOR textures to the device, which blits each into its half of the
   //  ONE wide runtime swapchain image and submits the frame (mirrors __composite, which
   //  takes one pre-packed wide two-eye texture). Genuine no-op on devices that do NOT
@@ -367,6 +367,13 @@ struct Device {
   bool _publishDepth                = true;
   float _stereoTileRotationDegreesL = 0.0f;
   float _stereoTileRotationDegreesR = 0.0f;
+  // NOSE-SIDE FRUSTUM INSET, degrees — how much narrower each eye's inward half-FOV is than
+  //  its outward one. Every real runtime hands out per-eye ASYMMETRIC frusta and derives the
+  //  center view from their average; a headless rig that leaves this at zero gives all three
+  //  cameras the same projection, which is a shape no headset has. Anything registering eye
+  //  imagery against the center view (the stereo occlusion pyramid) is untested by a
+  //  zero-inset rig. Zero keeps the symmetric projections byte-identical.
+  float _eyeFovInsetDegrees         = 0.0f;
 
   std::map<int, controllerstate_ptr_t> _controllers;
   fmtx4 _hmd_trackingMatrix;
@@ -489,6 +496,24 @@ device_ptr_t device();
 //  (no device / inactive / no "hmd" entry): the non-VR path is bit-for-bit the
 //  caller's own matrix, never an identity compose.
 fmtx4 composeHeadViewMatrix(const fmtx4& rig_view_matrix);
+
+// The three VR VIEW matrices Device::_updatePosesCommon publishes, and the ONE
+//  definition of how they are composed from the posemap. Factored so the pose
+//  self-tests drive the SAME expressions the runtime does (a test of a
+//  transcription proves nothing about the runtime).
+struct VrEyeViews {
+  fmtx4 _rel;    // base*hmd
+  fmtx4 _center; // usermtx*base*hmd
+  fmtx4 _left;   // center*eyel
+  fmtx4 _right;  // center*eyer
+};
+
+VrEyeViews composeEyeViewMatrices(
+    const fmtx4& usermtx, //
+    const fmtx4& basemtx,
+    const fmtx4& hmd,
+    const fmtx4& eyeL,
+    const fmtx4& eyeR);
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////

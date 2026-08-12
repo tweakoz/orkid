@@ -272,8 +272,8 @@ def _run_child(kind, outdir, forced):
   env["ORKID_VULKAN_VALIDATE"] = "2"
   # every switch this file's verdict depends on is set or cleared HERE, so a value
   #  left in the caller's shell cannot decide a leg.
-  for k in ("ORKID_TEST_FORCE_NO_MULTIVIEW_MESH", "ORKID_SPVR", "ORKID_FORCE_DMVR",
-            "ORKID_SPVR_NO_MULTIVIEW", "ORKID_GATE0_FORCE_MONO_TEK"):
+  for k in ("ORKID_TEST_FORCE_NO_MULTIVIEW_MESH", "ORKID_SPVR_NO_MULTIVIEW",
+            "ORKID_GATE0_FORCE_MONO_TEK"):
     env.pop(k, None)
   if forced:
     env["ORKID_TEST_FORCE_NO_MULTIVIEW_MESH"] = "1"
@@ -282,10 +282,6 @@ def _run_child(kind, outdir, forced):
     # the drawable's own path lines are on a default-off channel; without them a
     #  crash after the mesh path engaged reads exactly like a path that never did.
     env["ORKID_LOGCHAN_0"] = "1"
-    # the resolve gate asks whether this PROCESS may render two-view passes. The rig
-    #  is a mono scenegraph, so the answer has to be declared: ORKID_SPVR is the same
-    #  signal the compositor preset resolver reads.
-    env["ORKID_SPVR"] = "1"
   env[CHILD_ENV] = kind
   argv = [sys.executable, os.path.abspath(__file__), "--child", outdir]
   p = subprocess.run(argv, env=env, stdout=subprocess.PIPE,

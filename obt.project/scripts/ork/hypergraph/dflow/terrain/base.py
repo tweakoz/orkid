@@ -91,6 +91,17 @@ class HeightField:
     MATERIAL_PARAMS = {}
     MATERIAL_CLASS = None
 
+    # ---- suggested display resolutions (authoring metadata, same contract as
+    # MATERIAL above: the terrain "knows" the quality it wants to be seen at;
+    # viewers/tools READ these, explicit args override) --------------------------
+    # ork.terrain.viewer2.py honors them (CLI -d overrides); scene files keep
+    # passing render_dimension/bake_dimension/bake_res explicitly.
+    RENDER_DIM = None   # render-mesh + physics grid (None -> viewer default)
+    BAKE_DIM   = None   # compute/material-bake grid, >= RENDER_DIM (None -> render dim;
+                        # the render mesh downsamples from it)
+    BAKE_RES   = None   # stored-material atlas texels (None -> consumer default;
+                        # scene stored-mode only — the live viewer runs proc)
+
     def __init__(self, **kwargs):
         # L2 — the trace builds a structured DOCUMENT, never a GraphData. DSL ops
         # target the document's recorder graph (which duck-types GraphData); the

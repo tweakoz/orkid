@@ -301,27 +301,44 @@ class Hypermesh:
     return self._add(sw, "lsweep")                            # produces the GpuMesh
 
   def leaves(self, skeleton=None, *, style=LeafStyle.SINGLE, source=LeafSource.NODES, per_node=3,
-             min_gen=4.0, size=0.35, aspect=0.6, roll=137.5, pitch=50.0, jitter=0.25, seed=1):
+             min_gen=4.0, max_radius=0.0, size=0.35, aspect=0.6, roll=137.5, pitch=50.0,
+             embed=0.0, twist=0.0, up_bias=0.0, jitter=0.25, jitter_deg=0.0, seed=1):
     # BROADLEAF ORGAN placer — reads the L-system SKELETON (XfNodeGraph; defaults to the last lsystem()'s)
     # and emits a leaf-card GpuMesh: per high-generation node, `per_node` cards by phyllotaxis (golden-angle
     # `roll` around the node heading, drooped `pitch`). `style` LeafStyle.SINGLE (quad) | CROSS (2 quads). The
     # card UV0 lets the MATERIAL texture or proceduralize the leaf; COLOR.x = flutter weight (0..1 tip).
     # `source` LeafSource.SLOTS instead places at the grammar's own SLOT attachment points (areoles,
     # blooms) — their world frames, `min_gen` inapplicable, `per_node` cards per slot.
+    #   max_radius=: 0 = off; else a node whose segment radius EXCEEDS it bears no cards (trunk/bough
+    #                wood — a monopodial leader is ONE generation from thick base to thin apex, so
+    #                min_gen cannot make that cut).
+    #   embed=     : 0 = off (base edge on the skeleton centerline); else the base edge anchors on the
+    #                outward radial, recessed this fraction of the local radius UNDER the bark, so the
+    #                blade emerges through the surface instead of hovering beside it.
+    #   twist=     : card rotation about its own length axis (deg; 0 = the flat faces point radially out)
+    #   up_bias=   : -1..1, blends the length axis toward world up (+) / down (-) after pitch; the base
+    #                anchor does not move (the emergence DIRECTION bends, not the emergence point).
+    #   jitter_deg=: +/- degrees of per-card jitter on azimuth / pitch / twist, hashed from
+    #                (seed, placement, card) — deterministic, so two cooks are byte-identical.
     skel = skeleton if skeleton is not None else getattr(self, "_skeleton", None)
     if skel is None:
       raise ValueError("leaves(): no skeleton — call lsystem() first, or pass skeleton=<lsystem node>")
     m = _lev2.hypermesh.LeafScatterModule.createShared()
     m.style    = int(style)                                   # LeafStyle.SINGLE / CROSS (IntEnum -> 0/1)
     m.source   = int(source)                                  # LeafSource.NODES / SLOTS (IntEnum -> 0/1)
-    m.per_node = int(per_node)
-    m.min_gen  = float(min_gen)
-    m.size     = float(size)
-    m.aspect   = float(aspect)
-    m.roll     = float(roll)
-    m.pitch    = float(pitch)
-    m.jitter   = float(jitter)
-    m.seed     = int(seed)
+    m.per_node   = int(per_node)
+    m.min_gen    = float(min_gen)
+    m.max_radius = float(max_radius)
+    m.size       = float(size)
+    m.aspect     = float(aspect)
+    m.roll       = float(roll)
+    m.pitch      = float(pitch)
+    m.embed      = float(embed)
+    m.twist      = float(twist)
+    m.up_bias    = float(up_bias)
+    m.jitter     = float(jitter)
+    m.jitter_deg = float(jitter_deg)
+    m.seed       = int(seed)
     self.graphdata.connect(m.inputs.In, skel.outputs.Out)     # XfNodeGraph edge (the skeleton)
     return self._add(m, "leaves")                             # produces the leaf-card GpuMesh
 

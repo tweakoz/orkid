@@ -285,14 +285,25 @@ int VkFxInterface::_pipelineBitsForShader(vkfxshaderpass_rawptr_t shprog){
     // compute composite bits
     ////////////////////////////
 
-    OrkAssert(VIF->_pipeline_bits<256);
-    OrkAssert(shprog->_pipeline_bits_prg<256);
-    shprog->_pipeline_bits_composite = (shprog->_pipeline_bits_prg<<0)
-                                     | (VIF->_pipeline_bits<<8);
+    // packing + budgets: see the SHADER-SIDE PIPELINE KEY BUDGET block in vk_pipeline.h.
+    // 12 (prg) + 8 (vif) + 8 (gif) = 28 bits, consumed as sh_pbits by the pipeline hash.
+    OrkAssertIFMT(
+        VIF->_pipeline_bits < kmax_pipeline_bits_vif,
+        "vertex interface id budget (%d) exhausted",
+        kmax_pipeline_bits_vif);
+    OrkAssertIFMT(
+        shprog->_pipeline_bits_prg < kmax_pipeline_bits_prg,
+        "shader program id budget (%d) exhausted",
+        kmax_pipeline_bits_prg);
+    shprog->_pipeline_bits_composite = (shprog->_pipeline_bits_prg << kshift_pipeline_bits_prg)
+                                     | (VIF->_pipeline_bits << kshift_pipeline_bits_vif);
 
     if(GIF){
-      OrkAssert(GIF->_pipeline_bits<256);
-      shprog->_pipeline_bits_composite |= (GIF->_pipeline_bits<<16);
+      OrkAssertIFMT(
+          GIF->_pipeline_bits < kmax_pipeline_bits_gif,
+          "geometry interface id budget (%d) exhausted",
+          kmax_pipeline_bits_gif);
+      shprog->_pipeline_bits_composite |= (GIF->_pipeline_bits << kshift_pipeline_bits_gif);
     }
 
 

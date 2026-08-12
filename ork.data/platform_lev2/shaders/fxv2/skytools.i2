@@ -1,3 +1,8 @@
+// lib_sky inherits lib_math, so this file OWNS that dependency: an importer
+// that reaches skytools before mathtools would otherwise leave the inherit
+// unresolved (shadlang drops an unresolvable inherit SILENTLY) and PI would go
+// undeclared in every shader that inherits lib_sky.
+import "mathtools.i2";
 ///////////////////////////////////////////////////////////////////////////////
 // Hillaire-2020 atmosphere (SKYLIGHT lane B).
 //  "A Scalable and Production Ready Sky and Atmosphere Rendering Technique",
@@ -41,6 +46,18 @@ uniform_block ublk_sky_atmo (descriptor_set 0) {
   vec4 SkyMoonIlluminance; // rgb: the declared moon's illuminance at the top of
                            // the atmosphere, in SkySunIlluminance units (its
                            // light color x phase-scaled intensity), a: unused
+  // AERIAL PERSPECTIVE / GROUND HAZE (forward color pass only; every LUT
+  // bake ignores these lanes — they are OUTSIDE mediumHash by design).
+  vec4 SkyHazeDensity;       // x: base extinction (1/km), y: scale height (km),
+                             // z: phase g, w: ARMED (0 = branch never taken)
+  vec4 SkyHazeScatterTint;   // rgb: single-scatter albedo per channel
+  vec4 SkyHazeInscatterTint; // rgb: artist grade on the haze's OWN in-scatter only
+  vec4 SkyHazeGeom;          // x: km per world unit, y: sky exposure (== SkySunDisc.w
+                             // convention), z: march clamp (km), w: SHAFT GAIN —
+                             // artistic accentuation of the sun-shadow term, 1 =
+                             // physical. Read ONLY by lib_sun_air's per-step remap,
+                             // so it reaches both shaft modes and nothing else; the
+                             // sky-overlay bake leaves it zero (no taps to gain).
 }
 ///////////////////////////////////////////////////////////////////////////////
 sampler_set sset_sky_luts (descriptor_set 0) {
@@ -72,6 +89,11 @@ typeblock typ_sky {
     vec3 _msTransfer;
     vec3 _msLuminance;
   };
+  // What the medium between two world points does to what is behind it.
+  struct HazeResult {
+    vec3 _inscatter;      // scene-referred (sky exposure already applied)
+    vec3 _transmittance;  // per-channel Beer-Lambert throughput eye->fragment
+  };
 }
 ///////////////////////////////////////////////////////////////////////////////
 libblock lib_sky
@@ -97,6 +119,20 @@ libblock lib_sky
                       + vec3(SkyMieScatter.y * d_mie)     //
                       + SkyOzoneAbsorb.rgb * d_ozo;       //
     return med;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // artist ground-haze layer: an exponential slab that joins the geophysical
+  // medium under the ONE Beer-Lambert law — never a second exp() stacked on it.
+  //
+  // Deliberately NOT part of skySampleMedium: that function is what every LUT
+  // bake integrates, and this layer is presentation tier. Folding it in there
+  // would put a live look tweak inside the bake and re-cook the sky on every
+  // slider move.
+  ///////////////////////////////////////////////////////////
+
+  float hazeExtinction(float h) {
+    return max(SkyHazeDensity.x, 0.0) * exp(-max(h, 0.0) / max(SkyHazeDensity.y, 1e-4));
   }
 
   ///////////////////////////////////////////////////////////
@@ -675,6 +711,283 @@ libblock lib_sky
     lum *= (1.0 / 64.0);
     fms *= (1.0 / 64.0);
     return lum / max(vec3(1.0) - fms, vec3(1e-4));
+  }
+
+  ///////////////////////////////////////////////////////////
+  // AERIAL PERSPECTIVE — THE MEDIUM-SAMPLING SEAM.
+  //
+  // Everything the air between the eye and a lit fragment does to that
+  // fragment: what it REMOVES (_transmittance) and what it ADDS in front of it
+  // (_inscatter, already carrying the sky's own exposure so it composites
+  // straight onto scene-referred color).
+  //
+  // THE BODY IS THE ONLY REPLACEABLE PART. A froxel volume later swaps this
+  // 8-step march for a 3D-LUT tap with the SAME signature and the SAME
+  // contract; no caller changes. That is what makes this a seam.
+  //
+  // The sun parameter is dir_to_sun and NOT sun_dir: forward shaders calling
+  // this also inherit ublk_sun, whose global sun_dir a parameter would shadow.
+  //
+  // Caller supplies the eye position — the function must NEVER reach for a
+  // camera global, or stereo would collapse to one eye.
+  ///////////////////////////////////////////////////////////
+
+  // step_shadow03/step_shadow47: per-step DIRECT-sun visibility factors (index
+  // = march step, 1.0 = unoccluded), sampled by the CALLER — this file is also
+  // included by sky/IBL passes that bind no shadow maps, so the taps cannot
+  // live here. They multiply ONLY the direct single-scatter term: the multi-
+  // scatter fold stays unshadowed (shadowed air still glows with ambient sky —
+  // shafts darken, they never go black). All-ones = byte-identical march.
+  HazeResult skyAerialPerspectiveShadowed(vec3 eye_w, vec3 frag_w, vec3 dir_to_sun,
+                                          vec4 step_shadow03, vec4 step_shadow47) {
+    HazeResult res;
+    res._inscatter     = vec3(0.0);
+    res._transmittance = vec3(1.0);
+
+    float Rg = SkyRadii.x;
+    // planet frame: the eye stands at the view altitude on the +Y axis and the
+    // eye->fragment vector converts to km. Only length(p) and dot(up,dir) are
+    // read below, so any local basis serves (see FRAME at the top of the file).
+    vec3 ro    = vec3(0.0, Rg + max(SkyRadii.z, 0.0), 0.0);
+    vec3 dvec  = (frag_w - eye_w) * SkyHazeGeom.x;
+    float dist = length(dvec);
+    if (dist < 1e-6)
+      return res;
+    vec3 rd    = dvec / dist;
+    float tmax = min(dist, SkyHazeGeom.z);
+    // 8 steps: a structural constant like every other step count in this file
+    // (A8) — the tunables all arrive through ublk_sky_atmo.
+    float dt = tmax / 8.0;
+
+    float ct      = dot(rd, dir_to_sun);
+    float ph_ray  = skyRayleighPhase(ct);
+    float ph_mie  = skyMiePhase(ct, SkyMieScatter.w);
+    float ph_haze = skyMiePhase(ct, SkyHazeDensity.z);
+
+    // the sky-view march's continuous planet shadow, same window (its comment
+    // carries the reasoning): the two integrals meet at the skyline and a
+    // different terminator here would seam there.
+    const float penumbra_half_width = 0.004625; // 0.265 degrees, radians
+
+    vec3 throughput = vec3(1.0);
+    vec3 L          = vec3(0.0);
+
+    for (int i = 0; i < 8; i++) {
+      vec3 p      = ro + rd * ((float(i) + 0.5) * dt);
+      float r     = length(p);
+      vec3 up     = p / max(r, 1e-6);
+      float h     = r - Rg;
+      SkyMedium m = skySampleMedium(h);
+
+      float hz_e = hazeExtinction(h);
+      vec3 hz_s  = SkyHazeScatterTint.rgb * hz_e;
+      // ONE extinction for both components (the repo-wide Beer-Lambert law)
+      vec3 ext     = m._extinction + vec3(hz_e);
+      vec3 seg_ext = exp(-ext * dt);
+      vec3 sigma   = max(ext, vec3(1e-7));
+
+      float mu_sun  = dot(up, dir_to_sun);
+      vec3 t_sun    = skySampleTransmittance(r, mu_sun);
+      float sin_dip = -sqrt(max(1.0 - (Rg * Rg) / max(r * r, 1e-6), 0.0));
+      float shadow  = smoothstep(0.0, 2.0 * penumbra_half_width, mu_sun - sin_dip);
+
+      vec3 scat_phased = m._scatterRayleigh * ph_ray                //
+                       + vec3(m._scatterMie * ph_mie)               //
+                       + hz_s * ph_haze * SkyHazeInscatterTint.rgb; //
+      vec3 scat_total  = m._scatterRayleigh + vec3(m._scatterMie) + hz_s;
+
+      // terrain occlusion (caller-sampled cascade factor for THIS step)
+      float terr_shadow = (i < 4) ? step_shadow03[i] : step_shadow47[i - 4];
+
+      vec3 S = SkySunIlluminance.rgb * shadow * terr_shadow * t_sun * scat_phased;
+      // multi-scatter fold, haze included — without it a thick layer standing
+      // in the planet's shadow reads black instead of glowing.
+      S += skySampleMultiScatter(r, mu_sun) * scat_total;
+
+      // energy-conserving analytic segment integral, as skyIntegrateScattered
+      L += throughput * ((S - S * seg_ext) / sigma);
+      throughput *= seg_ext;
+    }
+
+    res._inscatter     = L * SkyHazeGeom.y;
+    res._transmittance = throughput;
+    return res;
+  }
+
+  // the unshadowed form (sky/IBL passes, and any caller without cascades)
+  HazeResult skyAerialPerspective(vec3 eye_w, vec3 frag_w, vec3 dir_to_sun) {
+    return skyAerialPerspectiveShadowed(eye_w, frag_w, dir_to_sun, vec4(1.0), vec4(1.0));
+  }
+
+  ///////////////////////////////////////////////////////////
+  // THE SHADOW ARM, ALONE — what terrain occlusion REMOVES from the unshadowed
+  // march's in-scatter, so that
+  //
+  //   skyAerialPerspectiveShadowed(..., s03, s47)._inscatter
+  //     == skyAerialPerspective(...)._inscatter
+  //        - skyAerialPerspectiveShadowLoss(..., s03, s47)
+  //
+  // is an ALGEBRAIC identity, not an approximation: step_shadow enters the loop
+  // above only as a linear factor on the direct single-scatter term S, the
+  // segment integral is linear in S, and _transmittance never reads it at all
+  // (throughput is a function of the medium alone). That identity is what lets
+  // the shadow arm be computed at a DIFFERENT RESOLUTION from the term it is
+  // subtracted from — the quarter-res shaft mode — with the full-res march
+  // still carrying the ambient/multi-scatter fold at full resolution.
+  //
+  // Everything not multiplied by step_shadow is therefore absent here: the
+  // multi-scatter fold, the artist in-scatter grade's non-direct path, all of
+  // it stays with the unshadowed march. The body is otherwise its sibling's,
+  // line for line, because any divergence in the medium sampling, the planet
+  // terminator, the phase functions or the segment integral would show up as a
+  // shaft that does not fit the haze it is cut out of.
+  ///////////////////////////////////////////////////////////
+  vec3 skyAerialPerspectiveShadowLoss(vec3 eye_w, vec3 frag_w, vec3 dir_to_sun,
+                                      vec4 step_shadow03, vec4 step_shadow47) {
+    float Rg = SkyRadii.x;
+    vec3 ro    = vec3(0.0, Rg + max(SkyRadii.z, 0.0), 0.0);
+    vec3 dvec  = (frag_w - eye_w) * SkyHazeGeom.x;
+    float dist = length(dvec);
+    if (dist < 1e-6)
+      return vec3(0.0);
+    vec3 rd    = dvec / dist;
+    float tmax = min(dist, SkyHazeGeom.z);
+    float dt = tmax / 8.0;
+
+    float ct      = dot(rd, dir_to_sun);
+    float ph_ray  = skyRayleighPhase(ct);
+    float ph_mie  = skyMiePhase(ct, SkyMieScatter.w);
+    float ph_haze = skyMiePhase(ct, SkyHazeDensity.z);
+
+    const float penumbra_half_width = 0.004625; // 0.265 degrees, radians
+
+    vec3 throughput = vec3(1.0);
+    vec3 L          = vec3(0.0);
+
+    for (int i = 0; i < 8; i++) {
+      vec3 p      = ro + rd * ((float(i) + 0.5) * dt);
+      float r     = length(p);
+      vec3 up     = p / max(r, 1e-6);
+      float h     = r - Rg;
+      SkyMedium m = skySampleMedium(h);
+
+      float hz_e = hazeExtinction(h);
+      vec3 hz_s  = SkyHazeScatterTint.rgb * hz_e;
+      vec3 ext     = m._extinction + vec3(hz_e);
+      vec3 seg_ext = exp(-ext * dt);
+      vec3 sigma   = max(ext, vec3(1e-7));
+
+      float mu_sun  = dot(up, dir_to_sun);
+      vec3 t_sun    = skySampleTransmittance(r, mu_sun);
+      float sin_dip = -sqrt(max(1.0 - (Rg * Rg) / max(r * r, 1e-6), 0.0));
+      float shadow  = smoothstep(0.0, 2.0 * penumbra_half_width, mu_sun - sin_dip);
+
+      vec3 scat_phased = m._scatterRayleigh * ph_ray                //
+                       + vec3(m._scatterMie * ph_mie)               //
+                       + hz_s * ph_haze * SkyHazeInscatterTint.rgb; //
+
+      float terr_shadow = (i < 4) ? step_shadow03[i] : step_shadow47[i - 4];
+
+      // the DEFICIT: what the fully-lit air would have in-scattered, times the
+      // fraction of it the caster ate.
+      vec3 S = SkySunIlluminance.rgb * shadow * (1.0 - terr_shadow) * t_sun * scat_phased;
+
+      L += throughput * ((S - S * seg_ext) / sigma);
+      throughput *= seg_ext;
+    }
+
+    return L * SkyHazeGeom.y;
+  }
+
+  ///////////////////////////////////////////////////////////
+  // SKY-PIXEL GROUND-HAZE OVERLAY — the skyline's other half.
+  //
+  // The sky-view LUT already integrates the GEOPHYSICAL medium along this ray,
+  // so this march adds ONLY the artist haze layer on top of it: in-scatter
+  // sourced by the haze alone, attenuated by the COMBINED (geo + haze)
+  // extinction, because the geophysical air standing in front of a haze
+  // particle does dim it.
+  //
+  // _transmittance is therefore the HAZE-ONLY optical depth — grayscale, and
+  // DELIBERATELY not the combined throughput skyAerialPerspective returns. The
+  // background it multiplies is the LUT sky, which is already self-consistently
+  // extincted in the geophysical medium; folding that extinction in a second
+  // time here would darken the whole sky by the square of its own air.
+  //
+  // Without this, a dense artist layer veils every mountain and leaves the sky
+  // above the ridge line clean — one medium with two different answers, and a
+  // hard seam at every skyline.
+  //
+  // VISIBLE SKY ONLY. The IBL equirect snapshot bakes through its own material
+  // and never calls this, so the ambient/reflection tier stays purely
+  // geophysical: a cranked artist layer changes what you SEE of the sky without
+  // regrading every surface lit by it. Closing that is a separate decision.
+  //
+  // Same 8-step structural march, same units, same exposure convention
+  // (SkyHazeGeom.y) on _inscatter as the aerial-perspective seam.
+  //
+  // NO eye parameter, unlike that seam: the skybox unprojects through a
+  // TRANSLATION-STRIPPED inverse view-projection, so the only world quantity
+  // its fragments can produce is this direction. The altitude is SkyRadii.z —
+  // the center-eye altitude the sky-view LUT being overlaid was baked at, which
+  // is the one altitude that cannot disagree with the background.
+  ///////////////////////////////////////////////////////////
+
+  HazeResult skyHazeSkyOverlay(vec3 view_dir_w, vec3 dir_to_sun) {
+    HazeResult res;
+    res._inscatter     = vec3(0.0);
+    res._transmittance = vec3(1.0);
+
+    float Rg   = SkyRadii.x;
+    vec3 ro    = vec3(0.0, Rg + max(SkyRadii.z, 0.0), 0.0);
+    vec3 rd    = normalize(view_dir_w);
+    // no fragment to stop at: the exponential layer self-limits (a horizon ray
+    // saturates long before the clamp) so the march simply runs the full
+    // distance the artist layer is declared to reach.
+    float tmax = SkyHazeGeom.z;
+    float dt   = tmax / 8.0;
+
+    float ct      = dot(rd, dir_to_sun);
+    float ph_haze = skyMiePhase(ct, SkyHazeDensity.z);
+
+    const float penumbra_half_width = 0.004625; // 0.265 degrees, radians
+
+    vec3 throughput = vec3(1.0);
+    vec3 L          = vec3(0.0);
+    float tau_haze  = 0.0;
+
+    for (int i = 0; i < 8; i++) {
+      vec3 p      = ro + rd * ((float(i) + 0.5) * dt);
+      float r     = length(p);
+      vec3 up     = p / max(r, 1e-6);
+      float h     = r - Rg;
+      SkyMedium m = skySampleMedium(h);
+
+      float hz_e = hazeExtinction(h);
+      vec3 hz_s  = SkyHazeScatterTint.rgb * hz_e;
+      // ONE extinction for the throughput (the repo-wide Beer-Lambert law); the
+      // SOURCE below is haze-only, which is what keeps this an overlay.
+      vec3 ext     = m._extinction + vec3(hz_e);
+      vec3 seg_ext = exp(-ext * dt);
+      vec3 sigma   = max(ext, vec3(1e-7));
+
+      float mu_sun  = dot(up, dir_to_sun);
+      vec3 t_sun    = skySampleTransmittance(r, mu_sun);
+      float sin_dip = -sqrt(max(1.0 - (Rg * Rg) / max(r * r, 1e-6), 0.0));
+      float shadow  = smoothstep(0.0, 2.0 * penumbra_half_width, mu_sun - sin_dip);
+
+      vec3 S = SkySunIlluminance.rgb * shadow * t_sun //
+               * hz_s * ph_haze * SkyHazeInscatterTint.rgb;
+      S += skySampleMultiScatter(r, mu_sun) * hz_s;
+
+      L += throughput * ((S - S * seg_ext) / sigma);
+      throughput *= seg_ext;
+      tau_haze += hz_e * dt;
+    }
+
+    res._inscatter     = L * SkyHazeGeom.y;
+    res._transmittance = vec3(exp(-tau_haze));
+    return res;
   }
 }
 ///////////////////////////////////////////////////////////////////////////////

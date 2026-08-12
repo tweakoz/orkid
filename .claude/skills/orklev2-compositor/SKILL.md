@@ -141,9 +141,13 @@ Color-based object selection rendering.
 - `_distortion_lambda` — barrel distortion callback
 - Mono viewer mode option
 
-### DualMonoVrOutputNode (NodeCompositorVr.h:60)
-- Dual-mono VR with external viewer window
-- `createExternalViewer()` — secondary monitor window
+### SinglePassStereoVrOutputNode (NodeCompositorVr.h:53)
+- THE VR output node: both eyes in ONE layered (2-view multiview) scene pass
+- Preset strings `FWDPBRSPVR` and `FWDPBRVRDM` BOTH route here (compositordata.cpp
+  `presetForwardPBRSPVR`); a device without multiview THROWS in the scenegraph
+  preset resolver — there is no degraded VR path
+- `downsampledEyeRtGroup(left)` — the per-eye final downsampled RtGroup (the buffer
+  the XR runtime and the desktop mirror consume); pybound, headless-capturable
 
 ### FileOutputCompositingNode (NodeCompositorFile.h:50)
 - Image sequence output
@@ -176,7 +180,7 @@ Color-based object selection rendering.
 | Picking | `presetPicking()` | Object selection pass |
 | PickingDebug | `presetPickingDebug()` | Picking with screen output |
 | ForwardPBRVR | `presetForwardPBRVR()` | Forward PBR for VR |
-| ForwardPBRVRDM | `presetForwardPBRVRDM()` | Dual-mono VR |
+| ForwardPBRSPVR | `presetForwardPBRSPVR()` | Single-pass stereo VR (preset strings FWDPBRSPVR + FWDPBRVRDM) |
 
 Note: DeferredPBR is currently disabled (`OrkAssert(false)`).
 

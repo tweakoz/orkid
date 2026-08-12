@@ -12,6 +12,7 @@
 // member function, so require the full Scene definition here).
 #include <ork/lev2/gfx/scenegraph/scenegraph.h>
 #include <ork/lev2/gfx/renderer/hzb.h>
+#include <ork/lev2/vr/vr.h> // SPVR: the eye/center cameras the layered pyramid registers against
 #include <ork/lev2/gfx/renderphasestats.h> // perf HUD render-phase timing sink
 
 namespace ork::lev2 {
@@ -48,6 +49,29 @@ static bool hzbAllowSameFrameDepth() {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ORKID_SPVR_HZB=0 — the escape hatch on the single-pass-stereo occlusion pyramid. ON by
+//  default, exactly as the pyramid is on the mono chain (ORKID_HZB_OCCLUSION, default 2,
+//  remains the one switch that turns occlusion off everywhere): stereo culling that only
+//  works when a knob is set is stereo culling that does not work. This knob exists so a
+//  stereo run can be priced with and without the pyramid without disturbing the mono
+//  contract. Read once, announced once when it disarms the path.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+static bool spvrLayeredHzbEnabled() {
+  static const bool _armed = []() -> bool {
+    auto env = std::getenv("ORKID_SPVR_HZB");
+    bool off = env and (std::string(env) == "0");
+    if (off) {
+      printf("[SPVR:HZB] ORKID_SPVR_HZB=0 — layered occlusion pyramid DISARMED; per-view culls "
+             "are frustum-only under single-pass stereo\n");
+      fflush(stdout);
+    }
+    return not off;
+  }();
+  return _armed;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ForwardPbrNodeImpl::ForwardPbrNodeImpl(ForwardNode* node)
     : _node(node)
@@ -57,7 +81,8 @@ ForwardPbrNodeImpl::ForwardPbrNodeImpl(ForwardNode* node)
   _CUBECAM   = std::make_shared<CameraMatrices>();
   _SUNCAM    = std::make_shared<CameraMatrices>();
   _COOKIECAM = std::make_shared<CameraMatrices>();
-  _CULLCAM   = std::make_shared<CameraMatrices>();
+  for (int i = 0; i < SunCullSetPlan::kMaxSets; i++) // one union sun ortho per cullset
+    _CULLCAM[i] = std::make_shared<CameraMatrices>();
   _primary_pass = std::make_shared<ForwardPass>();
 
 }
@@ -159,6 +184,12 @@ void ForwardPbrNodeImpl::init(lev2::Context* context, int iw, int ih) {
     _fxpInvP                = _ssao_material->param("inv_p");
     _fxpP                   = _ssao_material->param("p");
 
+    /////////////////
+    // QUARTER-RES SUN SHAFTS
+    /////////////////
+
+    _init_hazeshaft(context);
+
     auto mtl_load_req1 = std::make_shared<asset::LoadRequest>("src://effect_textures/white");
     _whiteTexture      = asset::AssetManager<TextureAsset>::load(mtl_load_req1);
   }
@@ -250,7 +281,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
       s_spvr_ssao_warned = true;
       printf("[FWD:SPVR] ERROR single-pass-stereo pass with ssaoNumSamples<%d> — SSAO is NOT "
              "layered and is DISABLED for this pass (it would shade both eyes from one view). "
-             "Set ssaoNumSamples=0 for VR, or use the DualMonoVr output node.\n",
+             "Set ssaoNumSamples=0 for VR.\n",
              pbrcommon->_ssaoNumSamples);
       fflush(stdout);
     }
@@ -298,6 +329,17 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
   } else {
     FBI->transitionDepthForWriting(rtg_out);
   }
+  ///////////////////////////////////////////////////////////////////////////
+  // QUARTER-RES SUN SHAFTS, half one. Between the depth transition and the
+  // color pass's push, because it samples the prepass depth (so it needs the
+  // sampling layout) and renders into its OWN half-dims target (so it cannot
+  // be inside the color pass). The composite half runs later, from inside
+  // _render_colorpass. No-op in every mode but 2.
+  ///////////////////////////////////////////////////////////////////////////
+  {
+    OrkProfilerSampleScope(CHANNEL_GPU, "fwd:hazeshaft");
+    _render_hazeshaft(fpass);
+  }
   FBI->PushRtGroup(rtg_out.get());
   if(_node->_pbrcommon->_enable_skybox){
     OrkProfilerSampleScope(CHANNEL_GPU, "fwd:skybox");
@@ -320,7 +362,7 @@ void ForwardPbrNodeImpl::_render_dppskyssaocolor(forward_pass_ptr_t fpass) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // frame PROLOGUE — view-independent work, exactly ONCE per composited frame
 //   (called from NodeCompositingTechnique::assemble BEFORE the assembler's eye
-//    fan-out; under DualMonoVr _render_top then runs once per eye). Absorbs:
+//    fan-out; on a per-eye output path _render_top then runs once per eye). Absorbs:
 //    light enumeration + lighting-SSBO packing (world-space data, enumerateInPass
 //    culling disabled), spotlight shadow-map renders, env-probe cube captures.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -335,7 +377,7 @@ void ForwardPbrNodeImpl::_render_prologue(CompositorDrawData& drawdata) {
   auto RCFD    = drawdata.RCFD();
 
   // frame identity is the context's target frame (one increment per EndFrame —
-  // stable across both DMVR eyes, which render inside ONE context frame).
+  // stable across both eyes, which render inside ONE context frame).
   // SILENT same-frame dedup, first assemble wins (the Scene::gpuUpdate /
   // Scene::_invokeFramePrologueHooks contract): shared-scene multi-viewport
   // configs legitimately assemble this node several times per context frame
@@ -522,8 +564,7 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
     rtg_fresh = true;
   }
   if (rtg_fresh) {
-    _hzb_seeded_rtgs.erase(rtg_key); // fresh depth image — unseeded until re-rendered
-    _hzb_recorded_rtgs.erase(rtg_key);
+    _hzb_recorded_rtgs.erase(rtg_key); // fresh depth image — unrecorded until re-rendered
   }
 
   // 1-phase occlusion HZB — built at FRAME START from LAST frame's depth. _rtg_primary is keyed-fetched
@@ -535,49 +576,192 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   // mode 0 => the pyramid has no consumer this run (both per-view culls skip it on the same
   // mode), so BUILDING it is pure cost. Scene::_hzb simply stays null; the culls read the
   // stamped handle back as null and stay frustum-only, exactly as they do before first build.
-  // SPVR INTERIM: the occlusion pyramid is built by a compute pass that binds the scene
-  //  depth as a plain sampler2D. Under single-pass stereo that depth is a 2-layer ARRAY
-  //  image, which is a validation error, not a subtlety — so the build is SKIPPED and the
-  //  per-view culls stay frustum-only (Scene::_hzb simply stays null, exactly as before
-  //  the first build of any run). Occlusion culling is a cost reduction, never a visual
-  //  input: what it removes is by definition not visible. The named follow-up is a
-  //  layer-0 2D view of the layered depth handed to HZBBuilder unchanged.
+  // permanent extent backstop against the HZB-vs-resize bug class: a pyramid built at a prior
+  // extent whose base dims no longer match the extent it would be built at NOW must NOT be
+  // consumed — its stale mip0 clamp maps this frame's NDC onto the wrong footprint (false culls
+  // / banding). On mismatch occlusion is disabled for the frame; the build below re-validates at
+  // the new extent once the depth is seeded. The expectation is derived from the DEPTH IMAGE the
+  // builder actually samples (_baseW == depthW/2 by construction in HZBBuilder::_ensure), not
+  // from the rtg's own width: those two agree on the mono chain, but assuming the rtg relation
+  // is what would latch the pyramid permanently invalid the moment a stereo target's depth
+  // extent stops matching its color extent. No depth texture yet => nothing to compare against,
+  // and the readiness test below rejects the build anyway.
+  auto hzb_extent_backstop = [&](hzbbuilder_ptr_t hzb) {
+    if (not hzb)
+      return;
+    auto depthtex = (_rtg_primary and _rtg_primary->_depthBuffer) ? _rtg_primary->_depthBuffer->_texture : nullptr;
+    if (not depthtex)
+      return;
+    int expect_baseW = std::max(1, depthtex->_width / 2);
+    int expect_baseH = std::max(1, depthtex->_height / 2);
+    if (hzb->_baseW != expect_baseW or hzb->_baseH != expect_baseH)
+      hzb->_valid = false;
+  };
+  // SPVR: the pyramid IS built under single-pass stereo, from the 2-layer ARRAY depth the one
+  //  multiview pass wrote, via the layered mip0 kernel that reduces over BOTH eye layers
+  //  (hzb.cpp, cs_hzb_mip0_layered). A texel then occludes only what BOTH eyes agree is
+  //  occluded — the under-occlude-only direction. The eye cameras go WITH the depth because
+  //  agreement alone is not registration: the cull indexes the pyramid with the center
+  //  camera, and the kernel needs the measured eye->center displacement to widen its
+  //  reduction over. Misregistered occlusion removes geometry that should survive.
+  //  ORDERING: same admission test as the dual-pass chain below — the LATEST frame that
+  //  recorded this rtg's depth (_hzb_recorded_rtgs) must be STRICTLY earlier than this one —
+  //  with a rejection that says so out loud rather than degrading silently.
   if (_node->_singlePassStereo) {
-    static bool s_spvr_hzb_warned = false;
-    if (not s_spvr_hzb_warned) {
-      s_spvr_hzb_warned = true;
-      printf("[FWD:SPVR] HZB occlusion pyramid NOT built under single-pass stereo (layered depth "
-             "has no 2D view yet) — per-view culls are frustum-only for this node.\n");
-      fflush(stdout);
+    auto* hzbscene = (spvrLayeredHzbEnabled() and _node->_pbrcommon) ? _node->_pbrcommon->_scene : nullptr;
+    //////////////////////////////////////////////////////////////////////
+    // THE PYRAMID IS ONLY MEANINGFUL TO A CULL THAT USES THE HEAD CAMERA.
+    //  Scene::_renderIMPL picks the per-view cull camera by exactly this predicate: with a
+    //  tracked pose (or an XR runtime that owns presentation) it culls against the HEAD
+    //  camera, which is the camera this pyramid is registered to; otherwise it falls back to
+    //  the DESKTOP draw camera ("spawncam"), whose projection has nothing to do with the eye
+    //  depth this pyramid was reduced from. Measured with that fallback active (offscreen
+    //  stereo, static pose): the armed pyramid removed geometry the disarmed arm draws — 60
+    //  to 745 eaten pixels depending on extent, and a different set every head step. So the
+    //  build is refused rather than published misregistered, and any pyramid left over from
+    //  an earlier frame is invalidated so no consumer keeps reading it.
+    //////////////////////////////////////////////////////////////////////
+    auto vrdev            = orkidvr::device();
+    bool cull_uses_head   = vrdev                                                        //
+                          and vrdev->_active                                             //
+                          and (vrdev->_trackedPoseValid or vrdev->ownsHmdPresentation()) //
+                          and vrdev->_centercamera and vrdev->_leftcamera and vrdev->_rightcamera;
+    if (hzbscene and not cull_uses_head) {
+      if (hzbscene->_hzb)
+        hzbscene->_hzb->_valid = false;
+      static bool s_spvr_hzb_nohead = false;
+      if (not s_spvr_hzb_nohead) {
+        s_spvr_hzb_nohead = true;
+        printf("[SPVR:HZB] layered build REFUSED — this frame's per-view cull resolves the DESKTOP "
+               "camera, not the head camera (tracked pose absent and the device does not own HMD "
+               "presentation). The pyramid is registered to the eye views; indexing it with an "
+               "unrelated projection removes visible geometry. Culls stay frustum-only.\n");
+        fflush(stdout);
+      }
+      hzbscene = nullptr;
+    }
+    if (hzbscene) {
+      OrkProfilerSampleScope(CHANNEL_MAIN, "cpu:fwd:hzb:spvr");
+      ////////////////////////////////////////////////////////////////////////
+      // MSAA note (no longer a caveat, kept because the shape is easy to re-break): under
+      //  multisampling there are TWO depth images. The depth TEST runs against the
+      //  multisample ATTACHMENT, which no shader can sample, so this pyramid — like every
+      //  other sampler-side depth consumer — reads the SINGLE-SAMPLE copy. One multiview
+      //  pass cannot fill that copy for more than one view, so the backend resolves the
+      //  eyes one at a time after the depth pass (VkRtGroupImpl::_resolveMultiviewDepth).
+      //  Before that existed the copy carried no eye depth at all under stereo and the
+      //  both-eyes combine read far everywhere, rejecting nothing.
+      ////////////////////////////////////////////////////////////////////////
+      hzb_extent_backstop(hzbscene->_hzb);
+      auto rec_it        = _hzb_recorded_rtgs.find(rtg_key);
+      bool have_depth    = (rec_it != _hzb_recorded_rtgs.end());
+      int  depth_frame   = have_depth ? rec_it->second : -1;
+      bool depth_earlier = have_depth                                //
+                           and (hzbAllowSameFrameDepth()             //
+                                or (context->GetTargetFrame() > depth_frame));
+      if (have_depth and not depth_earlier) {
+        // a same-frame stamp means this frame's depth passes are RECORDED but not yet
+        // submitted, while this build's dispatch submits on its own — sampling it would read
+        // an undefined image. Reject, and say so rather than degrade silently.
+        static bool s_spvr_hzb_sameframe = false;
+        if (not s_spvr_hzb_sameframe) {
+          s_spvr_hzb_sameframe = true;
+          printf("[SPVR:HZB] layered build REJECTED — depth for this rtg was recorded THIS frame "
+                 "(depth_frame<%d> this_frame<%d>); the pyramid needs strictly-earlier depth\n",
+                 depth_frame, int(context->GetTargetFrame()));
+          fflush(stdout);
+        }
+      }
+      bool depth_impl_ready = depth_earlier                //
+                              and _rtg_primary             //
+                              and _rtg_primary->_depthBuffer //
+                              and _rtg_primary->_depthBuffer->_texture;
+      if (depth_impl_ready) {
+        const auto& tex_impl = _rtg_primary->_depthBuffer->_texture->_impl;
+        depth_impl_ready     = tex_impl.isSet() and not tex_impl.isA<std::nullptr_t>();
+      }
+      if (depth_impl_ready) {
+        if (not hzbscene->_hzb)
+          hzbscene->_hzb = std::make_shared<ork::lev2::HZBBuilder>();
+        int depth_layers = _rtg_primary->_depthBuffer->_numLayers;
+        // PAIRED transition, same as the mono chain: a compute-side depth consumer with no
+        // push/pop of its own, released as soon as the build returns.
+        FBI->transitionDepthForSampling(_rtg_primary);
+        hzbscene->_hzb->buildLayered(
+            context,
+            _rtg_primary->_depthBuffer->_texture,
+            depth_layers,
+            vrdev->_leftcamera.get(),
+            vrdev->_rightcamera.get(),
+            vrdev->_centercamera.get());
+        FBI->transitionDepthForWriting(_rtg_primary);
+        hzbscene->_hzb->_sourceDepthFrame = depth_frame;
+        ////////////////////////////////////////////////////////////////////////
+        // OBSERVABLE ENGAGEMENT, AT THE POINT OF USE. "the branch compiled" and
+        //  "no validation error" are both true of a build that never ran; this
+        //  line fires from the site that actually dispatched, and names the layer
+        //  count and combine direction it dispatched WITH. Once per run.
+        //  Grep token: SPVR:HZB
+        ////////////////////////////////////////////////////////////////////////
+        static bool s_spvr_hzb_built = false;
+        if (not s_spvr_hzb_built) {
+          s_spvr_hzb_built = true;
+          const auto& sreg = hzbscene->_hzb->_stereoReg;
+          // the map's affine terms are reported as s/t (what an asymmetric rig makes large)
+          // and its PROJECTIVE terms as p (what a CANTED rig makes nonzero — the pair an
+          // affine map cannot express, and whose absence used to land in c0).
+          printf("[SPVR:HZB] layered pyramid BUILT layers<%d> base<%dx%d> mips<%d> "
+                 "combine<max = both-eyes-agree> reg<c0 %.3f c1 %.3f texels> "
+                 "map<L s %.4f,%.4f t %.4f,%.4f p %.5f,%.5f | "
+                 "R s %.4f,%.4f t %.4f,%.4f p %.5f,%.5f> "
+                 "depthframe<%d> thisframe<%d>\n",
+                 depth_layers,
+                 hzbscene->_hzb->_baseW,
+                 hzbscene->_hzb->_baseH,
+                 hzbscene->_hzb->_mips,
+                 sreg._c0,
+                 sreg._c1,
+                 sreg._regH[0][0],
+                 sreg._regH[0][4],
+                 sreg._regH[0][2],
+                 sreg._regH[0][5],
+                 sreg._regH[0][6],
+                 sreg._regH[0][7],
+                 sreg._regH[1][0],
+                 sreg._regH[1][4],
+                 sreg._regH[1][2],
+                 sreg._regH[1][5],
+                 sreg._regH[1][6],
+                 sreg._regH[1][7],
+                 depth_frame,
+                 int(context->GetTargetFrame()));
+          fflush(stdout);
+        }
+      }
     }
   }
   else if (auto* hzbscene = (_node->_pbrcommon) ? _node->_pbrcommon->_scene : nullptr) {
     OrkProfilerSampleScope(CHANNEL_MAIN, "cpu:fwd:hzb");
-    // permanent extent backstop against the HZB-vs-resize bug class: a pyramid built at a prior
-    // extent whose base dims no longer match the rtg's current extent must NOT be consumed — its
-    // stale mip0 clamp maps this frame's NDC onto the wrong footprint (false culls / banding). On
-    // mismatch disable occlusion for the frame; build() below re-validates at the new extent once
-    // the depth is seeded. Cheap: two integer compares, using the proven-correct width()/height().
-    if (hzbscene->_hzb) {
-      int expect_baseW = std::max(1, _rtg_primary->width() / 2);
-      int expect_baseH = std::max(1, _rtg_primary->height() / 2);
-      if (hzbscene->_hzb->_baseW != expect_baseW or hzbscene->_hzb->_baseH != expect_baseH)
-        hzbscene->_hzb->_valid = false;
-    }
+    hzb_extent_backstop(hzbscene->_hzb);
     // only sample LAST frame's depth if this rtg's depth passes have actually
     // completed at least once since (re)build/resize — otherwise the depth image
     // is UNDEFINED (or the texture has no backend impl yet) and dispatching
     // leaves u_depth unbound / samples an invalid layout (validation errors).
     // note: Texture::_impl default-initializes to nullptr_t, which counts as
     // "set" for the variant — so exclude that explicitly.
-    // seeding stamps the frame that RECORDED the depth passes; that frame's graphics work
+    // the stamp is the frame that RECORDED this rtg's depth passes; that frame's graphics work
     // (including the depth image's creation-time layout barriers) is not submitted until the
     // frame ends, while this dispatch submits on its own. So require a STRICTLY earlier frame
-    // — a same-frame seed (second eye / second compositor pass) is not yet on the queue.
-    auto seed_it          = _hzb_seeded_rtgs.find(rtg_key);
-    bool seed_earlier     = (seed_it != _hzb_seeded_rtgs.end())               //
+    // — a same-frame stamp (any second compositor pass on this rtg, e.g. a second view)
+    // means the depth is recorded but not yet on the queue, and sampling it reads an
+    // UNDEFINED image: the pyramid then varies render to render, and with it which marginal
+    // instances get culled. The stamp is ASSIGNED every recording frame, so it is the LATEST
+    // one: a sticky first-recording stamp would leave "GetTargetFrame() > stamp" true forever
+    // and the guard would never fire (which is what it used to do).
+    auto rec_it           = _hzb_recorded_rtgs.find(rtg_key);
+    bool seed_earlier     = (rec_it != _hzb_recorded_rtgs.end())              //
                             and (hzbAllowSameFrameDepth()                     //
-                                 or (context->GetTargetFrame() > seed_it->second));
+                                 or (context->GetTargetFrame() > rec_it->second));
     bool depth_impl_ready = seed_earlier //
                             and _rtg_primary //
                             and _rtg_primary->_depthBuffer //
@@ -597,12 +781,10 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
       hzbscene->_hzb->build(context, _rtg_primary->_depthBuffer->_texture);
       FBI->transitionDepthForWriting(_rtg_primary);
       // PROVENANCE (gate leg (m)): the frame whose depth passes LAST wrote the image this
-      //  pyramid was just built from. Compared against Context::GetTargetFrame() at consume
-      //  time, that is the direct observable for the invariant the guard above encodes —
-      //  equality means same-frame depth reached the pyramid. Reporting only, never a guard
-      //  input: the admission test keeps its FIRST-seed semantics unchanged.
-      auto rec_it = _hzb_recorded_rtgs.find(rtg_key);
-      hzbscene->_hzb->_sourceDepthFrame = (rec_it != _hzb_recorded_rtgs.end()) ? rec_it->second : -1;
+      //  pyramid was just built from — the same stamp the admission test above accepted, so
+      //  equality with Context::GetTargetFrame() at consume time is the direct observable for
+      //  the invariant that test encodes.
+      hzbscene->_hzb->_sourceDepthFrame = rec_it->second;
     }
   }
 
@@ -703,12 +885,9 @@ void ForwardPbrNodeImpl::_render_top(CompositorDrawData& drawdata) {
   RCFD->_passID = "PRIMARY"_crcu;
 
   _render_dppskyssaocolor(_primary_pass);
-  // depth passes recorded — a LATER frame's HZB may sample this depth (emplace, not assign:
-  // the stamp must stay at the FIRST recording frame, so a key seeded frames ago keeps
-  // qualifying instead of being pushed forward every frame).
-  _hzb_seeded_rtgs.emplace(rtg_key, context->GetTargetFrame());
-  // ...and the LATEST recording frame, which is what the pyramid actually samples (assign,
-  // not emplace — this one has to move forward every frame to stay the truth).
+  // depth passes recorded — the LATEST recording frame, which is both what a later frame's
+  // HZB build samples and what its admission test compares against (assign, not emplace: a
+  // stamp that does not move forward every frame stops being the truth after frame one).
   _hzb_recorded_rtgs[rtg_key] = context->GetTargetFrame();
 
   CIMPL->popCPD();

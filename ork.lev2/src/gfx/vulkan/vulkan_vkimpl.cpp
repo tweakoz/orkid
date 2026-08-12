@@ -358,7 +358,40 @@ VulkanInstance::VulkanInstance() {
   _appdata.applicationVersion = 1;
   _appdata.pEngineName        = "Orkid";
   _appdata.engineVersion      = 1;
-  _appdata.apiVersion         = VK_API_VERSION_1_3;
+  // apiVersion: ask for the highest the LOADER actually supports, capped at the
+  //  highest this engine is written against. Capability-driven, NOT hardcoded — the
+  //  ceiling differs per platform+driver (MoltenVK is 1.4 here; a given Linux driver
+  //  may be 1.3), and requesting more than the loader has fails vkCreateInstance.
+  //
+  //  Why it matters beyond feature access: vkGetDeviceProcAddr withholds EVERY core
+  //  entrypoint newer than the requested version, including promoted aliases of
+  //  extensions that ARE enabled. An in-process guest that proc-loads by core name —
+  //  an OpenXR runtime loaded into this process — then traps on a NULL pfn that looks
+  //  inexplicable, because the extension is right there in the enabled list. A guest
+  //  runtime that loads vkCmdPushDescriptorSet (VK_KHR_push_descriptor promoted in 1.4)
+  //  under a 1.3 instance gets NULL while vkCmdPushDescriptorSetKHR resolves fine.
+  //  vkEnumerateInstanceVersion is 1.1+; its absence means a 1.0 loader.
+  uint32_t loader_api_version = VK_API_VERSION_1_0;
+  if (auto pfn_enum_version = (PFN_vkEnumerateInstanceVersion)vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceVersion")) {
+    if (VK_SUCCESS != pfn_enum_version(&loader_api_version))
+      loader_api_version = VK_API_VERSION_1_0;
+  }
+  // Composed numerically, NOT the named VK_API_VERSION_1_4 macro: that macro only
+  //  exists in 1.4-era headers, and seats build against whatever vulkan_core.h their
+  //  staging carries (a Linux seat with 1.3 headers must still COMPILE — the loader
+  //  min() below keeps it from ever REQUESTING beyond what the runtime supports).
+  constexpr uint32_t ORKID_MAX_VK_API_VERSION = VK_MAKE_API_VERSION(0, 1, 4, 0);
+  _appdata.apiVersion = (loader_api_version < ORKID_MAX_VK_API_VERSION) //
+                            ? loader_api_version
+                            : ORKID_MAX_VK_API_VERSION;
+  logchan_vkimpl->log(
+      "apiVersion: loader supports <%u.%u.%u>, requesting <%u.%u.%u>",
+      VK_API_VERSION_MAJOR(loader_api_version),
+      VK_API_VERSION_MINOR(loader_api_version),
+      VK_API_VERSION_PATCH(loader_api_version),
+      VK_API_VERSION_MAJOR(_appdata.apiVersion),
+      VK_API_VERSION_MINOR(_appdata.apiVersion),
+      VK_API_VERSION_PATCH(_appdata.apiVersion));
 
   // X1: honor an externally-required Vulkan API-version window (e.g. XR's
   //  xrGetVulkanGraphicsRequirements min/max). Neutral when both bounds are 0.

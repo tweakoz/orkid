@@ -260,6 +260,28 @@ technique vtxcolor {
     state_block     = sb_default;
   }
 }
+///////////////////////////////////////////////////////////////
+// UI OVERLAY state: everything a 2D panel drawn last needs, and nothing a 3D surface
+// wants. ALPHA because a runtime setBlendingMacro on a FreestyleMaterial never reaches a
+// compiled pipeline (the pass's state_block is what the pipeline carries). CULL OFF
+// because a screen-space quad's winding is whatever the caller's y-down UI space made it
+// — a culled quad is the exact "drew nothing, said nothing" failure. DEPTH off both ways
+// because an overlay is not in the scene's depth conversation.
+state_block sb_uioverlay : sb_default {
+  BlendMode = ALPHA;
+  CullTest  = OFF;
+  DepthTest = OFF;
+  DepthMask = OFF;
+}
+///////////////////////////////////////////////////////////////
+technique vtxcolor_alpha {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_vtxcolor;
+    fragment_shader = ps_fragclr;
+    state_block     = sb_uioverlay;
+  }
+}
 technique debuguv {
   fxconfig = fxcfg_default;
   pass p0 {

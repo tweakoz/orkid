@@ -25,6 +25,32 @@ def search_path():
   return [Path(ork_path.data) / "scenes"]
 
 
+def portable_scene_path(scene_path):
+  """The form a composed .ecs stores as its scene source: a PATH TOKEN the
+  engine expands against the LIVE workspace at read time (see application.cpp's
+  expander table), so the same .ecs is correct on a mac checkout and a linux one.
+
+  <ork_data>/scenes/scn_x.py for the usual case, <ork_root>/... for anything
+  else inside the workspace. A scene OUTSIDE the workspace has no token to hang
+  on: it is stored absolute and warned about here, at the place the choice is
+  made, rather than discovered as a missing file on another machine."""
+  p = Path(scene_path).resolve()
+  data = Path(str(ork_path.data)).resolve()
+  root = Path(str(ork_path.root)).resolve()
+  try:
+    return "<ork_data>/%s" % p.relative_to(data).as_posix()
+  except ValueError:
+    pass
+  try:
+    return "<ork_root>/%s" % p.relative_to(root).as_posix()
+  except ValueError:
+    pass
+  print("ork.scene: %s is outside ORKID_WORKSPACE_DIR — its path is stored ABSOLUTE "
+        "in the composed .ecs, which is therefore not portable to another machine"
+        % p, file=sys.stderr)
+  return str(p)
+
+
 def resolve_scene_file(arg):
   """Turn a CLI arg into an existing .py path. Direct paths win; otherwise
   search each dir in ORK_SCENES_SEARCH_PATH for `<name>` or `<name>.py`."""

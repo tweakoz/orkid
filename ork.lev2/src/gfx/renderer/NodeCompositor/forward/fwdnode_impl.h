@@ -14,6 +14,7 @@
 #include <ork/reflect/properties/registerX.inl>
 
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
+#include <ork/lev2/gfx/material_pbr.inl> // SkyHazeParamSet — the shaft pass shares the haze binder
 #include <ork/asset/Asset.inl>
 #include <ork/profiling.inl>
 
@@ -49,7 +50,24 @@ struct ForwardPbrNodeImpl {
   void _render_skybox(forward_pass_ptr_t fpass);
   void _render_ssao_linearize_depth(forward_pass_ptr_t fpass);
   void _render_ssao_prepass(forward_pass_ptr_t fpass);
+  // QUARTER-RES SUN SHAFTS (SkyAtmosphereData::_hazeSunShadow == 2). Two halves
+  // of one effect: the march writes the shadow-LOSS term at half dims into
+  // _rtg_hazeshaft (its own pass, before the color pass pushes), and the
+  // composite subtracts the bilateral-upsampled loss back off the finished
+  // opaque image from INSIDE the color pass. See fwdnode_impl_hazeshaft.cpp.
+  void _init_hazeshaft(lev2::Context* context);
+  void _render_hazeshaft(forward_pass_ptr_t fpass);
+  void _composite_hazeshaft(forward_pass_ptr_t fpass);
+  // ORKID_HAZESHAFT_READBACK (bitmask: 1 = the loss target, 2 = the scene
+  // depth) — host round-trip + hash of the shaft pass's own inputs, off unless
+  // the variable is set. See the header comment in fwdnode_impl_hazeshaft.cpp.
+  void _hazeshaft_debug_readback(rtbuffer_ptr_t depthbuf);
+  // the atmosphere's shaft mode for THIS pass, already reduced against
+  // everything that can disarm the haze (probe capture, no atmosphere, no
+  // baked LUTs): 0 off, 1 inline, 2 quarter-res.
+  int _hazeshaft_mode(forward_pass_ptr_t fpass) const;
   void _render_colorpass(forward_pass_ptr_t fpass);
+  void _render_drawlast(forward_pass_ptr_t fpass);
   void _update_env_probes(CompositorDrawData& drawdata);
   void _update_shadow_maps();
   void _update_sun_cascades(); // SKYLIGHT lane A — sun UBO write + cascade depth passes
@@ -91,6 +109,47 @@ struct ForwardPbrNodeImpl {
   // _render_colorpass and published into the CompositorDrawData properties
   // under crc("aux_<name>") for postfx consumption.
   std::map<std::string, rtgroup_ptr_t> _aux_rtgs;
+  // QUARTER-RES SHAFT TARGET — half the primary's dims, RGBA16F, NO depth.
+  //  rgb = the shadow-loss radiance the composite subtracts; a is SPARE.
+  //  Layered + multiview under SPVR (one layer per eye, marched from that eye's
+  //  own ray), exactly as _rtgs_primary is. Created lazily on the first frame a
+  //  scene actually asks for mode 2, so every other scene pays nothing.
+  rtgroup_ptr_t _rtg_hazeshaft;
+  // FULL-RES R32F COPY of the scene depth, and the reason mode 2 is frame
+  // stable: the composite draws from inside the colour pass, which owns the
+  // depth image as an attachment, and a fetch of an image the drawing pass has
+  // attached is not reproducible frame to frame. Every shaft-pass depth fetch
+  // goes through this copy instead. See hazeshaft.fxv2.
+  rtgroup_ptr_t _rtg_hazeshaft_depth;
+  freestyle_mtl_ptr_t _hazeshaft_material;
+  const FxShaderTechnique* _tek_hzs_depthmirror        = nullptr;
+  const FxShaderTechnique* _tek_hzs_depthmirror_stereo = nullptr;
+  const FxShaderTechnique* _tek_hzs_march            = nullptr;
+  const FxShaderTechnique* _tek_hzs_march_stereo     = nullptr;
+  const FxShaderTechnique* _tek_hzs_composite        = nullptr;
+  const FxShaderTechnique* _tek_hzs_composite_stereo = nullptr;
+  const FxUniformBlock* _par_hzs_ublk_sun            = nullptr;
+  const FxUniformBlock* _par_hzs_ublk_stereo         = nullptr;
+  fxparam_constptr_t _par_hzs_mvp          = nullptr;
+  fxparam_constptr_t _par_hzs_invvp        = nullptr;
+  fxparam_constptr_t _par_hzs_invvpsize    = nullptr;
+  fxparam_constptr_t _par_hzs_eyepos       = nullptr;
+  fxparam_constptr_t _par_hzs_lowdim       = nullptr;
+  fxparam_constptr_t _par_hzs_geom         = nullptr;
+  fxparam_constptr_t _par_hzs_depth        = nullptr;
+  fxparam_constptr_t _par_hzs_depth_array  = nullptr;
+  fxparam_constptr_t _par_hzs_loss         = nullptr;
+  fxparam_constptr_t _par_hzs_loss_array   = nullptr;
+  fxparam_constptr_t _par_hzs_sunshadowmap = nullptr;
+  SkyHazeParamSet _hzs_sky_params;
+  // did THIS pass's march actually run? The composite is only legal behind a
+  // march of the same frame and the same view — a composite over a stale (or
+  // never-written) loss target would subtract last frame's shafts.
+  bool _hazeshaft_marched = false;
+  // one-shot complaints (both conditions recur every frame, so a per-frame line
+  // would be a spam channel rather than a report).
+  bool _hazeshaft_nodepth_warned = false;
+  bool _hazeshaft_engaged        = false;
   rtgset_ptr_t _rtgs_resolve_msaa;
   fmtx4 _viewOffsetMatrix;
   pbrmaterial_ptr_t _skybox_material;
@@ -102,9 +161,11 @@ struct ForwardPbrNodeImpl {
   cameramatrices_ptr_t _CUBECAM;
   cameramatrices_ptr_t _SUNCAM; // per-cascade ortho camera (reused sequentially like _SHADOWCAM)
   cameramatrices_ptr_t _COOKIECAM; // sun-aligned ortho camera the cloud decks are drawn from
-  cameramatrices_ptr_t _CULLCAM; // cascade-cull fix: UNION sun ortho enclosing ALL cascade slices; the
-                                 // per-frame sun-shadow cull (Scene::shadowCull) frustum. Superset of
-                                 // every slice, so its survivors cover every cascade's casters.
+  // cascade-cull fix: UNION sun ortho enclosing a CULLSET's cascade slices; the per-frame sun-shadow
+  // cull (Scene::shadowCull) frustum. Superset of every slice IN THAT SET, so its survivors cover
+  // every subscribed band's casters. One per cullset — unauthored scenes use [0] only and it is the
+  // union of every band, i.e. the single pre-cullset volume.
+  cameramatrices_ptr_t _CULLCAM[SunCullSetPlan::kMaxSets];
   // SUN-CASCADE SNAPSHOT state (DirectionalLightData::_shadowSnapshotInterval).
   // The held unit is fit+cull+depth-passes. The declared interval is the ONLY
   // cadence; what is recorded here is the STRUCTURAL premise set — the caster
@@ -122,6 +183,26 @@ struct ForwardPbrNodeImpl {
   float _sun_snap_bias          = 0.0f;
   float _sun_snap_pcf           = 0.0f;
   float _sun_snap_res_ratio     = 0.0f;   // per-band resolution step (1 = uniform dims)
+  // the authored cullset rig the held snapshot was fit for. An edit repartitions
+  // the volumes AND the per-band caster sets, so the maps it drew describe a
+  // different scene: RIG CHANGE, refit now.
+  std::string _sun_snap_cullsets;
+  // REFRESH-GATE premises (DirectionalLightData::_shadowRefresh*): the anchor
+  // the held bands are centered on and the direction the light travelled when
+  // they were fit. Position and direction ONLY — the fit is view-orientation
+  // independent by construction and the gate must not reintroduce a dependency
+  // the fit spent its design on removing.
+  fvec3 _sun_snap_anchor        = fvec3(0, 0, 0);
+  fvec3 _sun_snap_sundir        = fvec3(0, -1, 0);
+  // ...and the size of the caster set the held maps were drawn from. Content
+  // that STREAMS IN moves neither of the two above, so without this a snapshot
+  // taken while the scene was still assembling would be held as if it were fit
+  // for the scene that arrived after it.
+  size_t _sun_snap_casters      = size_t(-1);
+  // frames the refresh gate has seen. It stays OFF for the first of them: a
+  // scene becomes drawable over several frames and a snapshot taken before it
+  // did is empty, not stale.
+  int _sun_gate_frames          = 0;
   // Per-snapshot jitter sequence index — advanced once per STARTED snapshot,
   // never per frame: the whole point is that the offset is constant for the
   // life of a snapshot and only changes across a crossfade.
@@ -141,11 +222,17 @@ struct ForwardPbrNodeImpl {
     bool _active     = false;
     int _next_band   = 0; // next band to draw (== _band_count -> ready to publish)
     int _band_count  = 0;
-    int _target_set  = 0; // slice base = _target_set * kSunCascadeStorage
+    int _target_set  = 0; // slice base = _target_set * LightManager::_sun_cascade_bands
     fmtx4 _view[LightManager::kSunCascadeStorage];
     fmtx4 _proj[LightManager::kSunCascadeStorage];
     fmtx4 _shmtx[LightManager::kSunCascadeStorage]; // proj*view, the shader-facing form
+    // PER-BAND SCALARS PAST BAND 3 (5-band ladder). A vec4 holds four of them,
+    // so the storage ceiling growing past four means a SECOND vec4 rather than
+    // a std140 float array (which pads every element to 16 bytes and indexes
+    // worse). _hi carries bands 4.. in its own .xyzw; the shader reads the pair
+    // through one selector so neither side can index the wrong half.
     fvec4 _splits;
+    fvec4 _splits_hi;
     fvec4 _params;
     fvec3 _anchor;
     // PER-BAND RESOLUTION (S2b). _dim[i] is the band's rendered viewport edge
@@ -155,6 +242,17 @@ struct ForwardPbrNodeImpl {
     // uniform-dim path, bit for bit.
     int _dim[LightManager::kSunCascadeStorage];
     fvec4 _texel;
+    fvec4 _texel_hi;
+    // CULLSETS — frozen with the rest of the premises. _plan carries the
+    // band->set map and each set's family mask; _cullvalid[s] says the set's
+    // volume was non-degenerate and its cull may run. _culled_set is the set
+    // whose survivors are currently resident in the drawables' shadow buffers
+    // (-1 = none yet): bands are drawn in the plan's set-grouped order, so the
+    // cull re-runs exactly at each set boundary — once per SET per snapshot,
+    // never once per band, and never once per band-group-per-frame.
+    SunCullSetPlan _plan;
+    bool _cullvalid[SunCullSetPlan::kMaxSets] = {false};
+    int _culled_set                           = -1;
   };
   SunCascadeJob _sun_job;
   int _sun_live_set = 0; // which set the shader is sampling (published, atomic wrt the frame)
@@ -165,6 +263,7 @@ struct ForwardPbrNodeImpl {
   int _sun_pub_cascades = 0;
   fmtx4 _sun_pub_shmtx[LightManager::kSunCascadeStorage];
   fvec4 _sun_pub_splits;
+  fvec4 _sun_pub_splits_hi;
   fvec3 _sun_pub_anchor  = fvec3(0, 0, 0);
   int _sun_fade_total     = 0; // declared crossfade window, frames
   int _sun_fade_remaining = 0; // 0 = no fade running (shader takes the current set only)
@@ -179,6 +278,12 @@ struct ForwardPbrNodeImpl {
   // complaint: the condition recurs on every frame of every fade, so a per-frame
   // line would be a spam channel. Not reset — the first detection is the report.
   bool _sun_cadence_floor_warned = false;
+  // CLOUD-SHADOW COOKIE cadence (DirectionalLightData::_cloudShadowRefreshFrames).
+  // _valid says a fill has actually landed, so a held frame has something to hold;
+  // every disarm clears it, which is what keeps the cadence from ever extending a
+  // DISARMED state into the frames that follow it.
+  bool _sun_cookie_valid = false;
+  int _sun_cookie_held   = 0; // frames served by the current fill
   FreestyleMaterial _blit2screenmtl;
   const FxShaderTechnique* _fxtechnique1x1;
   const FxShaderParam* _fxpMVP;
@@ -222,21 +327,15 @@ struct ForwardPbrNodeImpl {
   // to render without a same-frame prologue (stale lights/shadows/probes die
   // loudly). NOT _node->_frameIndex — that increments per Render() (per eye).
   int _prologueTargetFrame       = -1;
-  // rtg key -> Context::GetTargetFrame() of the frame that FIRST recorded that key's
-  // depth passes since (re)build/resize. The frame-start HZB build samples LAST frame's
-  // depth — until a key is seeded that depth image is UNDEFINED and must not be sampled.
-  // The stamp is load-bearing: seeding marks the passes RECORDED, not SUBMITTED, and the
-  // HZB dispatch rides its own queue submit that precedes the frame's graphics submit. A
-  // second _render_top in the SAME frame (stereo/multi-compositor) would therefore hand
-  // the driver a depth image that is still UNDEFINED to it, while every engine-side
-  // layout check passes (CPU tracking already reads SHADER_READ_ONLY). Sampling is only
-  // legal once the recording frame has ended — hence the strict frame comparison.
-  std::unordered_map<uint64_t, int> _hzb_seeded_rtgs;
-  // rtg key -> the LATEST frame that recorded that key's depth passes. Distinct from the
-  // seed map above on purpose: the seed stamp is the admission test's comparand (first
-  // recording frame, deliberately sticky), this one is the pyramid's PROVENANCE (which
-  // frame's depth the build actually sampled) and is published on HZBBuilder for the
-  // cull-oracle's leg. Reporting only — nothing culls or admits on it.
+  // rtg key -> Context::GetTargetFrame() of the LATEST frame that recorded that key's depth
+  // passes (assigned every such frame). Both the admission test and the pyramid's published
+  // provenance read it. The stamp is load-bearing: recording marks the passes RECORDED, not
+  // SUBMITTED, and the HZB dispatch rides its own queue submit that precedes the frame's
+  // graphics submit. A second _render_top in the SAME frame (any second compositor pass
+  // on the same rtg) would otherwise hand the driver a depth image that is still
+  // UNDEFINED to it, while every engine-side layout check passes (CPU tracking already reads
+  // SHADER_READ_ONLY) — the pyramid then varies render to render. Sampling is only legal once
+  // the recording frame has ended, hence the strict frame comparison.
   std::unordered_map<uint64_t, int> _hzb_recorded_rtgs;
 
   forward_pass_ptr_t _primary_pass;

@@ -6,6 +6,7 @@
 ////////////////////////////////////////////////////////////////
 
 #include "headers/vulkan_ctx.h"
+#include <ork/lev2/gfx/nvtxshim.h> // labeled dispatch phases -> profiler timeline
 #include <chrono>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -362,10 +363,12 @@ void VkComputeInterface::syncPendingDispatch() {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-void VkComputeInterface::beginDispatchPhase() {
+void VkComputeInterface::beginDispatchPhase(const char* label) {
   if (_phaseDepth++ > 0) {
     return; // nested begin — the outer phase is already open (reentrant: a per-view fan-out
-            // batches every drawable's cull into this one phase / one submit)
+            // batches every drawable's cull into this one phase / one submit). A nested
+            // label is dropped with it: the OUTERMOST phase is what submits, so it is also
+            // what the GPU timestamp bracket can measure.
   }
 
   // C.5: a prior non-blocking phase must complete before we reset its command buffer (and before
@@ -389,6 +392,22 @@ void VkComputeInterface::beginDispatchPhase() {
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(_computeCmdBuf, &beginInfo);
+
+  // GPU timing (gpupassstats.h): only LABELED phases claim a slice — the offline cook
+  // loops open hundreds of unlabeled phases per frame and would spend the whole
+  // per-frame slot budget. This CB carries no render pass, so the write is legal here.
+  _phaseSliceHandle = -1;
+  if (label and _contextVK->_mtSliceTimer)
+    _phaseSliceHandle = _contextVK->_mtSliceTimer->sliceBegin(_computeCmdBuf, label);
+
+  // Tooling: the same label into the capture tool's command stream and (as a CPU range
+  // covering record+submit) into an attached profiler's timeline. Held for the pop /
+  // label-end in endDispatchPhase, so an unlabeled phase emits neither.
+  _phaseLabel = label;
+  if (_phaseLabel) {
+    _contextVK->_debugLabelBegin(_computeCmdBuf, _phaseLabel);
+    nvtxPush(_phaseLabel);
+  }
 
   // Insert memory barrier: ensure host writes and any prior compute shader writes
   // are complete and visible before this compute pass reads or transfers.
@@ -486,7 +505,12 @@ void VkComputeInterface::endDispatchPhase() {
   if (--_phaseDepth > 0) {
     return; // nested end — defer the submit+barrier to the OUTERMOST end (all culls in one submit)
   }
+  // close the CPU-side profiler range FIRST: it is thread-local and must pop even on the
+  // unbalanced-state return below, or every later range nests inside a dead phase.
+  if (_phaseLabel)
+    nvtxPop();
   if (!_inDispatchPhase) {
+    _phaseLabel = nullptr;
     return; // Not in dispatch phase
   }
 
@@ -506,6 +530,16 @@ void VkComputeInterface::endDispatchPhase() {
           VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
       0, 1, &memoryBarrier, 0, nullptr, 0, nullptr
   );
+
+  // GPU timing: close the phase's slice before the CB ends (see beginDispatchPhase).
+  if (_phaseSliceHandle >= 0 and _contextVK->_mtSliceTimer) {
+    _contextVK->_mtSliceTimer->sliceEnd(_computeCmdBuf, _phaseSliceHandle);
+    _phaseSliceHandle = -1;
+  }
+  if (_phaseLabel) {
+    _contextVK->_debugLabelEnd(_computeCmdBuf);
+    _phaseLabel = nullptr;
+  }
 
   // End the compute command buffer
   vkEndCommandBuffer(_computeCmdBuf);

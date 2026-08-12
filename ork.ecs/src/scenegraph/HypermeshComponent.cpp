@@ -37,6 +37,9 @@ using namespace ork::lev2;
 void HypermeshComponentData::describeX(ComponentDataClass* clazz) {
   clazz->directProperty("LayerName", &HypermeshComponentData::_layername);
   clazz->directProperty("NodeName", &HypermeshComponentData::_nodename);
+  clazz->directProperty("SkipAutoDpp", &HypermeshComponentData::_skipAutoDpp);
+  clazz->directProperty("VisGroup", &HypermeshComponentData::_visgroup);
+  clazz->directProperty("Visible", &HypermeshComponentData::_visible);
   // the WHOLE hypermesh description (graphdata + material ref + flags) round-trips —
   // hypermesh is model B from day one (no Python at load, no wire-step swap).
   clazz->directObjectProperty("DrawableData", &HypermeshComponentData::_drawabledata)
@@ -192,6 +195,13 @@ void HypermeshSystem::_onStageComponent(HypermeshComponent* component) {
     };
   }
 
+  // Told BEFORE the drawable exists, because createDrawable() decides there and then
+  // whether to register the stored-mode section bake as pending async work. A member
+  // that launches hidden has no bake in flight — an offscreen host waiting on the async
+  // marker would otherwise wait forever on a bake that cannot start until the set is
+  // switched to. The drawable re-registers the marker itself at the moment it does build.
+  hmdd->_launch_hidden = not HCD._visible;
+
   component->_drawable = hmdd->createDrawable();
 
   // layer default: the forward compositor renders a FIXED role set (std_forward,
@@ -211,12 +221,22 @@ void HypermeshSystem::_onStageComponent(HypermeshComponent* component) {
   // E.4 — early-z: hypermesh participates in the depth prepass (the generated
   // ptex3d materials carry FWD_SSBO_CUSTOM[_INSTANCED]_DEPTHPREPASS; a material
   // without the variant yields a null dpp pipeline and the draw self-skips).
-  auto dpp_layer = _sgsys->_scene->createLayer("depth_prepass");
-  auto attach_op = [component, layer, dpp_layer, node_name]() {
+  // ...unless the author declared this hypermesh a NON-CASTER (see
+  // HypermeshComponentData::_skipAutoDpp): the depth_prepass layer is also the
+  // sun-cascade caster set, so joining it costs a depth pass per band.
+  auto dpp_layer = HCD._skipAutoDpp
+                 ? lev2::scenegraph::layer_ptr_t(nullptr)
+                 : _sgsys->_scene->createLayer("depth_prepass");
+  bool launch_visible = HCD._visible;
+  auto attach_op = [component, layer, dpp_layer, node_name, launch_visible]() {
     // Hypermesh graphs produce geometry in their own object/world space; keep the node at
     // identity (same rationale as particles — the graph owns placement; per-instance
     // matrices place copies). Host-xf-driven placement arrives with the E.2 instance edge.
     component->_sgnode = layer->createDrawableNode(node_name, component->_drawable);
+    // the launch half of the visgroup contract (see the header): disabled here means the
+    // node never reaches gpuUpdate/preRender, so this member's mesh, cull, atlases and
+    // section bake are all deferred to the frame it is first switched on.
+    component->_sgnode->_enabled = launch_visible;
     if (dpp_layer)
       dpp_layer->addDrawableNode(component->_sgnode);
   };
@@ -261,6 +281,48 @@ void HypermeshSystem::_applyNotifyToComponent(HypermeshComponent* c, token_t evI
 }
 
 void HypermeshSystem::_onNotify(token_t evID, evdata_t data) {
+  // SET_VISGROUP: flip a whole presentation set on or off (HypermeshComponentData::
+  // _visgroup). The members are collected here, on the update thread, but the enable
+  // is written from a RENDER OP — the render thread reads node->_enabled inside
+  // Scene::gpuUpdate / Scene::preRender, and the render-op queue is the seam where
+  // this system is already allowed to touch the scenegraph (the stage-time attach
+  // goes through it too, which is also what guarantees _sgnode is populated by now).
+  if (evID == SET_VISGROUP._hashed) {
+    auto table_ptr = data.getShared<DataTable>();
+    if (!table_ptr) return;
+    auto const& table = *table_ptr;
+    auto group  = table["group"_tok].get<std::string>();
+    bool enable = false;
+    if (auto as_int = table["enable"_tok].tryAs<int>())
+      enable = (as_int.value() != 0);
+    else if (auto as_bool = table["enable"_tok].tryAs<bool>())
+      enable = as_bool.value();
+    if (group.empty()) { // an empty group is EVERY ungrouped hypermesh — refuse, loudly
+      logchan_hmcomp->log("SET_VISGROUP: empty group name — ignored");
+      return;
+    }
+    std::vector<HypermeshComponent*> members;
+    _components.atomicOp([&](component_set_t& unlocked) {
+      for (auto* c : unlocked)
+        if (c->_HCD._visgroup == group)
+          members.push_back(c);
+    });
+    if (members.empty()) {
+      logchan_hmcomp->log("SET_VISGROUP<%s>: no hypermesh declares that group", group.c_str());
+      return;
+    }
+    if (_sgsys) {
+      auto vis_op = [members, enable]() {
+        for (auto* c : members)
+          if (c->_sgnode)
+            c->_sgnode->_enabled = enable;
+      };
+      _sgsys->_renderops.push(vis_op);
+    }
+    logchan_hmcomp->log("SET_VISGROUP<%s> -> %s (%zu members)",
+                        group.c_str(), enable ? "on" : "off", members.size());
+    return;
+  }
   // SET_PARAM (E.6/2.12 ECS leg): poke the matching MaterialParamSinks' "value"
   // DATA plugs (the documented pokeable contract — the drawable's per-frame drain
   // reads the DATA plug, so a STATIC graph picks it up with zero recompute).

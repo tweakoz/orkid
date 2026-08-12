@@ -53,7 +53,13 @@ void IRenderer::enqueueRenderable(IRenderable* renderable) {
 // Sorts and renders all queued renderables
 ///////////////////////////////////////////////////////////////////////////////
 
-void IRenderer::drawEnqueuedRenderables(bool reset_after) {
+size_t IRenderer::countEnqueuedAtOrAboveSortKey(int skey) const {
+  return _unsortedNodes.countAtOrAboveSortKey(skey);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void IRenderer::drawEnqueuedRenderables(bool reset_after, int skey_lo, int skey_hi) {
 
   EASY_BLOCK("IRenderer::DER1", profiler::colors::Red);
 
@@ -135,6 +141,10 @@ void IRenderer::drawEnqueuedRenderables(bool reset_after) {
     OrkAssert(sorted < U32(renderQueueSize));
     const RenderQueue::Node* pnode = _sortedNodes[sorted];
     auto ren = pnode->_renderable;
+    // segment filter: out-of-range renderables belong to another segment of this pass and
+    // are drawn by its own call (see drawEnqueuedRenderables' range contract).
+    if ((ren->_sortkey < skey_lo) or (ren->_sortkey > skey_hi))
+      continue;
     if(_debugLog){
       int sortkey = _sortkeys[sorted];
       const char* name = ren->_drawable ? ren->_drawable->_name.c_str() : "???";

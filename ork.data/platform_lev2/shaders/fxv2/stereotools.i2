@@ -1,11 +1,12 @@
 ///////////////////////////////////////////////////////////////
 // stereotools.i2 — the SINGLE-PASS STEREO view block, and nothing else.
 //
-// It lives alone because three unrelated shader families need it and none of
-// them can afford each other's declarations: pbrtools.i2, terrain.fxv2 and
-// particle_ssbo.i2 each import THIS file directly. The C++ writer hand-mirrors
-// the std140 layout below (material_pbr_pipeline.cpp, k_stereo_off_*), so the
-// layout gets exactly ONE declaration to mirror.
+// It lives alone because unrelated shader families need it and none of them can
+// afford each other's declarations; pbrtools.i2 imports THIS file directly, while
+// terrain.fxv2 and particle_ssbo.i2 (which cannot pull the surrounding
+// declarations) re-declare the SAME layout inline. The C++ writer hand-mirrors
+// the std140 layout below (material_pbr_pipeline.cpp, k_stereo_off_*), so any
+// copy that drifts from it is a bug.
 ///////////////////////////////////////////////////////////////
 // The per-VIEW half of the view state, one entry per view. NOTHING here is
 // per-draw: a single-buffer per-frame UBO (the ublk_sun bind pattern), written

@@ -66,7 +66,7 @@ class ProjectilesMixin:
           emitter_radius    = 20.0)
       if trail_delay == 0.0:
         trail_delay = 0.20   # ignite ~3.6m downrange at 30 m/s — not in the shooter's face
-    self._ensure_system("BulletSystem", linGravity=vec3(0.0, -9.8, 0.0))
+    self._ensure_system("BulletSystem", linGravity=vec3(0.0, -12.25, 0.0))  # matches the walker default (owner aug07)
     node_name = node_name or (name + "_node")
     self.SG.instanced_node(node_name, model=model, capacity=max_count,
                            layers=layers)

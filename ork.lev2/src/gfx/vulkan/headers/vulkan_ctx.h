@@ -289,7 +289,6 @@ struct VkGeometryBufferInterface final : public GeometryBufferInterface {
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtgStackItemImpl {
   bool _did_begin_rendering = false;  // Whether this push actually called vkCmdBeginRenderingKHR
-  bool _profiler_owner      = false;  // Whether this push owns the profiler sample lifetime
   bool _was_redundant = false;        // Whether this push was a no-op (same rtgroup already active)
   RtGroup* _previous_rtgroup = nullptr; // The RTGroup that was active before this push
 };
@@ -550,6 +549,9 @@ struct VkFrameBufferInterface final : public FrameBufferInterface {
   void _doEndFrame(void) final;
   void _pushRtGroup(rtgroup_rawptr_t Base) final;
   void _popRtGroup() final;
+  // emitted at every pass end: fills the single-sample depth copy for a multiview
+  // MSAA target, whose in-pass resolve can only ever reach one view.
+  void _endedDepthWritePass(vkrtgrpimpl_ptr_t impl);
 
   //////////////////////////////////////////////
 
@@ -809,7 +811,7 @@ struct VkComputeInterface : public ComputeInterface {
 
   VkComputeInterface(vkcontext_rawptr_t ctx);
 
-  void beginDispatchPhase() final;
+  void beginDispatchPhase(const char* label = nullptr) final;
   void endDispatchPhase() final;
   void storageBarrier() final;
   void copyBufferRegion(
@@ -855,6 +857,11 @@ struct VkComputeInterface : public ComputeInterface {
   // bumped each beginDispatchPhase; pipelines recycle their per-dispatch descriptor
   // set ring when the generation changes (prior-phase command buffer has completed).
   uint64_t _dispatchGeneration = 0;
+  // open GPU slice for the OUTERMOST labeled phase (-1 = this phase is untimed)
+  int _phaseSliceHandle = -1;
+  // the OUTERMOST labeled phase's name, held for the profiler range + debug label it
+  // opened (null = unlabeled phase, which emits neither). Callers pass string literals.
+  const char* _phaseLabel = nullptr;
 
   // ---- C.5 P3b: NON-BLOCKING submit (flag: ORK_HM_NB_SUBMIT=1; blocking = the soak-default).
   // Depth-1 overlap: endDispatchPhase submits with the persistent fence and RETURNS; the wait
@@ -871,53 +878,32 @@ struct VkComputeInterface : public ComputeInterface {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-struct VkProfilerChannel final : ProfilerChannel {
-  static constexpr size_t MAX_GPU_PERF_QUERIES = 256;
-
-  VkDevice        _device     = VK_NULL_HANDLE;
-  VkCommandBuffer _cmdbuf     = VK_NULL_HANDLE;
-  VkQueryPool     _query_pool = VK_NULL_HANDLE;
-
-  struct VkTimespan {
-    SampleProfilerSeries* series = nullptr;
-    int begin_total_query = -1;
-    int begin_query = -1;
-    int end_query   = -1;
-  };
-  std::stack<VkTimespan>  _vk_span_stack{};
-  std::vector<VkTimespan> _vk_spans{};
-  std::vector<VkTimespan> _vk_total_spans{};
-  u32 _query_index = 0;
-  std::vector<u64> _timestamps{};
-
-  using ProfilerChannel::ProfilerChannel;
-
-  void frameBegin() override { OrkAssertI(false, "Call frameBegin(BeginParams) on VkProfilerChannel!"); }
-
-  // A given VulkanProfilerChannel Frame can only rest upon a single CommandBuffer.
-  // Create multiple VulkanProfilerChannel if you need multiple CommandBuffers.
-  struct BeginParams {
-    VkDevice        device;
-    float           timestamp_period;
-    VkCommandBuffer cmdbuf;
-  };
-  void frameBegin(BeginParams params);
-  void frameEnd() override;
-
-  void sampleBegin(SampleProfilerSeries* series) override;
-  void sampleEnd(SampleProfilerSeries* series) override;
-};
-
-///////////////////////////////////////////////////////////////////////////////
-// MT0 (JUL05_GPUMICROTASK §2.4): dedicated, ALWAYS-ON whole-frame GPU timer.
-// Same query-pool idiom as VkProfilerChannel above, but never gated by
-// ORK_PROFILER_ENABLE (T3) — this is the engine's only always-on GPU timing
-// primitive. One begin/end pair per frame for now (MT1 subdivides into
-// per-slice brackets within the same pool, out of scope here).
+// MT0/MT1 (JUL05_GPUMICROTASK §2.4): the engine's ONLY GPU timing primitive —
+// ALWAYS ON, never gated by ORK_PROFILER_ENABLE (T3). One whole-frame begin/end
+// pair (MT0) PLUS N named per-pass slices (MT1) in the same query pool.
+//
+// SLICES come from command buffers this class does not own and cannot see: the
+// frame's primary CB (render-pass instances, vulkan_fbi_rtgroup), the compute
+// interface's own CB (VkComputeInterface dispatch phases) and the one-shot XR
+// blit CBs (vulkan_vr_composite). So the slice API takes the CB per call and the
+// per-frame slot cursor is ATOMIC — two CBs recording in the same frame must
+// never claim the same query pair.
+//
+// MULTIVIEW: a timestamp written INSIDE a multiview render-pass instance consumes
+// one query per view, silently shifting every later index. Every slice write in
+// this engine is therefore placed OUTSIDE any render-pass instance (before
+// vkCmdBeginRenderingKHR / after vkCmdEndRenderingKHR); the compute and blit CBs
+// have no render pass at all.
 ///////////////////////////////////////////////////////////////////////////////
 
 struct VkGpuSliceTimer final : public GpuSliceTimer {
-  static constexpr uint32_t kNumQueries = 64;
+  // Per-frame-slot SLICE capacity. Counted in device-side SEGMENTS, not in names:
+  // a suspended+resumed render pass, or an rtgroup pushed twice, spends a pair per
+  // bracket and the readback sums them by name. Overflow is counted and published
+  // (GpuPassSnapshot::_dropped) rather than dropped silently.
+  static constexpr uint32_t kMaxSlices = 128;
+  static constexpr uint32_t kSliceNameMax = 40; // copied, not referenced: the readback is
+                                               // lag-2 and an rtgroup can die in between
   // Query-pair RING with lag-2 NON-WAITING reads. The first Linux/RADV gate run
   // proved why: a WAIT_BIT read right after submit wedged the amdgpu GPU in
   // kernel dma_fence_wait (that submit does NOT fully resolve the frame there,
@@ -926,11 +912,45 @@ struct VkGpuSliceTimer final : public GpuSliceTimer {
   // (GpuFrameTiming falls back to present-idle for that frame).
   static constexpr uint32_t kRingDepth = 4; // pairs; > MAX_FRAMES_IN_FLIGHT(2)
 
+  // POOL LAYOUT: [frame pairs: 2 * kRingDepth][slice pairs: 2 * kMaxSlices * kRingDepth]
+  static constexpr uint32_t kFrameQueryBase = 0;
+  static constexpr uint32_t kSliceQueryBase = 2 * kRingDepth;
+  static constexpr uint32_t kNumQueries     = kSliceQueryBase + 2 * kMaxSlices * kRingDepth;
+
   VkDevice        _device       = VK_NULL_HANDLE;
   VkQueryPool     _query_pool   = VK_NULL_HANDLE;
   VkCommandBuffer _cmdbuf       = VK_NULL_HANDLE; // this frame's primary CB (not owned)
   double          _tickToMs     = 1.0;
-  uint64_t        _frameCounter = 0; // advanced once per frame (in readbackFrameMs)
+  // ATOMIC: slices are opened from the compute interface's CB and the XR blit CBs,
+  // which are recorded off the frame's own call stack — those readers need a frame
+  // index that is never torn.
+  std::atomic<uint64_t> _frameCounter{0}; // advanced once per frame (in beginFrame)
+
+  // vkResetQueryPool (core 1.2 hostQueryReset). REQUIRED for the slice region: its
+  // writes come from several CBs, one of which (compute) is submitted BEFORE the
+  // frame's primary CB, so a vkCmdResetQueryPool on the primary CB would wipe
+  // timestamps the device had already written. The host resets the slot at readback
+  // instead, two frames after its last write.
+  PFN_vkResetQueryPool _vkResetQueryPool = nullptr;
+  // VK_EXT_calibrated_timestamps, when the device has it: publishes the
+  // gpu-domain -> CLOCK_MONOTONIC offset alongside the numbers so a GPU span can be
+  // placed on the same timeline as a CPU one. Absent = the HUD says "uncal".
+  PFN_vkGetCalibratedTimestampsEXT _vkGetCalibratedTimestamps = nullptr;
+
+  // Slices are published by the app's RENDER context only. The LOADING context runs
+  // its own near-empty frames at thousands per second — its 3us spans and its own
+  // rtgroup name would overwrite the render context's numbers in the process-wide
+  // GpuPassStats sink several times per real frame (first observed as a GPU page with
+  // one 0.00ms row). Set per frame from meTargetType, so no init-order can get it wrong.
+  bool _sliceEnable = true;
+
+  struct SliceSlot {
+    char _name[kSliceNameMax] = {0};
+  };
+  // per-ring-slot slice bookkeeping
+  std::atomic<uint32_t> _sliceCursor[kRingDepth];  // claimed pairs this frame slot
+  std::atomic<uint32_t> _sliceDropped[kRingDepth]; // claims past kMaxSlices
+  SliceSlot             _sliceSlots[kRingDepth][kMaxSlices];
 
   VkGpuSliceTimer(VkDevice device, float timestamp_period_ns);
   ~VkGpuSliceTimer() override;
@@ -942,6 +962,19 @@ struct VkGpuSliceTimer final : public GpuSliceTimer {
   void  beginFrame() override;
   void  endFrame() override;
   float readbackFrameMs() override;
+
+  // MT1 per-pass slices. sliceBegin claims a pair in THIS frame's ring slot and
+  // writes the opening timestamp into `cb`; the returned handle is passed back to
+  // sliceEnd (same cb, same frame). -1 = the frame's slot budget is spent (counted,
+  // published, never fatal) — sliceEnd(-1) is a no-op.
+  // BOTH calls must be outside any render-pass instance (multiview rule above).
+  int  sliceBegin(VkCommandBuffer cb, const char* name);
+  void sliceEnd(VkCommandBuffer cb, int handle);
+
+  // Read the lag-2 frame slot's slices, publish them into GpuPassStats (summed by
+  // name) together with the whole-frame span, and host-reset the slot. Called once
+  // per frame from the frame-end readback block; never waits.
+  void readbackSlices(float gpu_frame_ms);
 };
 using vkgpuslicetimer_ptr_t = std::shared_ptr<VkGpuSliceTimer>;
 
@@ -1255,6 +1288,11 @@ public:
   PFN_vkCmdBeginRendering _vkCmdBeginRenderingKHR             = nullptr;
   PFN_vkCmdEndRendering _vkCmdEndRenderingKHR                 = nullptr;
   PFN_vkCmdInsertDebugUtilsLabelEXT _vkCmdInsertDebugUtilsLabelEXT = nullptr;
+  // resolved UNCONDITIONALLY (not behind the validation-layer gate): the instance
+  // extension is always enabled, and an external capture tool is the consumer — it is
+  // attached without the engine's debug mode being on.
+  PFN_vkCmdBeginDebugUtilsLabelEXT _vkCmdBeginDebugUtilsLabelEXT = nullptr;
+  PFN_vkCmdEndDebugUtilsLabelEXT _vkCmdEndDebugUtilsLabelEXT     = nullptr;
   PFN_vkCmdSetCullModeEXT _vkCmdSetCullModeEXT                = nullptr;
   PFN_vkCmdSetDepthWriteEnableEXT _vkCmdSetDepthWriteEnableEXT = nullptr;
   // bumped at each mesh draw when the bound pass carries a task stage — the only
@@ -1333,10 +1371,37 @@ public:
   // _mtSliceTimer stays null when unsupported — that null IS the fallback
   // path (gpu_ms=-1 into _mtFrameTiming, which then uses present-idle).
   //////////////////////////////////////////////
+  // A context that REUSES another's VkDevice never runs _initVulkanForDevInfo, so it
+  // would carry no timer at all — which is how the app's WINDOW/OFFSCREEN context ended
+  // up with no GPU timing while the loading context (the device's creator) had it all.
+  // Every device-sharing path calls this, like it copies the other device-derived state.
+  void _inheritDeviceTimestampState(vkcontext_rawptr_t src);
   bool                  _gpuTimestampsSupported = false;
   vkgpuslicetimer_ptr_t _mtSliceTimer;
   GpuFrameTiming        _mtFrameTiming;
   Timer                 _mtFrameWallTimer; // cpu-frame-wall input to _mtFrameTiming
+
+  //////////////////////////////////////////////
+  // MT1: per-RENDER-PASS-INSTANCE GPU slices on the primary CB. ONE segment is
+  // open at a time by construction — the primary CB has at most one live
+  // dynamic-rendering instance — so the open handle is a single field rather than
+  // a stack, and a suspend/resume pair closes one segment and opens another under
+  // the same name (GpuPassStats sums them).
+  //////////////////////////////////////////////
+  void _gpuSliceOpenPass(const std::string& name);
+  void _gpuSliceClosePass();
+  std::string _gpuSlicePassName;      // name to reopen with after a suspend
+  int         _gpuSlicePassHandle = -1; // open segment, -1 = none
+  bool        _gpuSlicePassOpen   = false; // a segment bracket is live (labels included)
+
+  //////////////////////////////////////////////
+  // VK_EXT_debug_utils command-buffer LABELS, emitted at the same seams (and with the
+  // same names) as the GPU slices above, so a capture tool's pass list reads in engine
+  // vocabulary. Purely a tooling aid: null entry points make both a no-op, and no
+  // engine behavior may depend on them.
+  //////////////////////////////////////////////
+  void _debugLabelBegin(VkCommandBuffer cb, const char* name);
+  void _debugLabelEnd(VkCommandBuffer cb);
 
 };
 ///////////////////////////////////////////////////////////////////////////

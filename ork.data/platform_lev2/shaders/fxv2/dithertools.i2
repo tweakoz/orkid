@@ -16,7 +16,7 @@ import "orkshader://mathtools.i2";
 // truncated to 8 bits. In this engine that is
 //   - blit.fxv2 ps_blit / ps_blituv / ps_downsample*  -> main_rtg (BGRA8,
 //     fbi.cpp _ensureMainRtg) for the desktop/offscreen screen output, and ->
-//     the DualMonoVr/Vr per-eye SSAA buffers (RGBA8, NodeCompositorVr.h), which
+//     the VR per-eye SSAA buffers (RGBA8, NodeCompositorVr.h), which
 //     are what the OpenXR runtime receives. Gated per call site by DitherAmt so
 //     the blits whose destination is float (OutputNodeRtGroup) stay byte-exact.
 //   - framefx.fxv2 ps_aces / ps_hsvg, which are the last shaders before an

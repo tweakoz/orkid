@@ -206,8 +206,11 @@ TEST(shadlang_corpus) {
     }
   }
   std::sort(files.begin(), files.end());
-  // skip files that do not parse standalone via this path (pre-existing grammar
-  //  limitations, identical pre/post packrat-fix). override via env.
+  // terrain.fxv2 parses clean EXCEPT for its `import "misctools.i2"`: parsing that
+  //  import overflows this thread's stack (the harness runs tests on a std::thread,
+  //  whose default stack is far smaller than main's) and kills the process.
+  //  Not a grammar limitation - drop the import and the whole file parses.
+  //  override via env.
   std::set<std::string> skip;
   const char* skip_env = std::getenv("SHADLANG_CORPUS_SKIP");
   std::string skip_str = skip_env ? skip_env : "terrain.fxv2";

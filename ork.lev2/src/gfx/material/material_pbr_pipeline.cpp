@@ -203,6 +203,12 @@ FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl) {
     FXI->bindParamFloat(mtl->_parSpecularMipBias, envOverride ? 0.0f : pbrcommon->_specularMipBias);
     FXI->bindParamFloat(mtl->_paramDiffuseLevel, envOverride ? 1.0f : pbrcommon->_diffuseLevel);
     FXI->bindParamFloat(mtl->_paramSkyboxLevel, envOverride ? 1.0f : pbrcommon->_skyboxLevel);
+    // THE DIRECT DIFFUSE LOBE. Bound on EVERY draw for the same reason the SH
+    // block below is: ublk_std_pbr is shared by every PBR consumer, so a frame
+    // that skipped the write would shade against whatever the last one left.
+    // An envmap override changes where the light comes from, not which lobe
+    // scatters it, so it reads the scene's model unconditionally.
+    FXI->bindParamInt(mtl->_paramDiffuseBrdfModel, int(pbrcommon->_diffuseBrdfModel));
     FXI->bindParamTextureArray(mtl->_parMapSpecularEnv, spec_tex.get());
     FXI->bindParamTextureArray(mtl->_parMapSpecularEnvPrev, spec_tex_prev.get());
     FXI->bindParamFloat(mtl->_parEnvBlendWeight, envOverride ? 1.0f : pbrcommon->envCrossfadeWeight());

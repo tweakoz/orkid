@@ -22,6 +22,7 @@
 #include <ork/lev2/vr/openxr.h>
 #include <ork/lev2/gfx/gfxenv.h>
 #include <ork/lev2/gfx/vr_composite.h>
+#include <ork/lev2/gfx/gpupassstats.h> // VrPacingStats — the HUD's frame-deadline sink
 #include <ork/kernel/environment.h>
 #include <ork/util/logger.h>
 #include <cmath>
@@ -63,6 +64,14 @@ fmtx4 xrPoseToFmtx4(const XrPosef& pose) {
   fmtx4 m;
   m.compose(p, q, 1.0f);
   return m;
+}
+
+// head->eye offset (the _posemap["eyel"/"eyer"] entry). ONE definition, shared by
+// gpuUpdate and the self-test so the fixture exercises the runtime's own math.
+fmtx4 xrHeadToEyeOffset(const fmtx4& headWorld, const XrPosef& eyepose) {
+  fmtx4 eyeWorld   = xrPoseToFmtx4(eyepose);         // eye->world
+  fmtx4 worldToEye = eyeWorld.inverse();             // world->eye (the view)
+  return fmtx4::multiply_ltor(headWorld, worldToEye); // head->eye
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1228,7 +1237,10 @@ void OpenXrDevice::gpuUpdate(RenderContextFrameData& RCFD) {
   if (not wait_ok)
     return;
   double wait_ms = std::chrono::duration<double, std::milli>(t_wait1 - t_wait0).count();
-  _instrumentPacing(wait_ms, int64_t(I->_frameState.predictedDisplayTime));
+  _instrumentPacing(
+      wait_ms,
+      int64_t(I->_frameState.predictedDisplayTime),
+      int64_t(I->_frameState.predictedDisplayPeriod));
   I->_shouldRender = I->_frameState.shouldRender;
 
   XrFrameBeginInfo fbi{XR_TYPE_FRAME_BEGIN_INFO};
@@ -1298,10 +1310,8 @@ void OpenXrDevice::gpuUpdate(RenderContextFrameData& RCFD) {
           fflush(stdout);
         }
       }
-      fmtx4 eyeWorld  = xrPoseToFmtx4(v.pose);           // eye->world
-      fmtx4 worldToEye = eyeWorld.inverse();             // world->eye (the view)
-      fmtx4 offset     = fmtx4::multiply_ltor(headWorld, worldToEye); // head->eye
-      auto proj        = fovToVrFrustum(v.fov, _near, _far).composeProjection();
+      fmtx4 offset = xrHeadToEyeOffset(headWorld, v.pose); // head->eye
+      auto proj    = fovToVrFrustum(v.fov, _near, _far).composeProjection();
       if (e == 0) {
         _posemap["eyel"] = offset;
         _posemap["projl"] = proj;
@@ -1487,12 +1497,20 @@ void OpenXrDevice::_logCompositeMs(double comp_ms) const {
 // or doubled display cycle — the beat-pattern signature of two unsynced pacers), and a
 // ~5s summary (fps, waitMs p50/p95/max, periodSkips, poseSpikes). Only reached on the
 // live XR frame path, so it is inherently silent when the device is inactive.
+//
+// Also publishes VrPacingStats every frame (the perf HUD's vr: rows). The MISS test
+// there is the runtime's own advertised period, not the median estimate: a delta past
+// 1.5x predictedDisplayPeriod means the compositor showed our previous frame twice.
+// The published miss is deliberately coarser than the anomaly line above (which flags
+// any non-unit delta, doubled or skipped) — a reader wants "did we drop", not "was the
+// beat irregular".
 ////////////////////////////////////////////////////////////////////////////////
 
-void OpenXrDevice::_instrumentPacing(double waitMs, int64_t displayTimeNs) const {
+void OpenXrDevice::_instrumentPacing(double waitMs, int64_t displayTimeNs, int64_t displayPeriodNs) const {
   auto& P    = _impl->_pace;
   auto now   = PacingStats::clock_t::now();
   P._frameIdx++;
+  double periodMs = double(displayPeriodNs) * 1.0e-6;
 
   if (not P._primed) {
     P._primed          = true;
@@ -1501,6 +1519,9 @@ void OpenXrDevice::_instrumentPacing(double waitMs, int64_t displayTimeNs) const
     P._lastContinuous  = true;
     P._winStart        = now;
     P._lastAnomaly     = now - std::chrono::seconds(1); // allow an immediate first anomaly
+    // the sink goes live on the FIRST XR frame — the HUD's rows exist from then on,
+    // even if the run never gets a second frame to measure a delta against.
+    VrPacingStats::instance().publish(waitMs, periodMs, false);
     return;
   }
 
@@ -1528,6 +1549,12 @@ void OpenXrDevice::_instrumentPacing(double waitMs, int64_t displayTimeNs) const
     P._waitCount++;
 
   P._winFrames++;
+
+  // published miss: a display period the compositor had to fill with our last frame.
+  // Falls back to the median estimate only if the runtime advertised no period.
+  int64_t missRef = (displayPeriodNs > 0) ? displayPeriodNs : period;
+  bool    missed  = double(rawDelta) > 1.5 * double(missRef);
+  VrPacingStats::instance().publish(waitMs, periodMs, missed);
 
   if (not P._lastContinuous) {
     P._winPeriodSkips++;
@@ -1643,13 +1670,15 @@ void OpenXrDevice::__composite(Context* targ, Texture* twoeyetex) const {
 
   // Depth reprojection is NOT chained on the wide path: the pre-packed wide two-eye
   //  color texture arrives here with no matching per-eye depth (the wide FWDPBRVR handoff
-  //  keeps only color), and reconstructing it would need a re-plumb of that node. The
-  //  DualMonoVr per-eye path (__compositeStereo) is THE depth-supported model; note once.
+  //  keeps only color), and reconstructing it would need a re-plumb of that node. No output
+  //  node publishes an XR depth layer today — the per-eye path (__compositeStereo) accepts
+  //  depth textures but the single-pass stereo node passes null by phase-1 design (its scene
+  //  depth is a 2-layer array and the per-eye extract does not exist yet). Note once.
   if (I->_depthChainSupported) {
     static bool s_wide_nodepth = false;
     if (not s_wide_nodepth) {
       s_wide_nodepth = true;
-      printf("[OPENXR] wide __composite path ships NO depth layer (color-only reprojection); the DualMonoVr per-eye path is depth-supported.\n");
+      printf("[OPENXR] wide __composite path ships NO depth layer (color-only reprojection); no output node publishes XR depth today.\n");
       fflush(stdout);
     }
   }
@@ -1669,11 +1698,13 @@ void OpenXrDevice::__composite(Context* targ, Texture* twoeyetex) const {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// __compositeStereo — the PER-EYE handoff (DualMonoVrOutputNode / FWDPBRVRDM path).
+// __compositeStereo — the PER-EYE handoff (SinglePassStereoVrOutputNode / the VR presets).
 // Mirrors __composite but the two final per-eye textures are blitted into their
 // halves of the ONE wide swapchain image: left at dst x-offset 0 (discards the fresh
 // image), right at dst x-offset eyeW (dstDiscard=false → PRESERVES the left half).
 // Each blit applies the same sRGB-OETF-exactly-once encode as the wide path.
+// The depth arguments are honored when supplied, but the stereo node passes null today
+// (phase-1: its scene depth is a 2-layer array with no per-eye extract yet).
 ////////////////////////////////////////////////////////////////////////////////
 
 void OpenXrDevice::__compositeStereo(
@@ -1834,6 +1865,132 @@ bool runSelfTests() {
     fmtx4 m  = xrPoseToFmtx4(mkpose(0, s, 0, c, 5, 0, 0));
     fvec4 vx = fvec3(1, 0, 0).transform(m);
     verdict("pose_combined", vapprox(vx, 5, 0, -1, 1e-3f));
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
+  // FULL-CHAIN pure-yaw fixture. The primitives above are clean in isolation; what
+  //  the head-pose roll complaint is about is the COMPOSED view matrices the render
+  //  nodes consume. Synthetic PURE-YAW head poses plus a zero-relative-rotation IPD
+  //  rig go through the SAME helpers the runtime uses — xrHeadToEyeOffset (gpuUpdate)
+  //  then composeEyeViewMatrices (_updatePosesCommon) — so a roll contaminant
+  //  anywhere in the composition shows up here.
+  //  Nonzero head translation is deliberate: translation-vs-rotation ordering bugs
+  //  are invisible at the origin.
+  //////////////////////////////////////////////////////////////////////////////
+  {
+    auto yawpose = [&](float deg, const fvec3& pos) {
+      float h = deg * float(M_PI) / 360.0f; // half-angle
+      return mkpose(0, std::sin(h), 0, std::cos(h), pos.x, pos.y, pos.z);
+    };
+    // world-up through the VIEW rotation: under pure yaw it must stay exactly +Y;
+    //  a roll contaminant tilts it into the view's X axis.
+    auto up_in_view = [](const fmtx4& view) { return fvec3(0, 1, 0).transform3x3(view); };
+    // roll of the DECOMPOSED orientation — the quaternion path _updatePosesCommon
+    //  feeds _rotMatrix from — measured as the up-axis tilt in the view XY plane.
+    auto decomposed_roll = [](const fmtx4& view) {
+      fvec3 p;
+      fquat q;
+      float s;
+      view.decompose(p, q, s);
+      fvec3 u = fvec3(0, 1, 0).transform3x3(q.toMatrix());
+      return std::atan2(u.x, u.y);
+    };
+    auto rot_is_identity = [](const fmtx4& m, float eps) {
+      bool id = true;
+      for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+          id = id and approx(m.elemYX(i, j), (i == j) ? 1.0f : 0.0f, eps);
+      return id;
+    };
+
+    const float kHalfIpd = 0.032f;
+    const fvec3 headpos(0.1f, 1.6f, -0.3f);
+    const float yaws[] = {15.0f, 45.0f, 90.0f, 135.0f, 179.0f};
+
+    // usermtx cases: the identity baseline sweep, and a translated-only rig view
+    //  matrix (catches translation-induced coupling).
+    fmtx4 usertrans;
+    usertrans.setTranslation(2.5f, -0.75f, 4.0f);
+    const fmtx4 users[2]        = {fmtx4(), usertrans};
+    const char* usernames[2]    = {"identity", "usertrans"};
+    bool center_clean[2]        = {true, true};
+    bool eyes_clean[2]          = {true, true};
+    bool ipd_clean[2]           = {true, true};
+
+    for (int uc = 0; uc < 2; uc++) {
+      for (float yaw : yaws) {
+        XrPosef headpose = yawpose(yaw, headpos);
+        fmtx4 headWorld  = xrPoseToFmtx4(headpose); // head->world
+        fmtx4 hmd        = headWorld.inverse();     // _posemap["hmd"]
+
+        // IPD rig: same orientation as the head, positions +/-kHalfIpd along the
+        //  head's LOCAL +X (left eye = local -X).
+        fvec3 localx  = fvec3(1, 0, 0).transform3x3(headWorld);
+        fvec3 eyeposL = headpos - localx * kHalfIpd;
+        fvec3 eyeposR = headpos + localx * kHalfIpd;
+        fmtx4 eyeL    = xrHeadToEyeOffset(headWorld, yawpose(yaw, eyeposL));
+        fmtx4 eyeR    = xrHeadToEyeOffset(headWorld, yawpose(yaw, eyeposR));
+
+        auto views = composeEyeViewMatrices(users[uc], fmtx4(), hmd, eyeL, eyeR);
+
+        const fmtx4* mats[3]   = {&views._center, &views._left, &views._right};
+        const char* matnames[3] = {"cmv", "lmv", "rmv"};
+        for (int m = 0; m < 3; m++) {
+          fvec3 up   = up_in_view(*mats[m]);
+          float roll = decomposed_roll(*mats[m]);
+          bool clean = approx(up.x, 0.0f) and approx(up.y, 1.0f) and approx(roll, 0.0f);
+          if (not clean) {
+            printf(
+                "ORKID_OPENXR_SELFTEST_DETAIL: user=%s yaw=%g %s up=(%g,%g,%g) decomposed_roll=%g rad\n",
+                usernames[uc],
+                double(yaw),
+                matnames[m],
+                double(up.x),
+                double(up.y),
+                double(up.z),
+                double(roll));
+            fflush(stdout);
+          }
+          if (m == 0)
+            center_clean[uc] = center_clean[uc] and clean;
+          else
+            eyes_clean[uc] = eyes_clean[uc] and clean;
+        }
+
+        // IPD-rig invariant: each eye view differs from the center view by a PURE
+        //  translation in eye space (no relative rotation), the two offsets opposed
+        //  and each of magnitude kHalfIpd.
+        fmtx4 invc = views._center.inverse();
+        fmtx4 relL = fmtx4::multiply_ltor(invc, views._left);
+        fmtx4 relR = fmtx4::multiply_ltor(invc, views._right);
+        fvec3 tL   = relL.translation();
+        fvec3 tR   = relR.translation();
+        bool pure  = rot_is_identity(relL, 1e-4f) and rot_is_identity(relR, 1e-4f);
+        bool sized = approx(std::fabs(tL.x), kHalfIpd) and approx(tL.y, 0.0f) and approx(tL.z, 0.0f) and //
+                     approx(std::fabs(tR.x), kHalfIpd) and approx(tR.y, 0.0f) and approx(tR.z, 0.0f) and //
+                     ((tL.x * tR.x) < 0.0f);
+        if (not(pure and sized)) {
+          printf(
+              "ORKID_OPENXR_SELFTEST_DETAIL: user=%s yaw=%g ipd relL_t=(%g,%g,%g) relR_t=(%g,%g,%g) pure_rot=%d\n",
+              usernames[uc],
+              double(yaw),
+              double(tL.x),
+              double(tL.y),
+              double(tL.z),
+              double(tR.x),
+              double(tR.y),
+              double(tR.z),
+              int(pure));
+          fflush(stdout);
+        }
+        ipd_clean[uc] = ipd_clean[uc] and pure and sized;
+      }
+    }
+
+    verdict("chain_yaw_center_no_roll", center_clean[0]);
+    verdict("chain_yaw_eyes_no_roll", eyes_clean[0]);
+    verdict("chain_yaw_ipd_pure_translation", ipd_clean[0]);
+    verdict("chain_yaw_usertrans_no_roll", center_clean[1] and eyes_clean[1] and ipd_clean[1]);
   }
   // FOV symmetric -> matches a hand-built VrProjFrustumPar of the same tangents,
   // and is symmetric (no x/y center shift).

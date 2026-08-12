@@ -35,7 +35,7 @@ import hashlib
 from orkengine.core import Path as _Path
 
 # Bump when the template/contract changes so cached files regenerate.
-CODEGEN_VERSION = "geov2-ptex-fxv2-23"  # bumped: single-pass stereo (_ST) technique lowering
+CODEGEN_VERSION = "geov2-ptex-fxv2-24"  # bumped: opt-in lib_sky (skyAerialPerspective) inherit
 
 # The surface output contract (mirrors the eventual PBR2 SurfaceFragment subset).
 SURFACE_OUT_FIELDS = ("albedo", "metallic", "roughness", "normal", "emissive", "ao")
@@ -49,6 +49,10 @@ _STD_IMPORTS = (
   "orkshader://stdtools.i2",
   "orkshader://ssaotools.i2",
 )
+
+# the aerial-perspective seam's home (lib_sky); imported ONLY when an emitted body
+# names skyAerialPerspective (see uses_sky_haze).
+_SKY_HAZE_IMPORT = "orkshader://skytools.i2"
 
 ###############################################################################
 # SINGLE-PASS STEREO (_ST) LOWERING.
@@ -359,7 +363,16 @@ def _mesh_block(mesh_source, inh, vtx_outputs, vs_tail, vs_post, masked_dpp, ste
 
   lib_pbr_vtx is deliberately NOT inherited (unlike vs_ptex_ssbo): its vs_common() assigns the
   varyings as scalars, which does not compile against a mesh stage's ARRAY outputs even though the
-  function is unused. Emitted only when a mesh_source is supplied."""
+  function is unused. Emitted only when a mesh_source is supplied.
+
+  TASK STAGE (opt-in, mesh_source.wants_task_stage): an AMPLIFYING source fronts both mesh
+  techniques with a task stage that decides, per workgroup, how many mesh workgroups to launch
+  (EmitMeshTasksEXT) and hands its decision over the task_payload. The source owns the payload
+  decl, the task interface and the task body; this owns only WHERE they land and WHICH clip
+  matrix each view mode's task body reads. The COLOR technique and its DEPTH-PREPASS twin name
+  the SAME task shader, so both passes amplify to the identical geometry set — a second task
+  shader (or one pass amplifying and the other not) is a depth disagreement with the color pass
+  that no fragment stage could see. Absent (the default) => every byte below is unchanged."""
   if vs_post:
     # a post-tail VS snippet (e.g. the wire overlay's clip-space depth bias) writes gl_Position,
     # which is gl_MeshVerticesEXT[$V].gl_Position on this side — silently dropping it would put the
@@ -385,27 +398,66 @@ def _mesh_block(mesh_source, inh, vtx_outputs, vs_tail, vs_post, masked_dpp, ste
   # so the per-view redirect reaches BOTH the vertex placement and the per-cluster frustum
   # reject: the reject's planes stay Gribb-Hartmann rows of the matrix that actually
   # rasterizes THIS view, which is the property that keeps it from over-culling.
+  # TASK-STAGE opt-in. `pld` is the payload inherit appended to every MESH stage's own inherit
+  # list — NOT to vif_ptex_mesh: the sema resolves a task_payload inheritance only on a
+  # MeshShader/TaskShader node (shadlang_ast_sema.cpp:1021-1045), and an unresolved inheritance
+  # on a pipeline interface is dropped SILENTLY, which would leave the mesh body referencing a
+  # payload that is not in scope. `tsk` is the pass-line prefix that fronts the pass with the
+  # amplifier. Both are "" when the source declares no task stage, so the emission below is
+  # byte-identical to the taskless generator.
+  wants_task = bool(getattr(mesh_source, "wants_task_stage", False))
+  pld = tsk_mono = tsk_st = ""
+  task_hdr = task_st = ""
+  if wants_task:
+    for fn in ("task_payload", "task_interface", "task_body"):
+      if not callable(getattr(mesh_source, fn, None)):
+        raise ValueError("mesh_source.wants_task_stage is set but it has no %s() — a source that "
+                         "asks for amplification owns the whole task contract" % fn)
+    pld     = "\n  : pld_ptex_mesh"
+    tsk_mono = "task_shader = ts_ptex_mesh; "
+    tsk_st   = "task_shader = ts_ptex_mesh_stereo; "
+    task_msh = (
+      "task_shader ts_ptex_mesh%s\n"
+      "  : extension(GL_EXT_mesh_shader)\n"
+      "  : tif_ptex_mesh\n"
+      "  : pld_ptex_mesh\n"
+      "  : ublk_std_matrices%s%s {\n"
+      "%s\n"
+      "}\n")
+    task_hdr = (
+      "///////////////////////////////////////////////////////////////\n"
+      "// TASK STAGE — the amplifier in front of BOTH mesh techniques (color and its depth-prepass\n"
+      "// twin name this same shader, so the two passes emit the identical geometry set). The\n"
+      "// payload is declared ONCE and inherited by every stage that touches it.\n"
+      "%s\n%s\n" % (mesh_source.task_payload().strip(),
+                    mesh_source.task_interface(name="tif_ptex_mesh").strip()))
+    task_hdr += task_msh % ("", inh, "", _indent(mesh_source.task_body(mvp="mvp"), 2))
+    # the _ST task twin takes the per-view clip EXPRESSION exactly as the mesh stages do; a task
+    # stage has no view index of its own, so a source that amplifies in stereo is the one that
+    # decides what to cull against (see GrassFieldSource: a center camera from ublk_stereo).
+    task_st = task_msh % ("_stereo", inh, _ST_INH,
+                          _indent(mesh_source.task_body(mvp=_ST_VP), 2))
   color_msh = (
     "mesh_shader ms_ptex_mesh%s\n"
     "  : extension(GL_EXT_mesh_shader)\n"
-    "  : vif_ptex_mesh\n"
+    "  : vif_ptex_mesh%s\n"
     "  : ublk_std_matrices%s%s {\n"
     "%s\n"
     "}\n"
     "technique %s {\n"
     "  fxconfig = fxcfg_default;\n"
-    "  pass p0 { mesh_shader = ms_ptex_mesh%s; fragment_shader = ps_ptex_forward; state_block = sb_ptex; }\n"
+    "  pass p0 { %smesh_shader = ms_ptex_mesh%s; fragment_shader = ps_ptex_forward; state_block = sb_ptex; }\n"
     "}\n")
   depth_msh = (
     "mesh_shader ms_ptex_mesh_dpp%s\n"
     "  : extension(GL_EXT_mesh_shader)\n"
-    "  : vif_ptex_mesh_dpp\n"
+    "  : vif_ptex_mesh_dpp%s\n"
     "  : ublk_std_matrices%s%s {\n"
     "%s\n"
     "}\n"
     "technique %s {\n"
     "  fxconfig = fxcfg_default;\n"
-    "  pass p0 { mesh_shader = %s%s; fragment_shader = %s; state_block = sb_ptex; }\n"
+    "  pass p0 { %smesh_shader = %s%s; fragment_shader = %s; state_block = sb_ptex; }\n"
     "}\n")
   out = (
     "///////////////////////////////////////////////////////////////\n"
@@ -413,27 +465,31 @@ def _mesh_block(mesh_source, inh, vtx_outputs, vs_tail, vs_post, masked_dpp, ste
     "// per meshlet, frustum self-culling, emitting each unique corner ONCE (the pull VS re-decodes\n"
     "// every shared corner per triangle). Same varyings, same fragment, same image.\n"
     "%s\n" % mesh_iface)
-  out += color_msh % ("", inh, "", _indent(mesh_body, 2), "FWD_SSBO_CUSTOM_MESH", "")
+  out += task_hdr
+  out += color_msh % ("", pld, inh, "", _indent(mesh_body, 2),
+                      "FWD_SSBO_CUSTOM_MESH", tsk_mono, "")
   out += (
     "///////////////////////////////////////////////////////////////\n"
     "// FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS — mesh depth-only twin (early-z; depth occluder).\n"
     "%s\n" % dpp_iface)
-  out += depth_msh % ("", inh, "", _indent(dpp_body, 2),
-                      "FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS", dpp_msh, "", dpp_frg)
+  out += depth_msh % ("", pld, inh, "", _indent(dpp_body, 2),
+                      "FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS", tsk_mono, dpp_msh, "", dpp_frg)
   if stereo:
     # _ST peers: the mono varying interfaces verbatim (same outputs, same order — the two
     # view modes feed the same fragment stages), only the clip matrix differs.
     out += (
       "///////////////////////////////////////////////////////////////\n"
       "// SINGLE-PASS STEREO peers of the two mesh techniques above.\n")
-    out += color_msh % ("_stereo", inh, _ST_INH,
+    out += task_st
+    out += color_msh % ("_stereo", pld, inh, _ST_INH,
                         _indent(mesh_source.mesh_body(
                             mvp=_ST_VP, varying_writes=_mesh_varying_writes(vs_tail)), 2),
-                        _st_name("FWD_SSBO_CUSTOM_MESH"), "_stereo")
-    out += depth_msh % ("_stereo", inh, _ST_INH,
+                        _st_name("FWD_SSBO_CUSTOM_MESH"), tsk_st, "_stereo")
+    out += depth_msh % ("_stereo", pld, inh, _ST_INH,
                         _indent(mesh_source.mesh_body(
                             mvp=_ST_VP, varying_writes=_st_clip(dpp_vary)), 2),
-                        _st_name("FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS"), dpp_msh, "_stereo", dpp_frg)
+                        _st_name("FWD_SSBO_CUSTOM_MESH_DEPTHPREPASS"), tsk_st, dpp_msh, "_stereo",
+                        dpp_frg)
   return out
 
 
@@ -537,6 +593,8 @@ def _ssbo_block(ssbo_layout, ssbo_lib, ssbo_vs_body, ssbo_compute, ssbo_vs_inher
     "  : ublk_std_matrices%s%s {\n"
     "  // pull body -> position/normal/binormal/uv0/vtxcolor, THEN place by the per-instance matrix\n"
     "%s\n"
+    "  vec3 _opos_obj = position.xyz;   // raw pull = TRUE object space, saved before placement\n"
+    "  vec3 _onrm_obj = normal;\n"
     "  mat4 _IM    = _instance_matrices[gl_InstanceIndex];\n"
     "  position    = vec4(xformPoint(_IM, position.xyz), 1.0);\n"
     "  normal      = xformVec(_IM, normal);\n"
@@ -545,6 +603,15 @@ def _ssbo_block(ssbo_layout, ssbo_lib, ssbo_vs_body, ssbo_compute, ssbo_vs_inher
     "  // (the matrix-bottom-row smuggle is RETIRED; rows are pure transform again.)\n"
     "  vtxcolor    = _instance_attrs[gl_InstanceIndex];\n"
     "%s%s\n"
+    "  // OBJECT-space varyings: the tail above derived frg_opos/frg_onrm from the WORLD-\n"
+    "  // placed locals — the long-filed instanced-P_object seam (adobe.py's 'height-above-\n"
+    "  // base cannot compose'). Re-emit from the raw pull so ctx.P_object/ctx.N_object are\n"
+    "  // true object space under instancing, matching the non-instanced path: object-space\n"
+    "  // materials read the SAME surface on every instance and features magnify with the\n"
+    "  // instance transform (same-tree-same-look, owner ruling aug11). World outputs\n"
+    "  // (frg_wpos, frg_tbn, gl_Position, depth prepass) are untouched.\n"
+    "  frg_opos = _opos_obj;\n"
+    "  frg_onrm = normalize(_onrm_obj);\n"
     "}\n")
   _VS_INST_DPP = (
     "vertex_shader vs_ptex_ssbo_inst_dpp%s\n"
@@ -928,8 +995,20 @@ fragment_shader ps_ptex_dpp_masked
   float _a = ptex_alpha(frg_wpos.xyz, frg_opos, frg_uv0, frg_clr, frg_tbn, wnrm, onrm, vec3(0.0)%s%s);
   if (_a < %s)
     discard;
-  out_z        = gl_FragCoord.z;
-  gl_FragDepth = gl_FragCoord.z;
+  // CONSERVATIVE DEPTH (multisample correctness). A depth-REPLACING fragment stamps one
+  // value on every covered sample, but the color pass that follows keeps true per-sample
+  // interpolated depth — so on a tilted surface roughly half the samples interpolate
+  // BEHIND the centre value this pass wrote and lose LEQUAL against the surface's own
+  // prepass depth. The pixel then resolves as a mix of surface tone and whatever is
+  // behind it, at discrete sample ratios that step under any motion (measured on the
+  // forest canopy: 24%% of its energy, 43%% of the frame, gone at msaa 0 where sample and
+  // centre coincide). Pushing the written depth out by the pixel's own depth slope makes
+  // it an upper bound over the fragment's samples, so no color sample can lose to it.
+  // Derivative-derived, not a tuned bias: it scales with the surface, and erring FARTHER
+  // only ever makes the prepass occlude less.
+  float _dppz  = gl_FragCoord.z + 0.5 * (abs(dFdx(gl_FragCoord.z)) + abs(dFdy(gl_FragCoord.z)));
+  out_z        = _dppz;
+  gl_FragDepth = _dppz;
 }
 ''' % (surf_vnrm_param, surf_layer_param, ab, alpha_expr, surf_vnrm_arg, surf_layer_arg, cutout_expr))
 
@@ -937,7 +1016,7 @@ fragment_shader ps_ptex_dpp_masked
 # The billboard vertex stage — ONE source, emitted once per view mode. %s holes:
 # (name suffix, ublk_stereo inherit, clip transform).
 #
-# ONLY the clip transform is per-view. The camera-facing BASIS (right/up out of inv_v) and the
+# ONLY the clip transform is per-view. The camera-facing BASIS (rebuilt from the mono view axis) and the
 # fragment's view direction (EyePostion, which picks the hemi-oct tile) stay MONO deliberately:
 # a billboard is a flat proxy for a solid, so orienting or re-tiling it per eye gives the two
 # eyes different geometry for the same object and the stereo pair stops fusing. Held toward the
@@ -956,8 +1035,19 @@ _IMPOSTOR_VS = '''vertex_shader vs_ptex_impostor%s
   // the instance origin — otherwise the quad floats low under the mesh (the origin sits at the tree base).
   vec3 center = (inst * vec4(ImpCenter.xyz, 1.0)).xyz;
   float scale = length(inst[0].xyz);         // uniform scale
-  vec3 right  = normalize(inv_v[0].xyz);     // camera-facing billboard basis (inverse-view)
-  vec3 up     = normalize(inv_v[1].xyz);
+  // BILLBOARD BASIS — camera-facing but WORLD-UP anchored, never the inverse-view right/up rows. Those rows
+  // carry the camera's ROLL, which glues the quad to the screen axes: under a head tilt (VR) the tree rolls
+  // with the head instead of standing up. Only the view AXIS (inv_v[2] = world-space camera Z, scene->camera)
+  // is roll-invariant, so the frame is rebuilt from it. This is also the frame the atlas ENCODES: every tile
+  // was captured with lookAt(eye, center, world-up) (hmdflow_render.cpp), whose glm::lookAtRH basis is exactly
+  // right = cross(up_ref, Z), up = cross(Z, right) — so for a level camera this reproduces the old basis and
+  // the tile's local uv axes keep meaning what the bake wrote.
+  vec3 vaxis  = normalize(inv_v[2].xyz);
+  // degenerate straight-down/up view: world-up is parallel to the view axis and the cross collapses. Fall back
+  // to the SAME reference the bake used for its pole tiles (+Z), so the frame stays continuous with the atlas.
+  vec3 upref  = (abs(vaxis.y) > 0.99) ? vec3(0.0, 0.0, 1.0) : vec3(0.0, 1.0, 0.0);
+  vec3 right  = normalize(cross(upref, vaxis));
+  vec3 up     = cross(vaxis, right);         // unit already (vaxis and right are orthonormal)
   vec3 wpos   = center + (corner.x * right + corner.y * up) * (scale * ImpCenter.w);
 %s
   frg_wpos    = vec4(wpos, 1.0);
@@ -973,7 +1063,8 @@ _IMPOSTOR_VS = '''vertex_shader vs_ptex_impostor%s
 '''
 
 
-def _impostor_block(vtx_outputs, stereo=True):
+def _impostor_block(vtx_outputs, stereo=True, cull="OFF", depth_test="LEQUALS",
+                    depth_mask="ON", env_specular="", params_inherit=""):
   """FWD_SSBO_CUSTOM_IMPOSTOR — the impostor BILLBOARD draw technique (the far LOD tier). A camera-facing
   quad per instance (gl_VertexID corner + storage_inst_mtx[gl_InstanceIndex] placement); surface() SAMPLES
   the baked hemi-oct atlas (ImpAlbedo/ImpNormal/ImpMetalRough) and runs the SAME forward PBR lighting
@@ -981,11 +1072,23 @@ def _impostor_block(vtx_outputs, stereo=True):
   textures + grid/radius are PBRMaterial params bound by the forward pipeline's impostor branch (fwdnode).
   Emitted alongside the capture technique (impostor=True), instanced materials only (needs storage_inst_mtx).
   The billboard VS reuses the forward varying contract (vtx_outputs) + fif_ptex's forward env, exactly like
-  FWD_SSBO_CUSTOM pairs an SSBO VS with the shared forward fragment — only the surface SOURCE differs."""
+  FWD_SSBO_CUSTOM pairs an SSBO VS with the shared forward fragment — only the surface SOURCE differs.
+
+  The billboard gets its OWN state block (sb_ptex_impostor) rather than the material's sb_ptex: the FS
+  computes a silhouette coverage alpha that only A2C consumes, and the effective-rasterstate resolution
+  lets a technique state block outrank an equal-priority material rasterstate — so A2C declared anywhere
+  BUT here loses to sb_ptex's default-off. BlendMode stays OFF unconditionally (A2C, never alpha blend)."""
   return ('''///////////////////////////////////////////////////////////////
 // FWD_SSBO_CUSTOM_IMPOSTOR — LOD billboard: SSBO instance-matrix pull -> camera-facing quad -> atlas
 // sample -> the SAME forward PBR lighting as the mesh (color-matched). Emitted with the capture technique.
 ///////////////////////////////////////////////////////////////
+state_block sb_ptex_impostor : default {
+  CullTest  = %s;
+  DepthTest = %s;
+  DepthMask = %s;
+  BlendMode = OFF;
+  AlphaToCoverage = ON;
+}
 sampler_set sset_impostor (descriptor_set 0) {
   sampler2D ImpAlbedo;     // rgb=albedo, a=coverage
   sampler2D ImpNormal;     // rgb=worldNormal*0.5+0.5, a=ao
@@ -1022,7 +1125,7 @@ vertex_interface vif_ptex_impostor_vtx : ub_std_vtx {
   : storage_fwd_lighting
   : ss_frg_fwd
   : sset_impostor
-  : ublk_impostor {
+  : ublk_impostor%s {
   outputs {
     layout(location = 0) vec4 out_clr;
     layout(location = 1) vec4 out_diffuse;
@@ -1082,19 +1185,31 @@ fragment_shader ps_ptex_impostor
   // The cleared (a:0) background contributed 0 to both numerator and denominator, so no contaminated edges.
   float inv = 1.0 / cov;
   vec3  albedo    = alb.rgb * inv;
-  vec3  N         = normalize((nao.rgb * inv) * 2.0 - 1.0);
+  // Nb is the WEIGHTED MEAN of unit normals — from the 3 baked views AND (via the mip chain) from every
+  // surface inside the texel footprint. Its LENGTH is therefore the view/microgeometry AGREEMENT: 1.0 where
+  // the three views and the footprint agree, -> 0 where they cancel. Silhouette + minified canopy texels are
+  // exactly the disagreeing ones, and a mean-of-disagreeing-normals is a fiction the environment specular
+  // must not be allowed to mirror the sky through (that term has a floor and no ceiling by design).
+  // Diffuse keeps the full normal: only the specular lobe is a lie at low agreement.
+  vec3  Nb        = (nao.rgb * inv) * 2.0 - 1.0;
+  float agree     = clamp(length(Nb), 0.0, 1.0);
+  vec3  N         = normalize(Nb);
   vec3  ambrufmtl = vec3(nao.a * inv, mr.y * inv, mr.x * inv); // ao, roughness, metallic
-  ShadingResult sr = _forward_lightingZ(ModColor.xyz, albedo, ambrufmtl, vec3(0.0), EyePostion, N, false);
+  ShadingResult sr = _forward_lightingZQE(ModColor.xyz, albedo, ambrufmtl, vec3(0.0), EyePostion, N, false,
+                                          0.0, 0.0, (%s) * agree);
   out_clr     = vec4(sr.specular + sr.diffuse, smoothstep(covMid - covAA, covMid + covAA, cov));
   out_diffuse = vec4(sr.diffuse, 0.0);
 }
 technique FWD_SSBO_CUSTOM_IMPOSTOR {
   fxconfig = fxcfg_default;
-  vf_pass = { vs_ptex_impostor, ps_ptex_impostor, sb_ptex }
-}%s''' % (vtx_outputs,
+  vf_pass = { vs_ptex_impostor, ps_ptex_impostor, sb_ptex_impostor }
+}%s''' % (cull, depth_test, depth_mask,
+          vtx_outputs,
           _IMPOSTOR_VS % ("", "",
                           "  gl_Position = mvp * vec4(wpos, 1.0);       "
                           "// mvp = VP (the hypermesh drawable's model is identity)"),
+          params_inherit if env_specular else "",
+          env_specular if env_specular else "1.0",
           ("\n///////////////////////////////////////////////////////////////\n"
            "// SINGLE-PASS STEREO peer of the billboard technique — same quad, same basis,\n"
            "// same atlas tile, same fragment; per-view clip transform only.\n"
@@ -1103,7 +1218,7 @@ technique FWD_SSBO_CUSTOM_IMPOSTOR {
                              "// per-view VP x that same identity model")
            + "technique %s {\n"
              "  fxconfig = fxcfg_default;\n"
-             "  vf_pass = { vs_ptex_impostor_stereo, ps_ptex_impostor, sb_ptex }\n"
+             "  vf_pass = { vs_ptex_impostor_stereo, ps_ptex_impostor, sb_ptex_impostor }\n"
              "}" % _st_name("FWD_SSBO_CUSTOM_IMPOSTOR")) if stereo else ""))
 
 
@@ -1114,6 +1229,25 @@ _LIT_SHADE = (
   "  vec3 ambrufmtl = vec3(s.ao, _rough, s.metallic);   // ambrufmtl.x = AO -> _forward_lightingZ threads it to ambient/diffuse IBL (matAO)\n"
   "  ShadingResult sr = _forward_lightingZ(\n"
   "    ModColor.xyz, s.albedo, ambrufmtl, s.emissive, EyePostion, s.normal, false);\n"
+  "  out_clr     = vec4(sr.specular + sr.diffuse, %s);\n"
+  "  out_diffuse = vec4(sr.diffuse, 0.0);")
+# REDUCED SUN FILTER opt-in (surface(shadow_filter=...)): the SAME shade, through the
+# lighting entry that carries the selector. A surface that does not declare one keeps
+# _LIT_SHADE verbatim — the whole point of a second literal rather than a parameter
+# with a default, since the generated text of every other material must not move.
+_LIT_SHADE_Q = (
+  "  vec3 ambrufmtl = vec3(s.ao, _rough, s.metallic);   // ambrufmtl.x = AO -> _forward_lightingZ threads it to ambient/diffuse IBL (matAO)\n"
+  "  ShadingResult sr = _forward_lightingZQ(\n"
+  "    ModColor.xyz, s.albedo, ambrufmtl, s.emissive, EyePostion, s.normal, false, %s, %s);\n"
+  "  out_clr     = vec4(sr.specular + sr.diffuse, %s);\n"
+  "  out_diffuse = vec4(sr.diffuse, 0.0);")
+# ENVIRONMENT-SPECULAR GAIN opt-in (surface(env_specular=...)): the E entry carries the
+# reduced-sun-filter selectors AND the env-spec scale, so a material can declare either or
+# both. A surface that declares no env_specular keeps _LIT_SHADE / _LIT_SHADE_Q verbatim.
+_LIT_SHADE_E = (
+  "  vec3 ambrufmtl = vec3(s.ao, _rough, s.metallic);   // ambrufmtl.x = AO -> _forward_lightingZ threads it to ambient/diffuse IBL (matAO)\n"
+  "  ShadingResult sr = _forward_lightingZQE(\n"
+  "    ModColor.xyz, s.albedo, ambrufmtl, s.emissive, EyePostion, s.normal, false, %s, %s, %s);\n"
   "  out_clr     = vec4(sr.specular + sr.diffuse, %s);\n"
   "  out_diffuse = vec4(sr.diffuse, 0.0);")
 _UNLIT_SHADE = (
@@ -1174,6 +1308,9 @@ def generate_surface_fxv2(surface_body,
                           masked_dpp_body="",
                           masked_dpp_expr="",
                           masked_dpp_cutout="0.5",
+                          shadow_filter="",
+                          shadow_ambient="",
+                          env_specular="",
                           emit_stereo=True):
   """Assemble a complete forward-PBR .fxv2 around a GLSL surface body.
 
@@ -1183,6 +1320,17 @@ def generate_surface_fxv2(surface_body,
                           the IDENTITY INSTRUMENT, not a shipping mode: the disarmed output
                           is byte-identical to the pre-lowering generator, which is what
                           test_spvr_ptex3d_st_lowering_gate asserts.
+
+  shadow_filter         : GLSL scalar expression (a bindable-param member or a literal)
+                          selecting the REDUCED sun-shadow filter for THIS material —
+                          > 0.5 = one bilinear compare instead of the PCSS blocker search
+                          plus tent PCF (fwdtools.i2). Empty (default) emits the ordinary
+                          _forward_lightingZ call, byte for byte.
+
+  env_specular          : GLSL scalar expression (a bindable-param member or a literal)
+                          scaling the IBL ENVIRONMENT SPECULAR lobe for THIS material.
+                          1.0 = unchanged; empty (default) emits the ordinary call, byte
+                          for byte. Sun/point/spot speculars and all diffuse are untouched.
 
   masked_dpp_body/expr/cutout : A3 masked depth prepass — the opacity-only SSA
                           slice (body + final expr) and the cutoff (inline GLSL:
@@ -1222,7 +1370,25 @@ def generate_surface_fxv2(surface_body,
   # and override the computed SurfaceOut `s` (s.albedo/s.emissive/...). Used by TopoView (face-viz).
   surf_fs_post = ("\n" + _indent(surf_body_append.strip(), 2)) if (surf_body_append and surf_body_append.strip()) else ""
 
+  # ctx aerial-perspective: the SHARED haze seam (skyAerialPerspective, lib_sky) is OPT-IN by
+  # inheritance, exactly like the sun members below — naming it in an emitted body arms the
+  # skytools import + the lib_sky inherit on lib_ptex_surface, so every function in that
+  # libblock (surface, height, capture, alpha) can call it with no per-call plumbing, and a
+  # material that never names it generates byte-identical text (and keeps ublk_sky_atmo + the
+  # three LUT samplers out of its descriptor layout). A pass with no haze binder (impostor
+  # capture, masked depth prepass) reads the zero buffer, where SkyHazeDensity.w == 0 disarms
+  # the march — the same fallback contract has_sun rides. skytools.i2 owns its own dependency
+  # imports, so it can be appended here without disturbing the standard import order.
+  _SKY_HAZE_MEMBERS = ("skyAerialPerspective",)
+  uses_sky_haze = any(m in (b or "")
+                      for b in (surface_body, height_body, capture_body, masked_dpp_body,
+                                masked_dpp_expr, surf_body_append)
+                      for m in _SKY_HAZE_MEMBERS)
+  surf_sky_haze_inherit = " : lib_sky" if uses_sky_haze else ""
+
   imports = list(_STD_IMPORTS) + [i for i in extra_imports if i not in _STD_IMPORTS]
+  if uses_sky_haze and _SKY_HAZE_IMPORT not in imports:
+    imports.append(_SKY_HAZE_IMPORT)
   if emit_stereo:
     imports += [i for i in _ST_IMPORTS if i not in imports]
   import_lines = "\n".join('  import "%s";' % i for i in imports)
@@ -1364,21 +1530,37 @@ def generate_surface_fxv2(surface_body,
                                  surf_layer_param)
   capture_block  = _capture_block(capture_targets, surf_vnrm_arg, surf_storage_inherit,
                                   surf_layer_arg) if (ssbo_block and wants_capture) else ""
-  # the impostor billboard DRAW technique rides the same opt-in; it needs storage_inst_mtx (instanced only).
-  impostor_block = _impostor_block(vtx_outputs, stereo=emit_stereo) \
-      if (ssbo_block and wants_capture and ssbo_instanced) else ""
-
   # unlit/blend: pick the FS shade body (lit lighting vs unlit emissive) + the rasterstate tokens.
   # A2C also needs the fragment to OUTPUT opacity as alpha (alphaToCoverage converts alpha->coverage),
   # even with blend="off" (A2C is order-independent, no blending).
   _alpha       = "s.opacity" if (str(blend) != "off" or alpha_to_coverage) else "1.0"
-  fs_shade     = (_LIT_SHADE if surface_mode == "lit" else _UNLIT_SHADE) % _alpha
+  if surface_mode != "lit":
+    fs_shade = _UNLIT_SHADE % _alpha
+  elif env_specular:
+    # the E entry subsumes the Q entry — an env_specular material that ALSO declares a
+    # reduced sun filter carries both selectors through the one call.
+    _shf = shadow_filter if shadow_filter else "0.0"
+    _amb = shadow_ambient if shadow_ambient else ("sun_shadow_ibl_weights.y" if shadow_filter else "0.0")
+    fs_shade = _LIT_SHADE_E % (_shf, _amb, env_specular, _alpha)
+  elif shadow_filter:
+    # shadow_ambient rides only the Q entry: the material's own cascade->IBL weight
+    # (falls back to the scene-wide sun dial when the surface doesn't declare one).
+    _amb = shadow_ambient if shadow_ambient else "sun_shadow_ibl_weights.y"
+    fs_shade = _LIT_SHADE_Q % (shadow_filter, _amb, _alpha)
+  else:
+    fs_shade = _LIT_SHADE % _alpha
   st_blend     = _BLEND_TOK[blend]
   st_depthtest = _DTEST_TOK[depth_test]
   st_cull      = _CULL_TOK[cull]
   st_depthmask = "ON" if depth_write else "OFF"
   # A2C: only emit the state-block line when ON, so non-A2C materials stay byte-identical.
   st_a2c_line  = "  AlphaToCoverage = ON;\n" if alpha_to_coverage else ""
+  # the impostor billboard DRAW technique rides the same opt-in; it needs storage_inst_mtx (instanced only).
+  # It takes the material's cull/depth tokens but its OWN state block (A2C on, blend off) — see _impostor_block.
+  impostor_block = _impostor_block(vtx_outputs, stereo=emit_stereo,
+                                   cull=st_cull, depth_test=st_depthtest, depth_mask=st_depthmask,
+                                   env_specular=env_specular, params_inherit=params_inherit) \
+      if (ssbo_block and wants_capture and ssbo_instanced) else ""
   masked_block = _masked_dpp_block(masked_dpp_body, masked_dpp_expr, masked_dpp_cutout,
                                    surf_vnrm_param, surf_vnrm_arg,
                                    surf_layer_param, surf_layer_arg) if masked else ""
@@ -1417,6 +1599,7 @@ def generate_surface_fxv2(surface_body,
     import_lines=import_lines,
     surf_inherits=surf_inherits,
     surf_sun_inherit=surf_sun_inherit,
+    surf_sky_haze_inherit=surf_sky_haze_inherit,
     out_struct=out_struct,
     params_block=("\n" + params_block + "\n" if params_block else ""),
     params_inherit=params_inherit,
@@ -1496,6 +1679,9 @@ def materialize_surface_fxv2(surface_body,
                              masked_dpp_body="",
                              masked_dpp_expr="",
                              masked_dpp_cutout="0.5",
+                             shadow_filter="",
+                             shadow_ambient="",
+                             env_specular="",
                              emit_stereo=True,
                              name_hint="ptex"):
   """Generate + write the .fxv2 to <staging>/dslshadercache/ptex3d/<hint>_<hash>.fxv2.
@@ -1549,6 +1735,9 @@ def materialize_surface_fxv2(surface_body,
                                masked_dpp_body=masked_dpp_body,
                                masked_dpp_expr=masked_dpp_expr,
                                masked_dpp_cutout=masked_dpp_cutout,
+                               shadow_filter=shadow_filter,
+                               shadow_ambient=shadow_ambient,
+                               env_specular=env_specular,
                                emit_stereo=emit_stereo)
   digest = hashlib.sha1((CODEGEN_VERSION + "\n" + text).encode("utf-8")).hexdigest()[:16]
   fname  = "%s_%s.fxv2" % (name_hint, digest)
@@ -1617,7 +1806,7 @@ typeblock types_ptex {{
 {out_struct}{capture_struct}
 }}{params_block}{samplers_block}
 ///////////////////////////////////////////////////////////////
-libblock lib_ptex_surface : types_ptex{params_inherit}{samplers_inherit}{surf_inherits}{surf_sun_inherit} {{
+libblock lib_ptex_surface : types_ptex{params_inherit}{samplers_inherit}{surf_inherits}{surf_sun_inherit}{surf_sky_haze_inherit} {{
 {libblock}{height_function}
   SurfaceOut ptex_surface(vec3 wpos, vec3 opos, vec2 uv, vec4 cd, mat3 tbn, vec3 wnrm, vec3 onrm, vec3 eye{surf_vnrm_param}{surf_layer_param}{surf_obinr_param}) {{
     SurfaceOut o;

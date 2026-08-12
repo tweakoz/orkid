@@ -106,5 +106,61 @@ float computeGGX(vec3 normal, vec3 halfdir, float roughness) {
     return a2*INV_PI / (denominatorsqrt*denominatorsqrt);
 }
 
+  //////////////////////////////////////////////////////////////////////////////
+  // DIRECT DIFFUSE — the one evaluation site for every analytic diffuse term in
+  // the engine (forward point / spot cookie / sun, and the deferred pair). It
+  // returns the BRDF already multiplied by the energy split kD and the base
+  // color, with 1/pi folded in. NdotL, light color and distance attenuation stay
+  // with the caller: each site attenuates differently and always has.
+  //
+  // `model` is a UNIFORM, so this is a uniform branch — one pipeline, no shader
+  // permutation, and a live editor row can move it between frames.
+  //
+  // It is a small ORDINAL, not the crc id the scene DSL and the editor traffic
+  // in: the crc identity lives on the C++ side (pbr::DiffuseBrdfModel) and is
+  // mapped to this index at bind time, so no hash literal is ever baked into
+  // shader text.
+  //   0 = LAMBERT, 1 = OREN_NAYAR, 2 = BURLEY
+  // Anything else falls through to LAMBERT; the binder is what refuses an
+  // unknown name, out loud, long before a fragment sees it.
+  //////////////////////////////////////////////////////////////////////////////
+  vec3 diffuseBRDF(int model, vec3 albedo, vec3 kD, float roughness, vec3 N, vec3 V, vec3 L) {
+    vec3 lambert = kD * albedo * INV_PI;
+    if (model == 1) {
+      // OREN-NAYAR, qualitative A/B form. sigma is the slope-angle deviation of
+      // the microfacet distribution, in radians, and it is derived from the SAME
+      // roughness the GGX lobe uses — alpha = roughness^2, sigma = alpha/sqrt(2)
+      // (the Beckmann RMS-slope correspondence) — so a shading point never
+      // carries two disagreeing roughnesses. sigma=0 gives A=1, B=0, which is
+      // the lambert above exactly.
+      float alpha = roughness * roughness;
+      float sigma = alpha * 0.70710678;
+      float vari  = sigma * sigma;
+      float A     = 1.0 - 0.5 * vari / (vari + 0.33);
+      float B     = 0.45 * vari / (vari + 0.09);
+      float ndotl = saturateF(dot(N, L));
+      float ndotv = saturateF(dot(N, V));
+      // trig-free azimuth term: s/t == cos(phi_i - phi_r) * sin(alpha) * tan(beta).
+      // s < 0 divides by 1 rather than by max(NdotL,NdotV) — that is the form's
+      // own definition, not a guard; A - B is still positive for every sigma.
+      float s = dot(L, V) - ndotl * ndotv;
+      float t = (s <= 0.0) ? 1.0 : max(max(ndotl, ndotv), 1e-4);
+      return lambert * (A + B * (s / t));
+    } else if (model == 2) {
+      // BURLEY (Disney) — Schlick-weighted grazing retro-reflection. f90 rides
+      // the LINEAR roughness (alpha), matching the GGX lobe's convention rather
+      // than Disney's own perceptual one.
+      float alpha = roughness * roughness;
+      vec3  H     = normalize(V + L);
+      float ldoth = saturateF(dot(L, H));
+      float ndotl = saturateF(dot(N, L));
+      float ndotv = saturateF(dot(N, V));
+      float f90   = 0.5 + 2.0 * alpha * ldoth * ldoth;
+      float fl    = 1.0 + (f90 - 1.0) * pow(1.0 - ndotl, 5.0);
+      float fv    = 1.0 + (f90 - 1.0) * pow(1.0 - ndotv, 5.0);
+      return lambert * (fl * fv);
+    }
+    return lambert;
+  }
 
 }

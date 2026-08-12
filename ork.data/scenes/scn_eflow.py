@@ -27,16 +27,33 @@ class ErodeFlowScene(Scene):
   def __init__(self):
     super().__init__()
 
-    self.scenegraph(
-        preset            = "ForwardPBR",
-        skybox_path       = "<ork_envmaps2>/desert4k.xir",
-        SkyboxIntensity   = 1.3,
-        DiffuseIntensity  = 2.5,
-        SpecularIntensity = 1.5,
-        AmbientLight      = vec3(0),
+    # PROCEDURAL SKY (replaces the canned desert4k dome): Hillaire atmosphere +
+    # celestial sun over a southwest-desert site, clock FROZEN at mid-afternoon —
+    # a raking SW light that models the flow channels and basin walls the old
+    # IBL-only lighting flattened. NO skybox_path: the sky's own refiltered
+    # snapshot is the IBL (owner call, aug08 — a procedural-sky scene loads no
+    # envmap). Exposure trio rebalanced to the procedural-sky family's numbers
+    # (the 1.3/2.5/1.5 set was graded against the baked dome).
+    # No moon/stars: the clock is frozen in daylight, so they never rise.
+    self.sky(
+        skybox_intensity   = 1.2,
+        diffuse_intensity  = 1.5,
+        specular_intensity = 1.0,
+        ambient_light      = vec3(0.0),
+        msaa               = 3,
         CullFrustumScale   = 1.3,   # TEMP A/B TEST: narrow cull frustum (cull-more) — revert after
         DepthPrepass       = True,   # resolves a single-sample depth (the HZB occlusion source) + early-Z
-        msaa              = 3)
+        latitude_deg  = 36.0,
+        day_of_year   = 223.0,
+        time_of_day   = 15.5,
+        time_scale    = 0.0,
+        celestial     = True,
+        moon          = False,
+        stars         = False,
+        sun_color     = vec3(1.0, 0.82, 0.60),
+        sun_intensity = 2.5,
+        sun_params    = {"shadow_map_size": 4096,
+                         "shadow_caster": True})
 
     self.terrain(
         "erodeflow",
@@ -45,7 +62,7 @@ class ErodeFlowScene(Scene):
         render_dimension = 1600,
         mode      = "stored",   # Phase-1: capture the proctex to <assetcache>/ptex3d_capture/<key>/ (cached)
         bake_dimension  = 4096,
-        bake_res  = 4096,                
+        bake_res  = 4096,
         walkable  = True)
 
     self.projectile_pool(fire=True)   # '/' shoots fireballs (gaze-aimed in VR)

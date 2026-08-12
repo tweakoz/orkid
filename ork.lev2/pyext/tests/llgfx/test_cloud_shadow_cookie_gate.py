@@ -16,7 +16,7 @@
 #
 #     transmittance = exp(-tau * strength * a),   tau = CloudExtinction (7.5)
 #
-# _sun_cookie_factor (fwdtools.i2) multiplies it into the DIRECT sun term only,
+# _sun_cookie_sample (fwdtools.i2) multiplies it into the DIRECT sun term only,
 # and the sky pass (pbrtools.i2) multiplies the SAME law with the SAME tau into
 # the sun/moon disc radiance — one beam cannot have two transmittances. What is
 # per-consumer is only the SPATIAL filter: CloudShadowSoftness is the ground
@@ -39,31 +39,65 @@
 #     the two forms are identical; below it only this one extinguishes; at
 #     strength 0 it is exactly exp(0) = 1, so the disarmed path is untouched.
 #
+# WHAT THE SKY TERM TAKES (W15-S3). The cookie is also allowed to pull the
+# IMAGE-BASED term down, by a declared weight (CloudShadowIblWeight, 0.65 by
+# default): a cloud covers a broad wedge of the dome, and with the env term
+# carrying most of a daylit frame's energy a cookie that touched only the direct
+# beam was invisible. What the sky takes is NOT the beam's transmittance —
+# exp(-tau*a) is near-binary past a ~ 0.3, so a sky driven by it snaps to
+# 1-weight under any cloud worth seeing. It is COVERAGE:
+#
+#     env *= mix(1, 1 - strength*a, weight)
+#
+# one term, linear in the same alpha the beam's exponent uses, so a half-covered
+# sky is half dimmed. The two consumers of one sample therefore differ by design,
+# and this gate measures BOTH against the SAME recovered alpha (below).
+#
 # The occluder here is a plain PBR ball rather than a cloud deck: this gate is
 # about the ENGINE path, and a ball writes alpha 1, which makes the occlusion it
 # contributes exactly known. What the cloud decks contribute through that same
 # path is their own shader's business (and their own gate).
 #
-# GROUND legs — six captures of ONE static scene in one warm process, differing
-# only in the sun's cloud-shadow data:
+# GROUND legs — eight captures of ONE static scene in one warm process, differing
+# only in the sun's cloud-shadow data. EVERY leg declares CloudShadowIblWeight:
+# the BEAM legs pin it to 0 so that "what the cookie did to the direct term" is
+# still measured with the env term held fixed (the algebra below subtracts a
+# disarmed leg, which only cancels if the ambient is the same in both), and the
+# ENV legs are the ones that let the sky move:
 #
-#   off        strength 0                          -> the disarmed frame (no cookie pass at all)
-#   on_sharp   strength 1.0, softness 0            -> armed at the REFERENCE state, DEFAULT tau
-#   on_soft    strength 1.0, softness 3            -> the same, with a wide penumbra
-#   on_probe   strength 1.0, softness 0, tau 1.0   -> the SAME geometry at a low optical depth
-#   off_dark   strength 0,   sun intensity 0       -> image-based light alone
-#   on_dark    strength 1.0, sun intensity 0       -> image-based light alone, cookie armed
+#   off        strength 0,               iblw 0    -> the disarmed frame (no cookie pass at all)
+#   on_sharp   strength 1.0, softness 0, iblw 0    -> armed at the REFERENCE state, DEFAULT tau
+#   on_soft    strength 1.0, softness 3, iblw 0    -> the same, with a wide penumbra
+#   on_probe   strength 1.0, tau 1.0,    iblw 0    -> the SAME geometry at a low optical depth
+#   off_dark   strength 0,   sun 0                 -> image-based light alone (the env denominator)
+#   on_dark    strength 1.0, sun 0,      iblw 0    -> image-based light alone, cookie armed, sky OFF-LIMITS
+#   e_full     strength 1.0, sun 0,      iblw 1    -> the same, sky fully weighted
+#   e_half     strength 1.0, sun 0,      iblw 0.5  -> the same, sky at half weight
+#
+# off_dark needs no weight: at strength 0 the cookie is not armed at all, so its
+# sky_atten is exactly 1 whatever the weight says — which is itself the reason
+# the disarmed frame stays byte-identical.
 #
 # The armed ground legs run at strength 1.0 and softness 0 because that is the
 # OWNER-APPROVED bench state (both shipped scenes author past the clamp with
 # zero mip blur); the gate must prove the curve where the look was signed off.
 #
-# THE GROUND VERDICT has five halves:
+# THE GROUND VERDICT has six halves:
 #   * the cookie removed real direct light: a measurable region of the receiver
 #     is darker in on_sharp than in off, by a fraction that tracks the strength;
-#   * ATTRIBUTION: with the sun switched off, arming the cookie changes NOTHING
-#     (off_dark == on_dark to float rounding). A cookie that touched the IBL /
-#     ambient would show up here at the size of the whole occlusion;
+#   * ATTRIBUTION, in its post-W15-S3 form. With the sun switched off, arming
+#     the cookie must move the env term by EXACTLY the declared weight and by
+#     nothing else — three clauses, and together they are strictly stronger than
+#     the "env untouched" this gate asserted before the sky was allowed to dim:
+#       - at weight 0 the env is untouched to float rounding (on_dark ==
+#         off_dark), so an implementation that leaked into the ambient by any
+#         route other than the declared weight still fails here;
+#       - at weight 1 what the env LOST over the shadow core is the same alpha
+#         the beam legs recover from an independent measurement (the tau pair) —
+#         one cookie sample, two consumers, ONE coverage;
+#       - and the loss is LINEAR IN THE WEIGHT: e_half must remove exactly half
+#         of what e_full removed, per pixel. That is the mix() form itself, and
+#         no other attenuation shape satisfies it at two weights at once;
 #   * SOFTNESS IS DATA: the steepest luminance step across the cookie shadow's
 #     edge is strictly smaller at softness 3 than at softness 0 (the reference
 #     state uses 0 — this leg proves the knob still works, it is not a default);
@@ -272,7 +306,29 @@ CAM_TGT = vec3(0, 0.0, 0)
 SURFACE_FLOOR = 1.0e-4   # above this the pixel is lit geometry, not background
 SHADOW_DROP   = 0.02     # relative darkening that counts as "in the cookie shadow"
 MIN_PIXELS    = 200
-ATTRIB_TOL    = 1.0e-5   # |on_dark - off_dark| / off_dark, sun switched off
+ATTRIB_TOL    = 1.0e-5   # |on_dark - off_dark| / off_dark, sun switched off AND weight 0
+
+# THE SKY WEIGHT legs. Weight 1 is not the shipped default (0.65) on purpose:
+# the law under test is the mix, and the shipped number is a LOOK that moves,
+# so the gate exercises the two weights it can predict from each other instead
+# of freezing an artist's dial. Both env legs run at ANCHOR_STRENGTH.
+IBL_W_FULL    = 1.0
+IBL_W_HALF    = 0.5
+# what the env lost over the core, against the alpha the BEAM legs recovered.
+# The two are different estimators of the same coverage (the beam's is a
+# radiance-weighted aggregate over the core, the env's is an irradiance-weighted
+# mean), so the tolerance is the spread between the weightings and not instrument
+# noise. Measured 0.002 apart on mac/MoltenVK 2026-08-07 — the slack is for a
+# core that is less uniformly covered than this ball's.
+ENV_ALPHA_TOL = 0.06
+# per-pixel: (1 - r_half) vs 0.5*(1 - r_full). This one IS instrument noise —
+# the two legs are the same static frame at two weights.
+ENV_MIX_TOL   = 0.01
+ENV_SIGNAL    = 0.02     # coverage below this carries no signal to check the halving on
+ENV_OUTSIDE_TOL = 0.02   # where the beam legs COULD have seen a shadow and did not, the sky
+                         #  may not have moved either (see the mask derivation in section 5)
+DIRECT_FRACTION = 0.20   # how much of a pixel the direct term must carry for its silence
+                         #  about the deck to be evidence
 
 # TRANSIT rig (see the header). The camera FOV is StandardSceneGraphComponent's
 # default, and the disc's pixel radius is derived from it rather than eyeballed
@@ -382,14 +438,16 @@ class FloatOutSGC(StandardSceneGraphComponent):
 # tau=None means "leave the engine's own default alone" — the legs that carry
 # the shipped optical depth must not spell it, or the gate would stop noticing a
 # default that regressed.
-def _ground(key, strength, soft, sun, tau=None):
-  return dict(key=key, strength=strength, soft=soft, sun=sun, tau=tau,
+def _ground(key, strength, soft, sun, tau=None, iblw=0.0):
+  return dict(key=key, strength=strength, soft=soft, sun=sun, tau=tau, iblw=iblw,
               occ=OCC_OFFRAY, sky=False, tgt=CAM_TGT, settle=SETTLE_FRAMES)
 
 
+# the transit legs measure the DISC, which the sky weight does not touch; they
+# declare 0 so no leg in this file leaves the knob to whatever ran before it.
 def _transit(key, strength, occ, tau=None, soft=SOFT_SHARP):
   return dict(key=key, strength=strength, soft=soft, sun=SUN_INTENSITY, tau=tau,
-              occ=occ, sky=True, tgt=CAM_TGT_SUN, settle=TRANSIT_SETTLE)
+              iblw=0.0, occ=occ, sky=True, tgt=CAM_TGT_SUN, settle=TRANSIT_SETTLE)
 
 
 TRANSIT_KEYS = ["d_ref", "d_clear", "d_occ", "d_law", "d_law2", "d_lawh", "d_gsoft"]
@@ -404,6 +462,8 @@ LEGS = [
     _ground("on_probe", COOKIE_STRENGTH, SOFT_SHARP, SUN_INTENSITY, tau=TAU_PROBE),
     _ground("off_dark", 0.0,             SOFT_SHARP, 0.0),
     _ground("on_dark",  COOKIE_STRENGTH, SOFT_SHARP, 0.0),
+    _ground("e_full",   COOKIE_STRENGTH, SOFT_SHARP, 0.0, iblw=IBL_W_FULL),
+    _ground("e_half",   COOKIE_STRENGTH, SOFT_SHARP, 0.0, iblw=IBL_W_HALF),
 ] + sum([[leg, dict(leg)] for leg in [
     _transit("d_ref",   0.0,              OCC_OFFRAY),
     _transit("d_clear", TRANSIT_STRENGTH, OCC_OFFRAY),
@@ -487,7 +547,7 @@ class CloudCookieApp(ComponentizedApplication):
     sun = lev2.DynamicDirectionalLight()
     sun.data.color = vec3(1, 1, 1)
     sun.data.intensity = SUN_INTENSITY
-    sun.data.shadowBias = 2e-4
+    sun.data.shadowBias = 0.05  # metres
     sun.data.shadowMapSize = 2048
     sun.data.shadowCascadeCount = 3
     sun.data.shadowMaxDistance = 250.0
@@ -603,6 +663,7 @@ class CloudCookieApp(ComponentizedApplication):
         leg = dict(leg, strength=float(forced))
       self.sun.data.cloudShadowStrength = leg["strength"]
       self.sun.data.cloudShadowSoftness = leg["soft"]
+      self.sun.data.cloudShadowIblWeight = leg["iblw"]
       self.sun.data.cloudExtinction = (self._tau_default if leg["tau"] is None
                                        else leg["tau"])
       self.sun.data.intensity = leg["sun"]
@@ -616,9 +677,9 @@ class CloudCookieApp(ComponentizedApplication):
         self.atmo.sun_disc_angular_radius = TRANSIT_DISC_DEG
         self.atmo.sun_disc_intensity = TRANSIT_DISC_INT
       self._aim(leg["tgt"])
-      self._note("leg %s: strength %.2f softness %.1f tau %.2f sun %.2f occ<%.1f %.1f %.1f> sky %d"
+      self._note("leg %s: strength %.2f softness %.1f tau %.2f iblw %.2f sun %.2f occ<%.1f %.1f %.1f> sky %d"
                  % (leg["key"], leg["strength"], leg["soft"],
-                    float(self.sun.data.cloudExtinction), leg["sun"],
+                    float(self.sun.data.cloudExtinction), leg["iblw"], leg["sun"],
                     leg["occ"].x, leg["occ"].y, leg["occ"].z, int(leg["sky"])))
       self._restate(1)
       return
@@ -850,6 +911,8 @@ class CloudCookieApp(ComponentizedApplication):
     PROBE = lum(self._shots["on_probe"])
     OFFD  = lum(self._shots["off_dark"])
     OND   = lum(self._shots["on_dark"])
+    EFULL = lum(self._shots["e_full"])
+    EHALF = lum(self._shots["e_half"])
 
     # THE UNAUTHORED DEFAULTS. Every derivation below reads the engine's own
     # numbers, so this is the one place the SHIPPED values are pinned: a scene
@@ -896,16 +959,19 @@ class CloudCookieApp(ComponentizedApplication):
             "mean relative darkening %.4f (min 0.05) over %d px" % (drop, int(shadow.sum())))
 
     ##########################################################
-    # 2. ATTRIBUTION — sun off, arming the cookie must change nothing.
-    #    A cookie that reached the IBL would show here at the size of the
-    #    occlusion the first half just measured.
+    # 2. ATTRIBUTION, clause one — sun off AND weight 0: arming the cookie must
+    #    change nothing. The sky is allowed to dim ONLY through the declared
+    #    weight, so any leak by any other route lands here at the size of the
+    #    occlusion the first half just measured. (Clauses two and three, what
+    #    the weight itself is allowed to do, are section 5 — they need the
+    #    alpha the beam legs recover.)
     ##########################################################
     lit_env = OFFD > SURFACE_FLOOR
     rel = numpy.abs(OND[lit_env] - OFFD[lit_env]) / numpy.maximum(OFFD[lit_env], 1e-30)
-    print("=== attribution (sun intensity 0) ===", flush=True)
+    print("=== attribution (sun intensity 0, sky weight 0) ===", flush=True)
     print("  env-only px=%d  |on-off|/off mean=%.3e max=%.3e"
           % (int(lit_env.sum()), float(rel.mean()), float(rel.max())), flush=True)
-    check("env_untouched_by_cookie", float(rel.max()) < ATTRIB_TOL,
+    check("env_untouched_at_weight_zero", float(rel.max()) < ATTRIB_TOL,
           "max |on_dark-off_dark|/off_dark = %.3e (tol %.1e) over %d px"
           % (float(rel.max()), ATTRIB_TOL, int(lit_env.sum())))
 
@@ -949,6 +1015,7 @@ class CloudCookieApp(ComponentizedApplication):
     f_meas   = float("nan")
     f_pred   = float("nan")
     env_core = 0.0
+    core     = None
     if have_shadow:
       d_hi = OFF - SHARP
       d_lo = OFF - PROBE
@@ -996,16 +1063,78 @@ class CloudCookieApp(ComponentizedApplication):
       check("ambient_floor_survives", False, "no cookie shadow to measure the floor under")
 
     ##########################################################
-    # 5. THE TRANSIT — a cloud on the eye->sun ray puts the disc out.
+    # 5. WHAT THE SKY TERM TAKES — attribution clauses two and three.
+    #
+    #    With the sun off the frame is the env term alone, so an armed leg is
+    #    E * mix(1, 1 - cov, w) and dividing by the disarmed leg leaves the
+    #    weighted coverage per pixel, with E gone:
+    #        1 - e_full/off_dark = cov          (w = 1)
+    #        1 - e_half/off_dark = cov / 2      (w = 1/2)
+    #    Two independent statements come out of it and neither needs a golden:
+    #      * the coverage the SKY lost over the shadow core is the alpha the BEAM
+    #        legs recovered from the tau pair — one sample, two consumers, and
+    #        the sky is not free to invent its own occlusion;
+    #      * halving the weight halves the loss PER PIXEL, which is the mix()
+    #        form itself. A beam-transmittance sky (the pre-S3 law) fails the
+    #        first — exp(-7.5*0.8) leaves the sky ~1.0 dimmed where the coverage
+    #        is 0.8 — and any non-linear blend fails the second.
+    #    Plus the negative half: where the deck is not, the sky is untouched at
+    #    ANY weight.
+    ##########################################################
+    cov_full = 1.0 - EFULL / numpy.maximum(OFFD, 1e-30)
+    cov_half = 1.0 - EHALF / numpy.maximum(OFFD, 1e-30)
+    # WHERE THE NEGATIVE CONTROL IS ALLOWED TO STAND. "Not in the beam's shadow
+    # mask" does NOT mean "no deck overhead": most of a ball's surface under the
+    # projected deck is backfacing or grazing, takes no direct light at all, and
+    # so cannot report a shadow however thick the cloud is (measured here: 7161
+    # px of sky coverage against a 307 px beam mask, and they are consistent).
+    # The control therefore lives where the beam COULD have spoken — pixels the
+    # direct term contributes a fifth of. There, a coverage past 0.02 would have
+    # dropped the total by 2.8% and landed in the mask, so an unmasked pixel
+    # carrying a dimmed sky means the sky invented occlusion the cookie has not.
+    direct_lit = (OFF - OFFD) > (DIRECT_FRACTION * OFF)
+    outside  = lit_env & direct_lit & (~shadow)
+    off_max  = float(numpy.abs(cov_full[outside]).max()) if outside.sum() else float("nan")
+    sig      = lit_env & (cov_full > ENV_SIGNAL)
+    mix_max  = (float(numpy.abs(cov_half[sig] - 0.5 * cov_full[sig]).max())
+                if sig.sum() else float("nan"))
+    cov_core = (1.0 - float(EFULL[core].mean()) / max(float(OFFD[core].mean()), 1e-30)) \
+               if core is not None else float("nan")
+    print("=== what the sky term takes (sun 0, weights %.2f / %.2f) ===" % (IBL_W_FULL, IBL_W_HALF), flush=True)
+    print("  coverage from the sky: core %.4f (beam alpha %s)  |  p05 %.4f med %.4f p95 %.4f over %d lit px"
+          % (cov_core, ("%.4f" % a_ground) if a_ground is not None else "unreachable",
+             float(numpy.percentile(cov_full[lit_env], 5.0)),
+             float(numpy.percentile(cov_full[lit_env], 50.0)),
+             float(numpy.percentile(cov_full[lit_env], 95.0)), int(lit_env.sum())), flush=True)
+    print("  half-weight residual max=%.5f over %d signal px  |  outside the deck max=%.5f"
+          % (mix_max, int(sig.sum()), off_max), flush=True)
+    check("env_took_the_cookie_coverage",
+          (a_ground is not None) and (cov_core == cov_core)
+          and (abs(cov_core - a_ground) <= ENV_ALPHA_TOL),
+          "sky lost %.4f over the core vs beam alpha %s (tol %.2f); at weight %.2f these are the same number"
+          % (cov_core, ("%.4f" % a_ground) if a_ground is not None else "unreachable",
+             ENV_ALPHA_TOL, IBL_W_FULL))
+    check("env_scales_with_the_declared_weight",
+          (int(sig.sum()) >= MIN_PIXELS) and (mix_max == mix_max) and (mix_max <= ENV_MIX_TOL),
+          "max |(1-e_half/off_dark) - 0.5*(1-e_full/off_dark)| = %.5f (tol %.3f) over %d px above %.2f coverage"
+          % (mix_max, ENV_MIX_TOL, int(sig.sum()), ENV_SIGNAL))
+    check("env_untouched_where_the_deck_is_not",
+          (off_max == off_max) and (off_max <= ENV_OUTSIDE_TOL),
+          "max |1 - e_full/off_dark| outside the cookie shadow = %.5f (tol %.3f) over %d px"
+          % (off_max, ENV_OUTSIDE_TOL, int(outside.sum())))
+
+    ##########################################################
+    # 6. THE TRANSIT — a cloud on the eye->sun ray puts the disc out.
     ##########################################################
     tdetail = self._transitChecks(check)
 
     ok = (len(failures) == 0)
     verdict(ok, "shadow_px=%d removed=%.4f attrib_max=%.3e grad_sharp=%.4f grad_soft=%.4f"
-                " ground_alpha=%s beam=%.5f %s"
+                " ground_alpha=%s beam=%.5f sky_cov=%.4f sky_mix=%.5f %s"
             % (int(shadow.sum()), drop, float(rel.max()),
                g_sharp if g_sharp else -1.0, g_soft if g_soft else -1.0,
-               ("%.3f" % a_ground) if a_ground is not None else "x", f_meas, tdetail))
+               ("%.3f" % a_ground) if a_ground is not None else "x", f_meas,
+               cov_core, mix_max, tdetail))
     self._exit_code = 0 if ok else 1
     self._done = True
     self.ezapp.signalExit()

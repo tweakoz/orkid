@@ -162,7 +162,9 @@ bool PbrMaterialGenData::bindSamplerImage(
   }
   auto tex        = std::make_shared<Texture>();
   tex->_debugName = sampler;
-  ctx->TXI()->initTextureFromImage(tex.get(), img, false /*mipmapped*/, false /*async*/);
+  // MIPPED by default: every sampler bound here is an APPEARANCE texture (baked terrain
+  // atlas, cloud deck, leaf/needle card) sampled under heavy minification at distance.
+  ctx->TXI()->initTextureFromImage(tex.get(), img, true /*mipmapped*/, false /*async*/);
   mat->bindParam(par, tex);
   return true;
 }

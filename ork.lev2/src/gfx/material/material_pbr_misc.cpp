@@ -39,6 +39,165 @@ namespace ork::lev2 {
 
 FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl);
 
+///////////////////////////////////////////////////////////////////////////////
+// AERIAL PERSPECTIVE (SKYLIGHT lane B) — the haze march in lib_sky reads ONE
+// atmosphere, so it gets ONE binder: the forward lighting lambda calls this, and
+// so does the standalone lambda below, which the pipelines that carry no
+// lighting state (the sun-cookie fill) use instead.
+//
+// ARMED rides in SkyHazeDensity.w and is folded here, on the CPU: disarmed the
+// shader branch is never taken, so every value below is inert.
+//
+// SKY_FRAME is the anti-drift source for the sun and the view altitude — the
+// same numbers the LUTs being sampled were baked with. It is only published by
+// the procedural-sky prologue, and only AFTER the sun-cookie pass runs
+// (fwdnode_impl_top.cpp), so this must TEST for it, never assert: a baked-sky
+// scene and the cookie fill are both legitimately without one, and both simply
+// draw un-hazed (the skybox technique asserts because it cannot draw at all
+// without one; the haze can).
+//
+// PROBES: no haze in reflection-probe captures (v1) — a probe's cube is re-lit
+// at the receiving surface, and hazing the capture would double it.
+///////////////////////////////////////////////////////////////////////////////
+
+void bindSkyHazeState(const PBRMaterial* mtl, const RenderContextInstData& RCID) {
+  // the PBRMaterial face of the binder: gather its cached handles and run the
+  // one implementation below.
+  SkyHazeParamSet P;
+  P._density          = mtl->_parSkyHazeDensity;
+  P._rayleighScatter  = mtl->_parSkyRayleighScatter;
+  P._mieScatter       = mtl->_parSkyMieScatter;
+  P._ozoneAbsorb      = mtl->_parSkyOzoneAbsorb;
+  P._ozoneTent        = mtl->_parSkyOzoneTent;
+  P._radii            = mtl->_parSkyRadii;
+  P._sunDirection     = mtl->_parSkySunDirection;
+  P._sunIlluminance   = mtl->_parSkySunIlluminance;
+  P._scatterTint      = mtl->_parSkyHazeScatterTint;
+  P._inscatterTint    = mtl->_parSkyHazeInscatterTint;
+  P._geom             = mtl->_parSkyHazeGeom;
+  P._transmittanceLut = mtl->_parSkyTransmittanceLut;
+  P._multiScatterLut  = mtl->_parSkyMultiScatterLut;
+  P._viewLut          = mtl->_parSkyViewLut;
+  bindSkyHazeState(P, RCID);
+}
+
+void bindSkyHazeState(const SkyHazeParamSet& params, const RenderContextInstData& RCID) {
+  auto RCFD    = RCID.rcfd();
+  auto context = RCFD->GetTarget();
+  auto FXI     = context->FXI();
+
+  // the lighting-free passes publish a narrower RCFD than the color pass, so
+  // every property this reads is tested for rather than asserted on.
+  pbr::commonstuff_ptr_t pbrcommon;
+  if (RCFD->hasUserProperty("PBR_COMMON"_crcu))
+    pbrcommon = RCFD->userPropertyAs<pbr::commonstuff_ptr_t>("PBR_COMMON"_crcu);
+  else
+    pbrcommon = RCFD->_pbrcommon;
+  bool is_rendering_PROBE = RCFD->hasUserProperty("renderingPROBE"_crcu) //
+                                ? RCFD->userPropertyAs<bool>("renderingPROBE"_crcu)
+                                : false;
+
+  auto atmo = pbrcommon ? pbrcommon->_atmosphere : nullptr;
+  pbr::skyframestate_ptr_t skyframe;
+  if (RCFD->hasUserProperty("SKY_FRAME"_crcu))
+    skyframe = RCFD->userPropertyAs<pbr::skyframestate_ptr_t>("SKY_FRAME"_crcu);
+
+  bool haze_armed = atmo                               //
+                    and atmo->_aerialPerspectiveEnable //
+                    and (not is_rendering_PROBE)       //
+                    and skyframe                       //
+                    and skyframe->_transmittanceLUT    //
+                    and skyframe->_multiScatterLUT;
+
+  if (params._density) {
+    FXI->bindParamVect4(
+        params._density, //
+        haze_armed ? fvec4(atmo->_hazeDensity, atmo->_hazeScaleHeight, atmo->_hazePhaseG, 1.0f)
+                   : fvec4(0.0f, 1.0f, 0.0f, 0.0f));
+  }
+  if (haze_armed) {
+    // the medium, packed EXACTLY as HillaireSky::_bindAtmosphere packs it for
+    // the LUT bakes — the march calls the same skySampleMedium those bakes do,
+    // so a different layout here would be a second, disagreeing atmosphere.
+    if (params._rayleighScatter)
+      FXI->bindParamVect4(
+          params._rayleighScatter, //
+          fvec4(atmo->_rayleighScattering, atmo->_rayleighScaleHeight));
+    if (params._mieScatter)
+      FXI->bindParamVect4(
+          params._mieScatter, //
+          fvec4(atmo->_mieScattering, atmo->_mieExtinction, atmo->_mieScaleHeight, atmo->_miePhaseG));
+    if (params._ozoneAbsorb)
+      FXI->bindParamVect4(params._ozoneAbsorb, fvec4(atmo->_ozoneAbsorption, 0.0f));
+    if (params._ozoneTent)
+      FXI->bindParamVect4(
+          params._ozoneTent, //
+          fvec4(atmo->_ozoneCenterAltitude, atmo->_ozoneTentHalfWidth, 0.0f, 0.0f));
+    // geometry + sun, from the frame state (never re-derived), byte-for-byte
+    // the same construction the procedural skybox binds.
+    if (params._radii)
+      FXI->bindParamVect4(
+          params._radii, //
+          fvec4(atmo->_groundRadius, atmo->topRadius(), skyframe->_viewAltitudeKm, 0.0f));
+    if (params._sunDirection)
+      FXI->bindParamVect4(params._sunDirection, fvec4(skyframe->_dirToSun, 0.0f));
+    if (params._sunIlluminance)
+      FXI->bindParamVect4(params._sunIlluminance, fvec4(atmo->_sunIlluminance, 0.0f));
+    // the artist layer + the unit/exposure conventions the march works in
+    if (params._scatterTint)
+      FXI->bindParamVect4(params._scatterTint, fvec4(atmo->_hazeScatterTint, 0.0f));
+    if (params._inscatterTint)
+      // .w = terrain-shadowed-march arm (sky_atmosphere.h _hazeSunShadow)
+      FXI->bindParamVect4(params._inscatterTint, fvec4(atmo->_hazeInscatterTint, atmo->_hazeSunShadow));
+    if (params._geom)
+      // .w = SHAFT GAIN (was reserved padding). Non-negative is the only floor
+      // the shader's remap needs; the ceiling is an authoring choice, not a
+      // correctness one.
+      FXI->bindParamVect4(
+          params._geom, //
+          fvec4(
+              atmo->_kilometersPerWorldUnit,
+              atmo->_skyExposure,
+              atmo->_hazeMaxDistanceKm,
+              std::max(atmo->_hazeSunShadowGain, 0.0f)));
+  }
+  // the LUT samplers are ALWAYS bound (the sun-cookie precedent in the forward
+  // lambda): every fragment that inherits lib_sky declares sset_sky_luts, and a
+  // sampler left to the descriptor builder's default would hand the set a
+  // texture this binder never chose. Disarmed: white reads as unit
+  // transmittance, black as no multi-scatter — the inert medium.
+  auto tex_white = pbrcommon ? pbrcommon->_texWhite.get() : nullptr;
+  auto tex_black = pbrcommon ? pbrcommon->_texBlack.get() : nullptr;
+  if (params._transmittanceLut)
+    FXI->bindParamTexture(
+        params._transmittanceLut, //
+        haze_armed ? skyframe->_transmittanceLUT.get() : tex_white);
+  if (params._multiScatterLut)
+    FXI->bindParamTexture(
+        params._multiScatterLut, //
+        haze_armed ? skyframe->_multiScatterLUT.get() : tex_black);
+  if (params._viewLut)
+    FXI->bindParamTexture(
+        params._viewLut, //
+        (haze_armed and skyframe->_skyViewLUT) ? skyframe->_skyViewLUT.get() : tex_black);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// The haze bind as a STANDALONE state lambda, for the pipelines that carry no
+// forward lighting lambda to fold it into. A GENERATED material whose surface
+// calls skyAerialPerspective declares ublk_sky_atmo + the three LUT samplers in
+// EVERY one of its fragments (the inherit rides lib_ptex_surface), so the lean
+// sun-cookie fill needs the binder even though it needs no lighting.
+///////////////////////////////////////////////////////////////////////////////
+
+FxPipeline::statelambda_t createSkyHazeStateLambda(const PBRMaterial* mtl) {
+  return [mtl](const RenderContextInstData& RCID) { //
+    bindSkyHazeState(mtl, RCID);
+  };
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& permu) const {
   fxpipeline_ptr_t pipeline;
   auto basic_lambda  = createBasicStateLambda(this);
@@ -107,6 +266,23 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineSKY(const FxPipelinePermutation& 
         FXI->bindUniformBuffer(this->_parStereoBlock, PBRMaterial::stereoDataBuffer(context));
       }
     }
+    //////////////////////////////////////////////////////////
+    // GROUND HAZE on the sky pixels themselves (skyHazeSkyOverlay): the artist
+    // layer is not in the sky-view LUT, so without this bind a dense layer
+    // veils the mountains and leaves the sky above the ridge line clean.
+    //
+    // FIRST, and the order is load-bearing: the shared binder owns the medium,
+    // the haze lanes and the multi-scatter LUT this pass never bound, but it
+    // also DISARMS by pointing the sky-view and transmittance samplers at
+    // white/black — which is right for a geometry draw and would be a black sky
+    // here. The authoritative binds below therefore run after it and win on
+    // every member the two share.
+    //
+    // Probes ride the helper's own gate (renderingPROBE): a probe capture's sky
+    // stays haze-free, exactly as the geometry in it does.
+    //////////////////////////////////////////////////////////
+    bindSkyHazeState(this, RCID);
+
     auto atmo      = pbrcommon ? pbrcommon->_atmosphere : nullptr;
     OrkAssertI(
         atmo != nullptr,

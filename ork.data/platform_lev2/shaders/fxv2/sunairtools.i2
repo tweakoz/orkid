@@ -1,0 +1,142 @@
+///////////////////////////////////////////////////////////////////////////////
+// SUN OCCLUSION OF THE AIR ITSELF — the cascade taps the aerial-perspective
+// march needs, and nothing else.
+//
+// It lives in its own file because it has TWO consumers that share no other
+// declaration: the forward lighting chain (lib_fwd_impl, which runs the march
+// inline) and the standalone quarter-res shaft pass (hazeshaft.fxv2, which runs
+// the shadow arm of that march into a low-res target). Duplicating the taps
+// across the two would let the inline look and the quarter-res look drift apart
+// silently, which is exactly the failure the two modes must never have.
+//
+// It cannot live in skytools.i2: that file is also included by sky/IBL passes
+// that bind no cascades, and a sampler declared there would reach them.
+///////////////////////////////////////////////////////////////////////////////
+import "stdtools.i2"; // ublk_sun + sset_sun (the cascade state and the depth array)
+import "skytools.i2"; // SkyHazeGeom — the march's own km frame, which the step mapping rides
+///////////////////////////////////////////////////////////////////////////////
+// The per-step result as ONE value: shadlang has no `out` parameters, and two
+// return values that must stay in step are a struct anyway.
+typeblock typ_sun_air {
+  struct SunAirSteps {
+    vec4 _s03; // lit fraction of march steps 0..3
+    vec4 _s47; // ... and 4..7
+  };
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_sun_air //
+    : typ_sun_air    //
+    : lib_sky        //
+    : ublk_sun       //
+    : sset_sun {     //
+
+  // ONE READER FOR THE vec4 PAIRS ublk_sun carries its per-band scalar tables
+  // in (splits, texel sizes): the base vec4 is bands 0..3, the _hi one is bands
+  // 4.. . Every consumer goes through here, so a band past the first four cannot
+  // be read out of the wrong half in one place and not another.
+  float _sun_band_value(vec4 lo, vec4 hi, int band) {
+    return (band < 4) ? lo[band] : hi[band - 4];
+  }
+
+  // band pick: innermost world sphere (about the anchor the fit was made
+  // around) that contains the fragment. -1 = beyond the outermost band.
+  int _sun_select_band(vec3 wpos, vec3 anchor, vec4 splits, vec4 splits_hi, int count) {
+    float band_dist = length(wpos - anchor);
+    int cascade = -1;
+    for (int i = count - 1; i >= 0; i--) {
+      if (band_dist <= _sun_band_value(splits, splits_hi, i))
+        cascade = i;
+    }
+    return cascade;
+  }
+
+  // DIRECT-sun visibility of one point of AIR (1.0 = unoccluded). One hard
+  // compare, no filter: the caller averages several of these per march segment,
+  // so the estimator's noise is already handled a level up and a PCF here would
+  // only cost fetches.
+  float _sun_air_shadow(vec3 wpos) {
+    int cascade_count = int(sun_shadow_params.z + 0.5);
+    if (cascade_count <= 0)
+      return 1.0;
+    int cascade = _sun_select_band(wpos, sun_cascade_basis.xyz, sun_split_distances,
+                                   sun_split_distances_hi, cascade_count);
+    if (cascade < 0)
+      return 1.0;
+    mat4 shmtx       = sun_shadow_matrix[cascade];
+    float band_texel = _sun_band_value(sun_cascade_texel, sun_cascade_texel_hi, cascade);
+    float slice      = float(cascade) + sun_shadow_fade.y;
+    vec4 hpos = shmtx * vec4(wpos, 1.0);
+    vec3 ndc  = hpos.xyz / hpos.w;
+    if (!((abs(ndc.x) < 1.0) && (abs(ndc.y) < 1.0) && (ndc.z > 0.0) && (ndc.z < 1.0)))
+      return 1.0;
+    float uv_scale = sun_shadow_params.w / max(band_texel, 1e-9);
+    float uv_hi    = (uv_scale < 1.0) ? (uv_scale - sun_shadow_params.w) : 0.0;
+    vec2 uv = vec2(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5) * uv_scale;
+    if (uv_hi > 0.0)
+      uv = clamp(uv, vec2(0.0), vec2(uv_hi));
+    // world-metre bias knob converted per band (the surface path's derivation),
+    // doubled: an air sample fights mis-classification metres, never acne.
+    vec3 sh_row2         = vec3(shmtx[0].z, shmtx[1].z, shmtx[2].z);
+    float depth_range_ws = 1.0 / max(length(sh_row2), 1e-6);
+    float bias           = (2.0 * sun_shadow_params.x) / depth_range_ws;
+    float d = textureLod(sun_shadow_map, vec3(uv, slice), 0).x;
+    return ((d + bias) >= ndc.z) ? 1.0 : 0.0;
+  }
+
+  // THE PER-STEP LIT FRACTIONS the march integrates against, for the eye->frag
+  // ray. Step mapping is the march's own km frame: dvec_km = world *
+  // SkyHazeGeom.x, window clamped at SkyHazeGeom.z — divergence here would
+  // shadow the wrong air.
+  //
+  // STRATIFIED-JITTERED OCCUPANCY (aug08 audit): ONE center tap per segment
+  // weighted a thin near-field shadow (a tree crown, metres) by the WHOLE
+  // segment (dist/8 — hundreds of metres), ~100x longitudinal exaggeration,
+  // unjittered = coherent — observed as tree shadows projected mountain-sized
+  // through the veil. 4 jittered sub-taps per segment estimate the segment's LIT
+  // FRACTION instead: the expected value IS the true integral, the residual is
+  // per-pixel noise far below the haze's own frequency. Jitter hashes WORLD
+  // position — stable under camera motion and identical in both eyes.
+  //
+  // SHAFT GAIN (SkyHazeGeom.w) is applied HERE and nowhere else. It remaps the
+  // lit fraction 1 - gain*(1 - s): it scales what the caster TOOK, never what
+  // the air ambiently glows with, so over-driving deepens the shafts toward
+  // fully dark and stops (the clamp at zero), instead of driving the direct term
+  // negative. One site, so the inline mode and the quarter-res loss mode cannot
+  // apply it differently — which is what keeps a gain A/B across the two modes
+  // an honest comparison. gain == 1 leaves s untouched exactly.
+  //
+  // All-ones out (the degenerate zero-length ray) makes the march it feeds
+  // byte-identical to the unshadowed wrapper.
+  SunAirSteps _sun_air_shadow_steps(vec3 eyepos, vec3 wpos) {
+    SunAirSteps res;
+    res._s03 = vec4(1.0);
+    res._s47 = vec4(1.0);
+    vec3 dvec_w  = wpos - eyepos;
+    float dist_w = length(dvec_w);
+    if (dist_w <= 1e-6)
+      return res;
+    vec3 rd_w     = dvec_w / dist_w;
+    float tmax_km = min(dist_w * SkyHazeGeom.x, SkyHazeGeom.z);
+    float dt_w    = (tmax_km / 8.0) / SkyHazeGeom.x;
+    float jit  = fract(sin(dot(wpos.xz, vec2(12.9898, 78.233))) * 43758.5453);
+    float gain = max(SkyHazeGeom.w, 0.0);
+    for (int i = 0; i < 8; i++) {
+      float occ = 0.0;
+      for (int j = 0; j < 4; j++) {
+        float t = (float(i) + (float(j) + jit) * 0.25) * dt_w;
+        occ += _sun_air_shadow(eyepos + rd_w * t);
+      }
+      float s = occ * 0.25;
+      // EXACTLY at 1 the remap is skipped rather than evaluated: 1-(1-s) is not
+      // bit-identical to s in floating point, and the default of this knob must
+      // cost the picture nothing at all.
+      if (gain != 1.0)
+        s = max(1.0 - gain * (1.0 - s), 0.0);
+      if (i < 4)
+        res._s03[i] = s;
+      else
+        res._s47[i - 4] = s;
+    }
+    return res;
+  }
+}

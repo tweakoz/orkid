@@ -18,6 +18,7 @@
 #include <ork/lev2/gfx/renderer/renderqueue.h>
 #include <ork/lev2/gfx/renderer/renderer_enum.h>
 #include <ork/gfx/radixsort.h>
+#include <limits>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -59,7 +60,20 @@ public:
   /// Each Renderer implements this function as a helper for Renderables when composing their sort keys
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  void drawEnqueuedRenderables(bool reset_after=false);
+  /// Draw the enqueued renderables whose sort key falls in [skey_lo..skey_hi]. The range
+  /// exists so a pass can SPLIT its queue into segments that need different attachment
+  /// state (the forward node's depth-writable draw-last tail) without re-enqueueing:
+  /// reset_after must be false on every segment but the last, or the held-back renderables
+  /// are dropped with the queue.
+  void drawEnqueuedRenderables(
+      bool reset_after = false,
+      int skey_lo      = 0,
+      int skey_hi      = std::numeric_limits<int>::max());
+
+  /// How many enqueued renderables carry a sort key >= skey. Asked BEFORE the first
+  /// segment draws, because whether a tail segment exists decides whether its render pass
+  /// is worth beginning at all.
+  size_t countEnqueuedAtOrAboveSortKey(int skey) const;
 
   void SetPerformanceItem(PerformanceItem* perfitem);
 

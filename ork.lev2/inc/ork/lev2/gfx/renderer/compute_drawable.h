@@ -91,6 +91,11 @@ struct ComputeDrawable : public CallbackDrawable {
   // onPreRender fetches the per-frame HZB pyramid from the RCFD, packs base w/h/mips into CamBlk.misc
   // .yzw, and binds the HZB SSBO to this block on every pass each frame (a dummy when unavailable).
   const FxShaderStorageBlock* _hzbBlock = nullptr;
+  // ... and the GRAPHICS-stage twin, for a producer whose cull lives in a task stage rather than in
+  // a compute pass (the grass carpet): same pyramid, same CamBlk.misc.yzw header, but bound onto the
+  // material-built pipeline in _renderIndirect instead of onto a dispatch. Either block being set is
+  // what arms the per-frame HZB fetch + the misc.yzw pack in onPreRender.
+  const FxShaderStorageBlock* _hzbGraphicsBlock = nullptr;
   // render pipeline selection: if _pipeline is set it is used verbatim (override). Otherwise, if
   // _material is set, the pipeline comes from the STANDARD path — findPipeline(RCID) with
   // RCID._isSSBOSourced=true, so the material's cache picks its FWD_SSBO_CUSTOM variant (+ forward

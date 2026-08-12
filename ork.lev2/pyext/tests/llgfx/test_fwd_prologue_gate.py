@@ -43,7 +43,7 @@
 # teardown regression legible); test_teardown_rc_gate.py is the tripwire that
 # actually scores process exit.
 #
-# DMVR coverage lives in test_dmvr_capture_gate.py (2026-07-23). The earlier
+# Per-eye capture coverage lives in test_spvr_capture_gate.py (2026-07-23). The earlier
 # claim here that "NoVrDevice + FWDPBRVRDM offscreen stalls after one frame"
 # was a MISDIAGNOSIS — the compositor renders continuously in that config;
 # only onGpuPostFrame doesn't fire in the createScene path (D2 family).

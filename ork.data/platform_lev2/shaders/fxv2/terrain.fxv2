@@ -65,8 +65,7 @@ fragment_interface iface_fdefault : ublock_frg {
     layout(location = 0) vec4 out_clr;
   }
 }
-libblock lib_terrain_vtx {
-
+typeblock typ_terrain_vtx {
   struct TerOut {
     vec3 wpos;
     vec3 wpossh;
@@ -77,6 +76,9 @@ libblock lib_terrain_vtx {
     vec2 uvyplane;
     vec2 uvzplane;
   };
+}
+
+libblock lib_terrain_vtx : typ_terrain_vtx {
 
   vec2 quantize(vec2 inp, float quantum) {
     return round(inp * (1.0 / quantum)) * quantum;

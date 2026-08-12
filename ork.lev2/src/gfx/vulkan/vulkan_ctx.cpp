@@ -17,7 +17,9 @@
 #include <ork/lev2/gfx/image.h>
 #include <ork/lev2/gfx/external_gpu_requirements.h>
 #include <ork/lev2/gfx/renderphasestats.h> // MT0: peekMs("present-idle")
+#include <ork/lev2/gfx/gpupassstats.h>     // MT1: per-pass GPU slice publication
 #include <filesystem> // WS3 pipeline-cache dir creation (mac libc++ includes transitively; libstdc++ doesn't)
+#include <cstring>    // strncpy (per-pass slice names are copied, never referenced)
 
 #define USE_OIIO
 #if defined(USE_OIIO)
@@ -38,7 +40,6 @@ namespace ork::lev2::vulkan {
 
 static logchannel_ptr_t logchan_vkctx = logger()->configureChannel("VKCTX", fvec3(1,1,.9),false);
 static logchannel_ptr_t logchan_vkcap = logger()->configureChannel("VKCAPTURE", fvec3(1,1,.9),false);
-static logchannel_ptr_t logchan_vkprof = logger()->configureChannel("VKPROF", fvec3(0.1, 0.5, 0.9), true);
 
 // X1 external-GPU-requirements seam self-test (env-gated; see vulkan_vkimpl.cpp).
 static bool _extGpuSelfTestActive() {
@@ -407,6 +408,38 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     logchan_vkctx->log("Added VK_EXT_mesh_shader");
   }
 
+  // VK_EXT_host_query_reset (core in 1.2): lets the HOST recycle timestamp query
+  //  slots. REQUIRED by the always-on per-pass GPU timer — its slice writes come
+  //  from several command buffers, one of which (the compute interface's) submits
+  //  BEFORE the frame's primary CB, so a device-side reset recorded on the primary
+  //  CB would wipe timestamps already written. Requested wherever advertised;
+  //  VkGpuSliceTimer fails loudly at construction if the entrypoint is missing.
+  if (vk_devinfo->_extension_set.count(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME) > 0) {
+    _device_extensions.push_back(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME);
+    logchan_vkctx->log("Added VK_EXT_host_query_reset (per-pass GPU timing slot recycling)");
+  }
+
+  // VK_EXT_calibrated_timestamps: correlates a GPU tick with CLOCK_MONOTONIC so a
+  //  measured GPU span can be placed on the CPU timeline. Diagnostic only — absent,
+  //  the HUD's GPU page marks itself "uncal" instead of implying a shared timeline.
+  if (vk_devinfo->_extension_set.count(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) > 0) {
+    _device_extensions.push_back(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+    logchan_vkctx->log("Added VK_EXT_calibrated_timestamps");
+  }
+
+  // VK_KHR_maintenance5 (core in 1.4). Requested opportunistically because an
+  //  IN-PROCESS GUEST can need it on a device it did not create: an OpenXR runtime
+  //  loaded into this process builds ITS pipelines against OUR VkDevice, and a guest
+  //  may inline the SPIR-V as a VkShaderModuleCreateInfo chained off the pipeline stage
+  //  (no VkShaderModule object) — which IS the maintenance5 feature. OpenXR only lets
+  //  a runtime demand EXTENSIONS, never FEATURES, so nothing in the handshake asks for
+  //  this; unenabled, the guest's vkCreateGraphicsPipelines returns
+  //  VK_ERROR_INITIALIZATION_FAILED with no indication why.
+  if (vk_devinfo->_extension_set.count(VK_KHR_MAINTENANCE_5_EXTENSION_NAME) > 0) {
+    _device_extensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+    logchan_vkctx->log("Added VK_KHR_maintenance5");
+  }
+
   // X1 device-ext selftest leg (headless-observable): request one AVAILABLE device
   //  extension not already in the base set, injected into the backend-internal reqs
   //  slot EXACTLY like a real producer's would be, so the device-ext merge + the
@@ -414,6 +447,11 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   //  the XR device-ext merge (the OpenXR host_image_copy crash) could silently
   //  regress. Runs headless on any platform under ORKID_EXTGPU_SELFTEST=1.
   std::string _extgpu_selftest_dev_append;
+  // ...and a name NO implementation can advertise, to prove the availability filter drops
+  //  it INSTEAD of failing vkCreateDevice. This is the regression cover for the crash a
+  //  platform-mismatched XR runtime causes (a guest advertising its Linux dma-buf device
+  //  set on macOS): reaching the verdict line below at all means device creation survived.
+  static constexpr const char* _extgpu_selftest_dev_absent = "VK_ORKID_selftest_absent_ext";
   if (_extGpuSelfTestActive()) {
     for (const auto& avail : vk_devinfo->_extension_set) {
       bool in_base = false;
@@ -423,24 +461,60 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
     }
     if (not _extgpu_selftest_dev_append.empty())
       _externalGpuRequirementsMutable()->_deviceExtensions.push_back(_extgpu_selftest_dev_append);
+    _externalGpuRequirementsMutable()->_deviceExtensions.push_back(_extgpu_selftest_dev_absent);
     printf("ORKID_EXTGPU_SELFTEST: request append device ext <%s>\n", _extgpu_selftest_dev_append.c_str());
+    printf("ORKID_EXTGPU_SELFTEST: request absent device ext <%s>\n", _extgpu_selftest_dev_absent);
     fflush(stdout);
   }
 
   // X1: merge externally-required device extensions (e.g. XR's device ext list),
   //  deduping by name so the platform/portability device set is never disturbed.
   //  Neutral when nothing is registered.
+  //
+  //  AVAILABILITY-FILTERED (mirrors the instance-ext validation in vulkan_vkimpl): an
+  //  external producer advertises the set for the platform it was BUILT against, which
+  //  need not be this one. A Linux-built OpenXR runtime returns its Linux dma-buf import set
+  //  (external_memory_fd / external_semaphore_fd / external_memory_dma_buf /
+  //  image_drm_format_modifier / queue_family_foreign) on macOS too, where its own data
+  //  plane imports IOSurfaces through VK_EXT_metal_objects. One unsupported name makes
+  //  vkCreateDevice fail VK_ERROR_EXTENSION_NOT_PRESENT and takes the whole app down, so
+  //  anything the physical device does not advertise is dropped here.
+  //
+  //  Dropping is LOUD and NAMED, never silent: this engine cannot know whether the
+  //  producer merely over-advertised or genuinely needs the extension. If it needs one,
+  //  it traps later on a NULL proc inside its own table — and this line is the evidence
+  //  that says which name to look at.
   if (auto reqs = externalGpuRequirements()) {
+    std::vector<std::string> dropped;
     for (const auto& ext : reqs->_deviceExtensions) {
       bool already = false;
       for (auto e : _device_extensions)
         if (0 == strcmp(e, ext.c_str())) { already = true; break; }
       if (already) {
         logchan_vkctx->log("ext-gpu: device ext <%s> already present (dedup)", ext.c_str());
-      } else {
-        _device_extensions.push_back(ext.c_str());
-        logchan_vkctx->log("ext-gpu: merging external device ext <%s>", ext.c_str());
+        continue;
       }
+      if (0 == vk_devinfo->_extension_set.count(ext)) {
+        dropped.push_back(ext);
+        logchan_vkctx->log("ext-gpu: DROPPING unsupported external device ext <%s>", ext.c_str());
+        continue;
+      }
+      _device_extensions.push_back(ext.c_str());
+      logchan_vkctx->log("ext-gpu: merging external device ext <%s>", ext.c_str());
+    }
+    if (not dropped.empty()) {
+      std::string joined;
+      for (const auto& e : dropped) {
+        joined += e;
+        joined += " ";
+      }
+      printf(
+          "[VKDEV] WARNING: external producer required %zu device extension(s) NOT supported by <%s> -- DROPPED: %s\n",
+          dropped.size(),
+          vk_devinfo->_devprops.deviceName,
+          joined.c_str());
+      printf("[VKDEV]          (device creation proceeds; a producer that truly needs one fails later -- this is the name list)\n");
+      fflush(stdout);
     }
   }
 
@@ -466,6 +540,8 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   if (_extGpuSelfTestActive()) {
     bool present = (not _extgpu_selftest_dev_append.empty()) and (_enabled_dev_ext_set.count(_extgpu_selftest_dev_append) > 0);
     printf("ORKID_EXTGPU_SELFTEST: device ext append <%s> present=%d\n", _extgpu_selftest_dev_append.c_str(), present ? 1 : 0);
+    bool dropped = (0 == _enabled_dev_ext_set.count(_extgpu_selftest_dev_absent));
+    printf("ORKID_EXTGPU_SELFTEST: device ext absent <%s> dropped=%d\n", _extgpu_selftest_dev_absent, dropped ? 1 : 0);
     fflush(stdout);
   }
 
@@ -557,6 +633,50 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   };
   auto extEnabled = [&](const char* name) { return _enabled_dev_ext_set.count(name) > 0; };
 
+#ifdef VK_KHR_maintenance5
+  // Enabling the EXTENSION is not enough — like every promoted-to-core feature, the
+  //  maintenance5 bit must be chained at device creation or the functionality stays off.
+  VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Feat{};
+  initializeVkStruct(maintenance5Feat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR);
+  if (extEnabled(VK_KHR_MAINTENANCE_5_EXTENSION_NAME)) {
+    VkPhysicalDeviceFeatures2 probe{};
+    initializeVkStruct(probe, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+    probe.pNext = &maintenance5Feat;
+    vkGetPhysicalDeviceFeatures2(_vkphysicaldevice, &probe);
+    if (maintenance5Feat.maintenance5) {
+      appendExtFeature(&maintenance5Feat);
+      logchan_vkctx->log("ext-gpu: chaining VkPhysicalDeviceMaintenance5FeaturesKHR{maintenance5=TRUE}");
+    } else {
+      printf("[VKDEV] WARNING: VK_KHR_maintenance5 ENABLED but maintenance5 feature UNSUPPORTED on <%s> — an in-process "
+             "XR runtime that inlines shader modules will fail pipeline creation.\n",
+             _vkdeviceinfo->_devprops.deviceName);
+      fflush(stdout);
+    }
+  }
+#endif
+
+#ifdef VK_EXT_host_query_reset
+  // hostQueryReset is a promoted-to-core-1.2 feature: enabling the extension is not
+  //  enough, the bit must be chained here or vkResetQueryPool is illegal. The
+  //  always-on per-pass GPU timer requires it (see the ext request above).
+  VkPhysicalDeviceHostQueryResetFeaturesEXT hostQueryResetFeat{};
+  initializeVkStruct(hostQueryResetFeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_QUERY_RESET_FEATURES_EXT);
+  if (extEnabled(VK_EXT_HOST_QUERY_RESET_EXTENSION_NAME)) {
+    VkPhysicalDeviceFeatures2 probe{};
+    initializeVkStruct(probe, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2);
+    probe.pNext = &hostQueryResetFeat;
+    vkGetPhysicalDeviceFeatures2(_vkphysicaldevice, &probe);
+    if (hostQueryResetFeat.hostQueryReset) {
+      appendExtFeature(&hostQueryResetFeat);
+      logchan_vkctx->log("ext-gpu: chaining VkPhysicalDeviceHostQueryResetFeatures{hostQueryReset=TRUE}");
+    } else {
+      printf("[VKDEV] WARNING: VK_EXT_host_query_reset ENABLED but hostQueryReset feature UNSUPPORTED on <%s> — per-pass "
+             "GPU timing will fail loudly at context init.\n",
+             _vkdeviceinfo->_devprops.deviceName);
+      fflush(stdout);
+    }
+  }
+#endif
 #ifdef VK_EXT_host_image_copy
   VkPhysicalDeviceHostImageCopyFeaturesEXT hostImageCopyFeat{};
   initializeVkStruct(hostImageCopyFeat, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES_EXT);
@@ -709,6 +829,8 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
   }
 
   _fetchDeviceProcAddr(_vkSetDebugUtilsObjectName, "vkSetDebugUtilsObjectNameEXT");
+  _fetchDeviceProcAddr(_vkCmdBeginDebugUtilsLabelEXT, "vkCmdBeginDebugUtilsLabelEXT");
+  _fetchDeviceProcAddr(_vkCmdEndDebugUtilsLabelEXT, "vkCmdEndDebugUtilsLabelEXT");
 
   _initPipelineCache(); // WS3: seed the persisted pipeline cache (this ctx owns the device)
 
@@ -773,6 +895,35 @@ void VkContext::_initVulkanForDevInfo(vkdeviceinfo_ptr_t vk_devinfo) {
       int(mt_no_timestamps_env));
   if (_gpuTimestampsSupported) {
     _mtSliceTimer = std::make_shared<VkGpuSliceTimer>(_vkdevice, _vkdeviceinfo->_devprops.limits.timestampPeriod);
+    // Calibrated timestamps: only wire the entrypoint when the extension is enabled
+    //  AND the device actually calibrates the CLOCK_MONOTONIC domain — asking for a
+    //  domain it does not report is invalid usage, and a nonexistent correlation is
+    //  reported as "uncal" on the HUD rather than guessed at.
+    if (_enabled_dev_ext_set.count(VK_EXT_CALIBRATED_TIMESTAMPS_EXTENSION_NAME) > 0) {
+      auto fn_domains = (PFN_vkGetPhysicalDeviceCalibrateableTimeDomainsEXT)vkGetInstanceProcAddr(
+          _GVI->_instance, "vkGetPhysicalDeviceCalibrateableTimeDomainsEXT");
+      bool has_device = false, has_monotonic = false;
+      if (fn_domains) {
+        uint32_t count = 0;
+        fn_domains(_vkphysicaldevice, &count, nullptr);
+        std::vector<VkTimeDomainEXT> domains(count);
+        if (count)
+          fn_domains(_vkphysicaldevice, &count, domains.data());
+        for (auto d : domains) {
+          has_device |= (d == VK_TIME_DOMAIN_DEVICE_EXT);
+          has_monotonic |= (d == VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT);
+        }
+      }
+      if (has_device and has_monotonic) {
+        _mtSliceTimer->_vkGetCalibratedTimestamps =
+            (PFN_vkGetCalibratedTimestampsEXT)vkGetDeviceProcAddr(_vkdevice, "vkGetCalibratedTimestampsEXT");
+      }
+      logchan_vkctx->log(
+          "gpu timestamp calibration: %s (device_domain=%d monotonic_domain=%d)",
+          _mtSliceTimer->_vkGetCalibratedTimestamps ? "AVAILABLE" : "uncalibrated",
+          int(has_device),
+          int(has_monotonic));
+    }
   }
   _mtFrameWallTimer.Start();
 }
@@ -853,6 +1004,8 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _vkCmdDebugMarkerBeginEXT = context0->_vkCmdDebugMarkerBeginEXT;
     _vkCmdDebugMarkerEndEXT = context0->_vkCmdDebugMarkerEndEXT;
     _vkCmdDebugMarkerInsertEXT = context0->_vkCmdDebugMarkerInsertEXT;
+    _vkCmdBeginDebugUtilsLabelEXT = context0->_vkCmdBeginDebugUtilsLabelEXT;
+    _vkCmdEndDebugUtilsLabelEXT = context0->_vkCmdEndDebugUtilsLabelEXT;
     _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
     _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
     _vkCmdSetCullModeEXT = context0->_vkCmdSetCullModeEXT;
@@ -863,12 +1016,28 @@ void VkContext::_initVulkanForWindow(VkSurfaceKHR surface) {
     _device_extensions = context0->_device_extensions;
     _num_queue_types = context0->_num_queue_types;
     _DQCIs = context0->_DQCIs;
+    _inheritDeviceTimestampState(context0);
     _initVulkanCommon();
   }
   else{
     _initVulkanForDevInfo(vk_devinfo);
     _initVulkanCommon();
   }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_inheritDeviceTimestampState(vkcontext_rawptr_t src) {
+  // Timestamp SUPPORT is a property of the device + queue family, so it is inherited;
+  // the timer OBJECT is not (its query-pool ring is indexed by a per-context frame
+  // counter, and two contexts advancing one ring would read each other's slots).
+  _gpuTimestampsSupported = src->_gpuTimestampsSupported;
+  if (_gpuTimestampsSupported) {
+    _mtSliceTimer = std::make_shared<VkGpuSliceTimer>(_vkdevice, _vkdeviceinfo->_devprops.limits.timestampPeriod);
+    if (src->_mtSliceTimer)
+      _mtSliceTimer->_vkGetCalibratedTimestamps = src->_mtSliceTimer->_vkGetCalibratedTimestamps;
+  }
+  _mtFrameWallTimer.Start();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -893,6 +1062,8 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
     _vkCmdDebugMarkerBeginEXT = context0->_vkCmdDebugMarkerBeginEXT;
     _vkCmdDebugMarkerEndEXT = context0->_vkCmdDebugMarkerEndEXT;
     _vkCmdDebugMarkerInsertEXT = context0->_vkCmdDebugMarkerInsertEXT;
+    _vkCmdBeginDebugUtilsLabelEXT = context0->_vkCmdBeginDebugUtilsLabelEXT;
+    _vkCmdEndDebugUtilsLabelEXT = context0->_vkCmdEndDebugUtilsLabelEXT;
     _vkCmdBeginRenderingKHR = context0->_vkCmdBeginRenderingKHR;
     _vkCmdEndRenderingKHR = context0->_vkCmdEndRenderingKHR;
     _vkCmdSetCullModeEXT = context0->_vkCmdSetCullModeEXT;
@@ -902,6 +1073,7 @@ void VkContext::_initVulkanForOffscreen(DisplayBuffer* pBuf) {
     _device_extensions = context0->_device_extensions;
     _num_queue_types = context0->_num_queue_types;
     _DQCIs = context0->_DQCIs;
+    _inheritDeviceTimestampState(context0);
     _initVulkanCommon();
   }
   else{
@@ -1682,6 +1854,7 @@ void VkContext::_doExecuteInlineGpuJob(const void_lambda_t& record) {
   // beginFrame). Mirror of _pushRtGroup's STEP-1 teardown.
   if (_renderPassActive) {
     _vkCmdEndRenderingKHR(job_impl->_vkcmdbuf);
+    _gpuSliceClosePass(); // the open segment belongs to THIS job CB (primary_cb() is it)
     _renderPassActive    = false;
     _activeRenderPassRTG = nullptr;
   }
@@ -1827,20 +2000,19 @@ void VkContext::_doPreBeginFrame() {
   mRenderContextInstData = 0;
   _doBeginPrimaryCommandBuffer();
 
-  // begin gpu profiler frame after we have setup commandbuffer
-  // must use beginProfilerFrame overload to set cmdbuf for frame
-  VkProfilerChannel::BeginParams profiler_params = {
-    .device           = _vkdevice,
-    .timestamp_period = _vkdeviceinfo->_devprops.limits.timestampPeriod,
-    .cmdbuf           = primary_cb()->_vkcmdbuf,
-  };
-  OrkProfilerFrameBegin(CHANNEL_GPU, VkProfilerChannel, profiler_params);
+  // CHANNEL_GPU is a CPU-TIMELINE channel now: the device-side timing it used to
+  // carry moved to the always-on VkGpuSliceTimer below (whose numbers reach the
+  // player HUD's GPU page with no -DPROFILER=ON build). What the CHANNEL_GPU
+  // sample sites still measure under a profiler build is the HOST wall of each
+  // GPU-work block — useful for record cost, NOT a GPU measurement.
+  OrkProfilerFrameBegin(CHANNEL_GPU, CpuProfilerChannel);
   OrkProfilerSampleBegin(CHANNEL_GPU, SERIES_GPU_FRAME_ALL);
 
   // MT0 (JUL05_GPUMICROTASK §2.4): always-on GPU frame timer — independent of
   // ORK_PROFILER_ENABLE (T3). No-op when timestamps are unsupported (_mtSliceTimer==nullptr).
   if (_mtSliceTimer) {
     _mtSliceTimer->setCmdBuf(primary_cb()->_vkcmdbuf);
+    _mtSliceTimer->_sliceEnable = (meTargetType != TargetType::LOADING);
     _mtSliceTimer->beginFrame();
   }
 
@@ -1992,6 +2164,9 @@ void VkContext::_doEndFrame() {
   // offscreen — degrades to src=idle with idle_ms=0 rather than block/guess).
   {
     float gpu_ms  = _mtSliceTimer ? _mtSliceTimer->readbackFrameMs() : -1.0f;
+    // MT1: same lag-2 slot's PER-PASS slices -> GpuPassStats (the HUD's GPU page).
+    if (_mtSliceTimer)
+      _mtSliceTimer->readbackSlices(gpu_ms);
     float idle_ms = float(RenderPhaseStats::instance().peekMs("present-idle"));
     float cpu_ms  = float(_mtFrameWallTimer.SecsSinceStart() * 1000.0);
     _mtFrameWallTimer.Start();
@@ -2116,6 +2291,7 @@ void VkContext::initializeDRMContext(Window* pWin, CTXBASE* pctxbase) {
     _device_extensions         = share_ctx->_device_extensions;
     _num_queue_types           = share_ctx->_num_queue_types;
     _DQCIs                     = share_ctx->_DQCIs;
+    _inheritDeviceTimestampState(share_ctx);
     _initVulkanCommon();
   } else {
     _initVulkanForDevInfo(vk_devinfo);
@@ -2129,6 +2305,8 @@ void VkContext::initializeDRMContext(Window* pWin, CTXBASE* pctxbase) {
     _fetchDeviceProcAddr(_vkCmdDebugMarkerInsertEXT, "vkCmdDebugMarkerInsertEXT");
     _fetchDeviceProcAddr(_vkCmdInsertDebugUtilsLabelEXT, "vkCmdInsertDebugUtilsLabelEXT");
   }
+  _fetchDeviceProcAddr(_vkCmdBeginDebugUtilsLabelEXT, "vkCmdBeginDebugUtilsLabelEXT");
+  _fetchDeviceProcAddr(_vkCmdEndDebugUtilsLabelEXT, "vkCmdEndDebugUtilsLabelEXT");
   ///////////////////////
   auto drm_sc = std::make_shared<VkSwapChainDRM>(this, plato_drm->_drmctx);
   drm_sc->_buildup();
@@ -2667,6 +2845,8 @@ void VkContext::suspendRenderPass() {
   // End the current render pass
   auto& CB = primary_cb()->_vkcmdbuf;
   _vkCmdEndRenderingKHR(CB);
+  _gpuSliceClosePass(); // AFTER the end: a timestamp inside a multiview instance
+                        // would consume one query per view
 
   // Mark render pass as inactive but keep the RTG reference
   // so we know what to resume
@@ -2691,157 +2871,65 @@ void VkContext::resumeRenderPass() {
   
   // Use renderinfoForResume() which has LOAD ops and RESUMING bit
   auto rinfo = _activeRenderPassRTG->renderinfoForResume();
+  _gpuSliceOpenPass(_gpuSlicePassName); // BEFORE the begin (multiview rule); the
+                                        // resumed segment sums into the same name
   _vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
-  
+
   // Mark render pass as active again
   _renderPassActive = true;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// GPU Profiler Implementation
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// MT1 per-pass GPU slices on the primary CB. Both calls are placed by their
+// callers OUTSIDE any render-pass instance; the timer's null state (unsupported
+// timestamps) makes them no-ops.
+///////////////////////////////////////////////////////////////////////////////
 
-void VkProfilerChannel::frameBegin(BeginParams params) {
-  _recording = Profiler::enabled();
-  if (!_recording) [[unlikely]] return;
-  if (_device == VK_NULL_HANDLE) {
-    _device = params.device;
-    _tick_to_ms = double(params.timestamp_period) * 1e-6; // milliseconds per GPU tick
-
-    VkQueryPoolCreateInfo info = {
-      .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
-      .queryType = VK_QUERY_TYPE_TIMESTAMP,
-      .queryCount = MAX_GPU_PERF_QUERIES * 2, // 2 timestamps per block (begin + end)
-    };
-    OrkVkAssert(vkCreateQueryPool(_device, &info, nullptr, &_query_pool));
-  }
-
-  if (!_vk_span_stack.empty()) [[unlikely]] {
-    logchan_vkprof->log("frameBegin(%s) but _vk_span_stack not empty (size=%zu)! Ensure sampleEnd called. Or use sampleScope.",
-        _name.c_str(), _vk_span_stack.size());
-    while (!_vk_span_stack.empty()) {
-      logchan_vkprof->log("   stale entry: %s", _vk_span_stack.top().series->_name.c_str());
-      _vk_span_stack.pop();
-    }
-    _current_level = 0;
-  }
-
-  _cmdbuf = params.cmdbuf;
-  vkCmdResetQueryPool(_cmdbuf, _query_pool, 0, MAX_GPU_PERF_QUERIES * 2);
+void VkContext::_gpuSliceOpenPass(const std::string& name) {
+  if (name.empty())
+    return;
+  if (_gpuSlicePassOpen) [[unlikely]]
+    return; // a segment is already open (only one instance can be live)
+  _gpuSlicePassOpen   = true;
+  _gpuSlicePassName   = name;
+  auto& CB            = primary_cb()->_vkcmdbuf;
+  _debugLabelBegin(CB, name.c_str()); // the capture tool's copy of this bracket
+  _gpuSlicePassHandle = _mtSliceTimer ? _mtSliceTimer->sliceBegin(CB, name.c_str()) : -1;
 }
 
-void VkProfilerChannel::frameEnd() {
-  if (!_recording) [[unlikely]] return;
-  if (_cmdbuf == VK_NULL_HANDLE) [[unlikely]]{
-    logchan_vkprof->log("frameEnd(%s) called but frameBegin was never called! Skipping.", _name.c_str());
+void VkContext::_gpuSliceClosePass() {
+  if (not _gpuSlicePassOpen)
     return;
-  }
-  if (!_vk_span_stack.empty()) [[unlikely]] {
-    logchan_vkprof->log("frameEnd(%s) but _vk_span_stack not empty (size=%zu)! Ensure sampleEnd called! Or use sampleScope!",
-        _name.c_str(), _vk_span_stack.size());
-    while (!_vk_span_stack.empty()) {
-      logchan_vkprof->log("   leaked entry: %s", _vk_span_stack.top().series->_name.c_str());
-      _vk_span_stack.pop();
-    }
-    _current_level = 0;
-  }
-
-  _cmdbuf = VK_NULL_HANDLE;
-
-  // Readback timestamp queries
-  _timestamps.resize(_query_index);
-  VkResult ok = vkGetQueryPoolResults(_device, _query_pool, 0, _query_index, _query_index * sizeof(u64),
-      _timestamps.data(), sizeof(u64), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
-  OrkAssert(VK_SUCCESS == ok);
-  _query_index = 0;
-
-    // Accumulate isolated ticks from per-segment spans
-  for (auto& span : _vk_spans)
-      span.series->_isolated_ticks += _timestamps[span.end_query] - _timestamps[span.begin_query];
-  _vk_spans.clear();
-
-    // Accumulate total ticks from full-duration spans (begin_total_query -> end_query)
-  for (auto& span : _vk_total_spans)
-      span.series->_total_ticks += _timestamps[span.end_query] - _timestamps[span.begin_total_query];
-  _vk_total_spans.clear();
-
-  // accumulate in series through base call
-  ProfilerChannel::frameEnd();
+  _gpuSlicePassOpen = false;
+  auto& CB          = primary_cb()->_vkcmdbuf;
+  if (_mtSliceTimer and _gpuSlicePassHandle >= 0)
+    _mtSliceTimer->sliceEnd(CB, _gpuSlicePassHandle);
+  _gpuSlicePassHandle = -1;
+  _debugLabelEnd(CB);
 }
 
-void VkProfilerChannel::sampleBegin(SampleProfilerSeries* s) {
-  if (!_recording) [[unlikely]] return;
-  if (_cmdbuf == VK_NULL_HANDLE) [[unlikely]] {
-    logchan_vkprof->log("sampleBegin(%s::%s) called but frameBegin was never called! Skipping.", _name.c_str(), s->_name.c_str());
+///////////////////////////////////////////////////////////////////////////////
+// VK_EXT_debug_utils labels. Region-shaped and strictly paired by their callers (the
+// GPU-slice seams), which is what the extension requires of a begin/end pair.
+///////////////////////////////////////////////////////////////////////////////
+
+void VkContext::_debugLabelBegin(VkCommandBuffer cb, const char* name) {
+  if (not _vkCmdBeginDebugUtilsLabelEXT)
     return;
-  }
-  if (_query_index >= MAX_GPU_PERF_QUERIES) [[unlikely]] {
-    logchan_vkprof->log("sampleBegin(%s::%s) queries exhausted! Increase MAX_GPU_PERF_QUERIES or reduce samples per frame. Skipping.", _name.c_str(), s->_name.c_str());
-    return;
-  }
-  if (s->_call_level != -1) [[unlikely]] {
-    logchan_vkprof->log("sampleBegin(%s::%s) _call_level=%d already sampling! Ensure sampleEnd was called or use sampleScope. Skipping.",
-        _name.c_str(), s->_name.c_str(), s->_call_level);
-    return;
-  }
-
-  int current_query_index = _query_index++;
-  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, current_query_index);
-
-  s->_call_level = _current_level++;
-  s->_sampling   = true;
-  s->_call_count++;
-
-	// pause parent time by pushing a span which will end at the current query index
-  if (!_vk_span_stack.empty()) {
-    auto& parent = _vk_span_stack.top();
-    _vk_spans.push_back({ .series = parent.series, .begin_query = parent.begin_query, .end_query = current_query_index });
-  }
-
-  _vk_span_stack.push({ .series = s, .begin_total_query = current_query_index, .begin_query = current_query_index, .end_query = -1 });
+  VkDebugUtilsLabelEXT label{};
+  initializeVkStruct(label, VK_STRUCTURE_TYPE_DEBUG_UTILS_LABEL_EXT);
+  label.pLabelName = name;
+  _vkCmdBeginDebugUtilsLabelEXT(cb, &label);
 }
- 
-void VkProfilerChannel::sampleEnd(SampleProfilerSeries* s) {
-  if (!_recording) [[unlikely]] return;
-  if (_cmdbuf == VK_NULL_HANDLE) [[unlikely]] {
-    logchan_vkprof->log("sampleEnd(%s::%s) called but frameBegin was never called! Skipping.", _name.c_str(), s->_name.c_str());
+
+void VkContext::_debugLabelEnd(VkCommandBuffer cb) {
+  if (not _vkCmdEndDebugUtilsLabelEXT)
     return;
-  }
-  if (s->_call_level == -1) [[unlikely]] {
-    logchan_vkprof->log("sampleEnd(%s::%s) but _call_level=-1 not sampling! Ensure sampleBegin was called or use sampleScope! Skipping.",
-        _name.c_str(), s->_name.c_str());
-    return;
-  }
-
-  int current_query_index = _query_index++;
-  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, current_query_index);
-
-  while (!_vk_span_stack.empty()) {
-    auto& top = _vk_span_stack.top();
-    auto  top_series = top.series;
-
-    _vk_total_spans.push_back({ .series = s,          .begin_total_query = top.begin_total_query, .end_query = current_query_index });
-    _vk_spans.push_back(      { .series = top_series, .begin_query       = top.begin_query,       .end_query = current_query_index });
-    top_series->_max_call_level = std::max(top_series->_max_call_level, _current_level);
-    top_series->_call_level     = -1;
-    top_series->_sampling       = false;
-    _current_level--;
-    OrkAssertI(_current_level >= 0, "VkProfilerChannel _current_level should never go below 0!");
-    _vk_span_stack.pop();
-
-    // resume parent
-    if (!_vk_span_stack.empty())
-      _vk_span_stack.top().begin_query = current_query_index;
-
-		// pop and end samples for all children of passed in series
-    if (top_series == s)
-      return;
-  }
-  logchan_vkprof->log("sampleEnd(%s::%s) beginSample never called for this series!", _name.c_str(), s->_name.c_str());
+  _vkCmdEndDebugUtilsLabelEXT(cb);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// MT0 GPU Slice Timer Implementation (JUL05_GPUMICROTASK §2.4)
+// MT0/MT1 GPU Slice Timer Implementation (JUL05_GPUMICROTASK §2.4)
 //   Always-on — no ORK_PROFILER_ENABLE dependency (T3). Only instantiated when
 //   the T2 caps guard (VkContext::_initVulkanForDevInfo) found real timestamp
 //   support, so every method here can assume a valid, working query pool.
@@ -2856,6 +2944,27 @@ VkGpuSliceTimer::VkGpuSliceTimer(VkDevice device, float timestamp_period_ns)
     .queryCount = kNumQueries,
   };
   OrkVkAssert(vkCreateQueryPool(_device, &info, ORK_VK_ALLOC, &_query_pool));
+  for (uint32_t i = 0; i < kRingDepth; i++) {
+    _sliceCursor[i].store(0);
+    _sliceDropped[i].store(0);
+  }
+  // Host query reset — the slice region's HARD requirement (see the declaration).
+  // Proc-loaded rather than link-called: the core-1.2 name and the pre-promotion EXT
+  // name are the same command, and which one a given loader exports depends on the
+  // device's api version.
+  _vkResetQueryPool = (PFN_vkResetQueryPool)vkGetDeviceProcAddr(_device, "vkResetQueryPool");
+  if (not _vkResetQueryPool)
+    _vkResetQueryPool = (PFN_vkResetQueryPool)vkGetDeviceProcAddr(_device, "vkResetQueryPoolEXT");
+  OrkAssertI(
+      _vkResetQueryPool != nullptr,
+      "VkGpuSliceTimer: no vkResetQueryPool entrypoint — the hostQueryReset feature was not enabled at device "
+      "creation, and per-pass GPU timing cannot recycle its query slots without it");
+  // vkCreateQueryPool leaves every query UNINITIALIZED, not reset — and the recycling
+  // reset below only runs at a slot's lag-2 readback, which is AFTER that slot's first
+  // write. So the first pass through the ring wrote unreset queries
+  // (VUID-vkCmdWriteTimestamp-None-00830, observed on the slice indices of ring slots 1
+  // and 2). Reset the WHOLE pool once, here, so every query's first use is legal.
+  _vkResetQueryPool(_device, _query_pool, 0, kNumQueries);
 }
 
 VkGpuSliceTimer::~VkGpuSliceTimer() {
@@ -2870,6 +2979,127 @@ VkGpuSliceTimer::~VkGpuSliceTimer() {
     vkDestroyQueryPool(_device, _query_pool, ORK_VK_ALLOC);
 }
 
+int VkGpuSliceTimer::sliceBegin(VkCommandBuffer cb, const char* name) {
+  if (cb == VK_NULL_HANDLE or not name or not _sliceEnable) [[unlikely]]
+    return -1;
+  uint64_t frame = _frameCounter.load(std::memory_order_relaxed);
+  uint32_t slot  = uint32_t(frame % kRingDepth);
+  uint32_t idx   = _sliceCursor[slot].fetch_add(1, std::memory_order_relaxed);
+  if (idx >= kMaxSlices) [[unlikely]] {
+    _sliceDropped[slot].fetch_add(1, std::memory_order_relaxed);
+    return -1; // budget spent — counted and published, never fatal
+  }
+  auto& ss = _sliceSlots[slot][idx];
+  strncpy(ss._name, name, kSliceNameMax - 1);
+  ss._name[kSliceNameMax - 1] = 0;
+  uint32_t q = kSliceQueryBase + (slot * kMaxSlices + idx) * 2;
+  vkCmdWriteTimestamp(cb, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, q);
+  return int(q);
+}
+
+void VkGpuSliceTimer::sliceEnd(VkCommandBuffer cb, int handle) {
+  if (handle < 0 or cb == VK_NULL_HANDLE)
+    return;
+  vkCmdWriteTimestamp(cb, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, uint32_t(handle) + 1);
+}
+
+void VkGpuSliceTimer::readbackSlices(float gpu_frame_ms) {
+  // Same lag-2 never-waiting discipline as readbackFrameMs. A slice pair that is
+  // not yet available (or was opened by a phase that never submitted) reads
+  // avail=0 and is skipped — the row keeps its age on the HUD, which is the honest
+  // report of "no fresh measurement".
+  // ORKID_MT_TRACE=2: which context is publishing, and how many segments it saw —
+  // the "GPU page shows one 0.00ms row" class is exactly a wrong-context publish.
+  static const bool s_slicetrace = []() {
+    const char* v = std::getenv("ORKID_MT_TRACE");
+    return v && v[0] == '2';
+  }();
+  if (not _sliceEnable) {
+    if (s_slicetrace) [[unlikely]] {
+      static int s_n = 0;
+      if ((s_n++ & 1023) == 0)
+        printf("[gpuslice] timer<%p> DISABLED (loading context)\n", (void*)this);
+    }
+    return; // not this context's page to publish (see _sliceEnable)
+  }
+  uint64_t frame = _frameCounter.load(std::memory_order_relaxed);
+  if (frame < 3)
+    return;
+  uint32_t slot  = uint32_t((frame - 2) % kRingDepth);
+  if (s_slicetrace) [[unlikely]] {
+    static int s_n = 0;
+    if ((s_n++ & 63) == 0)
+      printf("[gpuslice] timer<%p> frame=%llu slot=%u segments=%u frame_ms=%.3f\n",
+             (void*)this, (unsigned long long)frame, slot,
+             _sliceCursor[slot].load(std::memory_order_relaxed), gpu_frame_ms);
+  }
+  uint32_t count = std::min(kMaxSlices, _sliceCursor[slot].load(std::memory_order_relaxed));
+  if (count) {
+    std::vector<uint64_t> res(size_t(count) * 4, 0); // [value, avail] per query, 2 queries per slice
+    VkResult ok = vkGetQueryPoolResults(
+        _device,
+        _query_pool,
+        kSliceQueryBase + slot * kMaxSlices * 2,
+        count * 2,
+        res.size() * sizeof(uint64_t),
+        res.data(),
+        2 * sizeof(uint64_t),
+        VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+    // VK_NOT_READY is the normal partial answer here (some pairs unavailable) — the
+    // per-pair availability bits below decide, not the aggregate result.
+    if (ok == VK_SUCCESS or ok == VK_NOT_READY) {
+      auto& sink = GpuPassStats::instance();
+      for (uint32_t i = 0; i < count; i++) {
+        uint64_t b = res[size_t(i) * 4 + 0], ba = res[size_t(i) * 4 + 1];
+        uint64_t e = res[size_t(i) * 4 + 2], ea = res[size_t(i) * 4 + 3];
+        if (not ba or not ea or e < b)
+          continue;
+        sink.add(_sliceSlots[slot][i]._name, double(e - b) * _tickToMs);
+      }
+    }
+  }
+  // HOST reset of this slot's ENTIRE range + cursor: the slot is next written two
+  // frames from now, and its writers (compute CBs submitted BEFORE the frame CB,
+  // one-shot XR blit CBs submitted after it) make a device-side cmd reset unsafe.
+  //
+  // The range is the slot's FULL kMaxSlices pairs, never the cursor extent that was
+  // actually used: the next pass through this slot may open MORE slices than this one
+  // did, and every query it writes must already be reset.
+  //
+  // The cursor is cleared HERE AND ONLY HERE, immediately after the reset — that pairing
+  // is the invariant that keeps a frame whose readback never ran (a skipped/aborted
+  // frame) from rewriting an unreset query: its cursor keeps advancing into
+  // still-reset ground, and overflow drops instead of aliasing.
+  _vkResetQueryPool(_device, _query_pool, kSliceQueryBase + slot * kMaxSlices * 2, kMaxSlices * 2);
+  // ...and the slot's FRAME pair, already read by readbackFrameMs above. beginFrame's
+  // cmd-reset of the same pair stays: it is the only reset the loading context gets
+  // (this function returns before here for it) and it covers a frame whose readback
+  // was skipped.
+  _vkResetQueryPool(_device, _query_pool, kFrameQueryBase + slot * 2, 2);
+  int dropped = int(_sliceDropped[slot].exchange(0, std::memory_order_relaxed));
+  _sliceCursor[slot].store(0, std::memory_order_relaxed);
+
+  // Calibration sample (once per frame, cheap): the offset that maps a raw GPU tick
+  // onto CLOCK_MONOTONIC. Absent extension => _calibrated=false and the HUD shows
+  // "uncal" rather than implying the spans share the CPU timeline.
+  bool   calibrated = false;
+  double cal_offset_ns = 0.0;
+  if (_vkGetCalibratedTimestamps) {
+    VkCalibratedTimestampInfoEXT infos[2] = {};
+    infos[0].sType      = VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT;
+    infos[0].timeDomain = VK_TIME_DOMAIN_DEVICE_EXT;
+    infos[1].sType      = VK_STRUCTURE_TYPE_CALIBRATED_TIMESTAMP_INFO_EXT;
+    infos[1].timeDomain = VK_TIME_DOMAIN_CLOCK_MONOTONIC_EXT;
+    uint64_t ts[2]      = {0, 0};
+    uint64_t maxdev     = 0;
+    if (VK_SUCCESS == _vkGetCalibratedTimestamps(_device, 2, infos, ts, &maxdev)) {
+      calibrated    = true;
+      cal_offset_ns = double(ts[1]) - double(ts[0]) * (_tickToMs * 1.0e6);
+    }
+  }
+  GpuPassStats::instance().commit(gpu_frame_ms, 2, dropped, calibrated, cal_offset_ns);
+}
+
 void VkGpuSliceTimer::beginFrame() {
   OrkAssertI(_cmdbuf != VK_NULL_HANDLE, "VkGpuSliceTimer::beginFrame: setCmdBuf() must be called first");
   // THE COUNTER ADVANCES HERE AND ONLY HERE. The first linux gate run proved
@@ -2878,19 +3108,21 @@ void VkGpuSliceTimer::beginFrame() {
   // acquire failures / resizes / non-visual frames) — reads then poll slots
   // that are never written and availability stays 0 forever. Keyed solely off
   // begin, readback is always lag-2 from the NEWEST write, cadence-proof.
-  _frameCounter++;
+  uint64_t frame = _frameCounter.fetch_add(1, std::memory_order_relaxed) + 1;
   // Reset ONLY this frame's ring slot (pair): it was last written kRingDepth
-  // frames ago and read (or abandoned) at lag-2 — never still in flight.
-  uint32_t slot = uint32_t(_frameCounter % kRingDepth);
-  vkCmdResetQueryPool(_cmdbuf, _query_pool, slot * 2, 2);
-  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, slot * 2);
+  // frames ago and read (or abandoned) at lag-2 — never still in flight. The FRAME
+  // pair is written from the primary CB alone, so a device-side reset here is
+  // correctly ordered (the SLICE region is host-reset instead — see readbackSlices).
+  uint32_t slot = uint32_t(frame % kRingDepth);
+  vkCmdResetQueryPool(_cmdbuf, _query_pool, kFrameQueryBase + slot * 2, 2);
+  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, kFrameQueryBase + slot * 2);
 }
 
 void VkGpuSliceTimer::endFrame() {
   if (_cmdbuf == VK_NULL_HANDLE) [[unlikely]]
     return;
-  uint32_t slot = uint32_t(_frameCounter % kRingDepth);
-  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, slot * 2 + 1);
+  uint32_t slot = uint32_t(_frameCounter.load(std::memory_order_relaxed) % kRingDepth);
+  vkCmdWriteTimestamp(_cmdbuf, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, _query_pool, kFrameQueryBase + slot * 2 + 1);
 }
 
 float VkGpuSliceTimer::readbackFrameMs() {
@@ -2898,12 +3130,13 @@ float VkGpuSliceTimer::readbackFrameMs() {
   // here wedged RADV/amdgpu in kernel dma_fence_wait). WITH_AVAILABILITY at
   // stride 16 lays out [value, avail] per query. Does NOT advance the counter
   // (begin owns it) — safe to call at any cadence relative to beginFrame.
-  if (_frameCounter < 3)
+  uint64_t frame = _frameCounter.load(std::memory_order_relaxed);
+  if (frame < 3)
     return -1.0f;
-  uint32_t slot   = uint32_t((_frameCounter - 2) % kRingDepth);
+  uint32_t slot   = uint32_t((frame - 2) % kRingDepth);
   uint64_t res[4] = {0, 0, 0, 0};
   VkResult ok     = vkGetQueryPoolResults(
-      _device, _query_pool, slot * 2, 2,
+      _device, _query_pool, kFrameQueryBase + slot * 2, 2,
       sizeof(res), res, 2 * sizeof(uint64_t),
       VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
   // ORKID_MT_TRACE=2: raw-read diagnostics (rate-limited) for on-target triage
@@ -2916,7 +3149,7 @@ float VkGpuSliceTimer::readbackFrameMs() {
     static int s_count = 0;
     if ((s_count++ & 63) == 0)
       printf("[gpumt-raw] frame=%llu slot=%u vkres=%d ts=(%llu,%llu) avail=(%llu,%llu)\n",
-             (unsigned long long)_frameCounter, slot, int(ok),
+             (unsigned long long)frame, slot, int(ok),
              (unsigned long long)res[0], (unsigned long long)res[2],
              (unsigned long long)res[1], (unsigned long long)res[3]);
   }

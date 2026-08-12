@@ -8,6 +8,7 @@
 #pragma once
 #include <ork/util/crc.h>
 #include <ork/reflect/enum_serializer.inl>
+#include <string>
 
 namespace ork::lev2 {
 
@@ -467,6 +468,37 @@ inline StorageBufferUsage operator|(StorageBufferUsage a, StorageBufferUsage b) 
 inline bool operator&(StorageBufferUsage a, StorageBufferUsage b) { // membership test
   return (uint32_t(a) & uint32_t(b)) != 0;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// SUN-CASCADE CULLSETS — the caster FAMILY a drawable belongs to.
+//
+// A sun cullset is a NAMED list of families; each cascade band subscribes to one
+// cullset, is culled against that cullset's own volume, and draws only that
+// cullset's families (see DirectionalLightData::_shadowCullSets). The family is
+// a property of the DRAWABLE, not of its C++ type: producers stamp their own
+// (terrain, the instanced GPU-culled scatterers), everything else is OTHER, so
+// classification is one enum read at enqueue time rather than a type switch.
+//
+// The token set is CLOSED — an unknown token in an authored cullset is an error,
+// never a silently-empty family (a mis-spelled family that quietly matched
+// nothing would read as "the shadows are broken").
+///////////////////////////////////////////////////////////////////////////////
+
+enum class ShadowFamily : uint32_t {
+  OTHER     = 0, // props, models, particles — anything with no GPU cull of its own
+  TERRAIN   = 1, // the terrain chunk drawable
+  INSTANCED = 2, // GPU-culled instanced scatterers (hypermesh instances, instanced rigid prims)
+};
+static constexpr uint32_t kShadowFamilyCount = 3;
+static constexpr uint32_t kShadowFamilyAll   = 0x7; // every bit of the three above
+
+inline uint32_t shadowFamilyBit(ShadowFamily f) {
+  return 1u << uint32_t(f);
+}
+// token <-> family (drawable.cpp). Returns false for an unknown token — the
+// caller fails loud with the offending spelling.
+const char* shadowFamilyToken(ShadowFamily f);
+bool shadowFamilyFromToken(const std::string& tok, ShadowFamily& out);
 
 ///////////////////////////////////////////////////////////////////////////////
 } // namespace ork::lev2

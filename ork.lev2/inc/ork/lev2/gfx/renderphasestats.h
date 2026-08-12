@@ -22,6 +22,7 @@
 #include <atomic>
 #include <cstdint>
 #include <ork/kernel/timer.h>
+#include <ork/lev2/gfx/nvtxshim.h> // the same phase names, into an attached GPU profiler
 
 namespace ork::lev2 {
 
@@ -86,6 +87,8 @@ struct CullCounts {
   bool     hyper_valid = false;
   int      h_variants = 0;
   uint64_t h_total = 0, h_frustum = 0, h_visible = 0, h_occluded = 0;
+  bool     grass_valid  = false; // grass task stage: mesh workgroups emitted this frame
+  uint32_t g_workgroups = 0;     //  (the compaction's whole point — the picture can't report it)
 };
 
 class CullStats {
@@ -112,6 +115,13 @@ public:
     _accum.h_visible += visible;
     _accum.h_occluded += occluded;
   }
+  // grass reads its stats SSBO at a frame boundary (lag-1), so this lands once per frame
+  // as an absolute per-frame figure rather than an accumulation.
+  void setGrassWorkgroups(uint32_t wg) {
+    std::lock_guard<std::mutex> lk(_mtx);
+    _accum.grass_valid  = true;
+    _accum.g_workgroups = wg;
+  }
   void commit() {
     std::lock_guard<std::mutex> lk(_mtx);
     _published = _accum;
@@ -128,17 +138,21 @@ private:
   CullCounts        _accum, _published;
 };
 
-// scoped wall-time timer that feeds a named phase
+// Scoped wall-time timer that feeds a named phase. Also the engine's NVTX range
+// emitter: every phase a reader can see on the HUD carries THE SAME NAME on a profiler
+// timeline, for free when no profiler is attached (nvtxshim.h).
 struct RenderPhaseScope {
   const char* _name;
   uint64_t    _t0;
   RenderPhaseScope(const char* n)
       : _name(n)
       , _t0(Timer::getSystemTick()) {
+    nvtxPush(_name);
   }
   ~RenderPhaseScope() {
     double ms = double(Timer::getSystemTick() - _t0) * 1.0e-6; // ns -> ms
     RenderPhaseStats::instance().add(_name, ms);
+    nvtxPop();
   }
 };
 

@@ -109,6 +109,11 @@ uniform_block ublk_std_pbr(descriptor_set 0) {
   // already crossfaded on the CPU (see lib_env_sh). Procedural probe or
   // authored map — one pipeline, one seam (CommonStuff::envSHCoeffs).
   vec4 EnvSH[9];              // 0xa0 .. 0x130
+  // DIRECT DIFFUSE BRDF selector — an ordinal into lib_brdf::diffuseBRDF
+  // (0 lambert / 1 oren-nayar / 2 burley), NOT a crc. Appended at the END so
+  // every std140 offset above is unchanged. Bound on every PBR draw by
+  // createBasicStateLambda, from CommonStuff::_diffuseBrdfModel.
+  int DiffuseBrdfModel;       // 0x1e0
 }
 
 ///////////////////////////////////////////////////////////////
@@ -295,21 +300,31 @@ uniform_block ublk_std_lighting (descriptor_set 0) {
 // has_sun (sun_dir.w) gates ALL sun work — sunless scenes take a no-op
 // branch before any sampling (byte-identity contract).
 uniform_block ublk_sun (descriptor_set 0) {
-  mat4 sun_shadow_matrix[4];  // per-cascade proj*view (storage 4; runtime 2..4)
-  vec4 sun_split_distances;   // per-band SELECT radius (world meters from the anchor below)
+  mat4 sun_shadow_matrix[5];  // per-cascade proj*view (storage 5; runtime 2..5)
+  // PER-BAND SCALAR TABLES COME IN vec4 PAIRS. A vec4 holds four of them and the
+  // ladder reserves five, so every such table is a base vec4 (bands 0..3) plus a
+  // _hi vec4 whose .x is band 4. Read them through lib_sun_air's
+  // _sun_band_value(lo, hi, i) — indexing either half directly is how the two
+  // sides drift. (float[5] was the alternative and std140 pads it to 80 bytes.)
+  vec4 sun_split_distances;   // per-band SELECT radius (world meters from the anchor below), bands 0..3
+  vec4 sun_split_distances_hi;// ... band 4 in x
   vec4 sun_dir;               // xyz = sunlight travel direction, w = has_sun
   vec4 sun_color;             // rgb = color, w = intensity
-  vec4 sun_shadow_params;     // x = bias(ndc), y = pcf radius(texels), z = cascade count, w = texel size(uv)
+  vec4 sun_shadow_params;     // x = constant depth bias in WORLD METRES (the evaluator divides it by
+                              // the band's own fitted depth range — one slack distance for every band,
+                              // which an ndc constant cannot be), y = pcf radius(texels),
+                              // z = cascade count, w = texel size(uv)
   vec4 sun_cascade_basis;     // xyz = BAND ANCHOR (viewer position the world bands were fit around,
                               // mono prologue cam). NOTHING here may carry an orientation — the bands
                               // are view-independent and a turn must stay free.
-  vec4 sun_cascade_texel;     // per-band 1/dim. PER-BAND RESOLUTION (S2b): the array is one allocation
+  vec4 sun_cascade_texel;     // bands 0..3 1/dim. PER-BAND RESOLUTION (S2b): the array is one allocation
                               // at the near band's dim (= sun_shadow_params.w) and an outer band is
                               // rendered into the top-left dim² corner of its slice, so that band's uv
                               // scale is sun_shadow_params.w/sun_cascade_texel[i] and its WORLD texel
-                              // size derives from sun_cascade_texel[i]. All four equal
+                              // size derives from sun_cascade_texel[i]. All of them equal
                               // sun_shadow_params.w = every band full dim = the shipped path, scale 1.
-                              // (This vec4 sits where sun_cascade_basis[1] was reserved — same offsets.)
+                              // (This vec4 sits where sun_cascade_basis[1] was reserved.)
+  vec4 sun_cascade_texel_hi;  // ... band 4's 1/dim in x
   // DIRECTIONAL COOKIE (cloud shadows). Cookies were spot-only; the sun needs one
   // because a cloud deck occludes the whole world, not a cone, and it sits far
   // outside any cascade. The cookie is a TRANSMITTANCE map in the light's own
@@ -337,6 +352,7 @@ uniform_block ublk_sun (descriptor_set 0) {
   // failed -> the whole crossfade sampled as unshadowed). With the array last
   // there is nothing after it and both rules agree on every member.
   vec4 sun_split_distances_prev;
+  vec4 sun_split_distances_prev_hi; // ... band 4 in x
   vec4 sun_cascade_basis_prev; // xyz = the PREVIOUS snapshot's band anchor
   vec4 sun_shadow_fade;        // x = prev weight (0=current only), y = current slice base,
                                // z = prev slice base, w = unused
@@ -348,14 +364,25 @@ uniform_block ublk_sun (descriptor_set 0) {
   // and anything that reads "is it night" off it is keyed to the wrong body.
   // Written on EVERY path of the prologue write, sunless ones included.
   vec4 sky_ambient;           // x = background luminance, yzw = unused
-  mat4 sun_shadow_matrix_prev[4];
+  // HOW MUCH OF EACH SHADOW FACTOR THE AMBIENT/IBL TERM TAKES. A shadow factor
+  // scales the DIRECT beam; whether the sky term goes with it depends on the
+  // solid angle the occluder covers. A CLOUD covers a broad wedge of sky, so
+  // its cookie must pull the env term down or it is invisible in a frame the
+  // env term dominates. A TREE covers the sun disc, so the cascade must not
+  // (an asserted invariant — the shadow-attribution gate). Applied to BOTH env
+  // channels as mix(1, 1 - coverage, weight) for the cloud (the sky grades with
+  // how much of the dome the deck takes) and mix(1, factor, weight) for the
+  // cascade.
+  vec4 sun_shadow_ibl_weights; // x = cloud cookie -> IBL, y = cascade -> IBL, zw = unused
+  mat4 sun_shadow_matrix_prev[5];
 
 }
 ///////////////////////////////////////////////////////////////
 sampler_set sset_sun (descriptor_set 0) {
   sampler2DArray sun_shadow_map; // Z32F cascade depth array (dedicated, not the spot cookie array;
-                                 // 2 sets of kSunCascadeStorage slices when a flip crossfade or an
-                                 // amortized snapshot is armed — see sun_shadow_fade)
+                                 // 2 sets of RUNTIME-BAND-COUNT slices when a flip crossfade or an
+                                 // amortized snapshot is armed — the set base arrives in
+                                 // sun_shadow_fade.yz, never assumed from the storage ceiling)
   sampler2D sun_cookie;          // A = cloud OCCLUSION toward the sun (0 = unoccluded;
                                  // transmittance is 1-a). RGB is the decks' own radiance,
                                  // carried only so the map is legible in a dump.

@@ -451,7 +451,7 @@ def erode_thermal(node, *packs, iterations=40, blend=1.0, name=None, **overrides
     return _blend_out(node, TerrainNode(m, m.outputs.Out), blend)
 
 
-def erox(node, *packs, blend=1.0, name=None, **overrides):
+def erox(node, *packs, erodibility=None, blend=1.0, name=None, **overrides):
     """PHYSICAL hydraulic erosion (Mei et al. virtual-pipes) in METERS / SECONDS, so the
     bake is RESOLUTION-INDEPENDENT. Heights are TRUE METERS; cell_size_m = extent_m/dim
     (real slope = rise_m/run_m); the timestep dt is CFL-derived
@@ -467,21 +467,49 @@ def erox(node, *packs, blend=1.0, name=None, **overrides):
       capacity_Kc           sediment carrying-capacity coeff (C = Kc*sin(slope)*|velocity|)
       erosion_rate_per_s    dissolve rate (terrain -> suspended sediment when under capacity)
       deposition_rate_per_s settle rate (sediment -> terrain when over capacity)
-      creep_m2ps            hillslope creep / numerical diffusion (m^2/s) — also the
-                            anti-checkerboard stabilizer (a central-difference slope is
-                            blind to the Nyquist mode, so per-cell erosion needs it)
+      creep_m2ps            hillslope creep — a PHYSICAL diffusivity (m^2/s)
+      bed_clamp_frac        per-step bed change as a fraction of the LOCAL RELIEF
+      creep_max_cells       creep smoothing-length CEILING, in cells
     Cost is ~O(dim^3) for fixed sim_time_s (iterations grow with dim); the cook cache
     amortizes re-bakes.
+
+    STABILITY — two laws, both derived per-bake from (cell_size, sim_time_s):
+      * `bed_clamp_frac` bounds one step's bed change to that fraction of the local relief
+        (down = height above the lowest neighbour, up = height below the highest), the same
+        guard flow_erode carries. It is what makes the grid-axis 2-cell mode DECAY rather
+        than ring — a checkerboard peak may only carve, a pit may only fill — so creep no
+        longer has to double as the anti-checkerboard stabilizer. 0 disables the limit.
+      * `creep_max_cells` caps the EFFECTIVE creep so one pass never diffuses further than
+        that many CELLS: a physical diffusivity smooths the same number of METERS at every
+        resolution, which erases everything a fine grid could resolve. Coarse grids sit
+        under the cap and keep the authored creep verbatim; raise it for a softer, more
+        resolution-independent result, lower it for sharper rills on a fine grid.
+
+    `erodibility` is an OPTIONAL per-cell FIELD (TerrainNode) multiplying erosion_rate_per_s
+    cell-by-cell — the stratigraphy hook: hard beds resist and stand out as ledges while soft
+    beds cut back, so one layer field drives silhouette AND material. DIMENSIONLESS: 1.0 = the
+    uniform rate (== leaving it unwired, bit-for-bit), 0 = armored, >1 = softer than nominal;
+    clamped to [0,16]. Deposition is NOT scaled (only the carving term). e.g.
+
+        hard = T.band(layer_phase, 0.0, 0.5, soft=0.05)          # 1 in the hard beds
+        h    = T.erox(h, **EROX, erodibility=T.mix(1.0, 0.15, hard))
+
     PARAMS may be supplied as keyword args (e.g. capacity_Kc=2.0), via one or more
     ParamPacks (T.erox(node, pack)), or both (explicit kwargs override packs); unspecified
     params keep their defaults. Defaults: sim_time_s=60, rain_mps=0.05, evaporation_per_s=0.05,
     flow_speed_max_mps=8, capacity_Kc=1, erosion_rate_per_s=1, deposition_rate_per_s=1,
-    creep_m2ps=4."""
+    creep_m2ps=4, bed_clamp_frac=0.5, creep_max_cells=4."""
     g = graph_or_raise("Erox")
     if not isinstance(node, TerrainNode):
         raise TypeError(f"erox expects a terrain node; got {type(node).__name__}")
+    if erodibility is not None and not isinstance(erodibility, TerrainNode):
+        raise TypeError(f"erox: erodibility must be a terrain node (a per-cell field); "
+                        f"got {type(erodibility).__name__} — for a uniform strength use "
+                        f"erosion_rate_per_s=")
     m = g.create(name or anon_name("erox", g), _terrain.EroxModule)
     g.connect(m.inputs.In, node.output_plug)
+    if erodibility is not None:
+        g.connect(m.inputs.Erodibility, erodibility.output_plug)
     _apply_packs(m, packs, overrides)
     return _blend_out(node, TerrainNode(m, m.outputs.Out), blend)
 

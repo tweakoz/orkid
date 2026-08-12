@@ -41,6 +41,20 @@ fmtx4 composeHeadViewMatrix(const fmtx4& rig_view_matrix) {
   return fmtx4::multiply_ltor(rig_view_matrix, fmtx4::multiply_ltor(dev->_baseMatrix, hmd));
 }
 ////////////////////////////////////////////////////////////////////////////////
+VrEyeViews composeEyeViewMatrices(
+    const fmtx4& usermtx, //
+    const fmtx4& basemtx,
+    const fmtx4& hmd,
+    const fmtx4& eyeL,
+    const fmtx4& eyeR) {
+  VrEyeViews v;
+  v._rel    = fmtx4::multiply_ltor(basemtx, hmd);
+  v._center = fmtx4::multiply_ltor(usermtx, v._rel);
+  v._left   = fmtx4::multiply_ltor(v._center, eyeL);
+  v._right  = fmtx4::multiply_ltor(v._center, eyeR);
+  return v;
+}
+////////////////////////////////////////////////////////////////////////////////
 ork::LockedResource<VrTrackingNotificationReceiver_set> gnotifset;
 ////////////////////////////////////////////////////////////////////////////////
 void addVrTrackingNotificationReceiver(VrTrackingNotificationReceiver_ptr_t recvr) {
@@ -297,9 +311,10 @@ void Device::_updatePosesCommon() {
 
   _outputViewOffsetMatrix = usermtx;
 
-  fmtx4 relmtx = fmtx4::multiply_ltor(_baseMatrix,_hmdMatrix);
+  auto views = composeEyeViewMatrices(usermtx, _baseMatrix, _hmdMatrix, eyeL, eyeR);
 
-  fmtx4 cmv = fmtx4::multiply_ltor(usermtx,relmtx);
+  const fmtx4& relmtx = views._rel;
+  const fmtx4& cmv    = views._center;
 
   if (_calibstate == 2) {
     deco::printf(fvec3::White(), "[BASEVR] _baseMatrix: %s\n", _baseMatrix.dump4x3cn().c_str());
@@ -309,8 +324,8 @@ void Device::_updatePosesCommon() {
     deco::printf(fvec3::White(), "[BASEVR]         cmv: %s\n", cmv.dump4x3cn().c_str());
   }
 
-  fmtx4 lmv = fmtx4::multiply_ltor(cmv,eyeL);
-  fmtx4 rmv = fmtx4::multiply_ltor(cmv,eyeR);
+  fmtx4 lmv = views._left;
+  fmtx4 rmv = views._right;
 
   ////////////////////////////////////////
   // per-eye view adjust (canting / toe-in) from the host presentation, if set.

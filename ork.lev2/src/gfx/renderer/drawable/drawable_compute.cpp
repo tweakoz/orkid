@@ -34,6 +34,42 @@ ComputeDrawable::ComputeDrawable()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// THE per-frame HZB pyramid, off the RCFD handle Scene::preRender stamps. One reader for the
+// compute-side cull (onPreRender, which also packs the dims into CamBlk.misc.yzw) and the
+// graphics-side one (_renderIndirect, task-stage culls) — two lookups of the same handle in the
+// same frame must never resolve to different buffers, or a task stage tests this frame's tiles
+// against a pyramid the CamBlk header does not describe. Returns null when occlusion is off for
+// the frame (env lever, disabled, or no valid pyramid built yet): every consumer treats that as
+// "no occlusion", never as "cull everything".
+///////////////////////////////////////////////////////////////////////////////
+
+static FxShaderStorageBuffer* _frameHZB(Context* ctx, int& w, int& h, int& mips) {
+  w = h = mips = 0;
+  static const int s_hzbMode = []() { const char* e = getenv("ORKID_HZB_OCCLUSION"); return e ? atoi(e) : 2; }();
+  // ONE meaning for the mode across every consumer. 0 = off, 1 = VERIFY (count, do not cull),
+  // 2 = cull. The instanced cull implements 1 by counting occluded instances while keeping them
+  // visible; the families fed by this header (terrain chunks) have no counters, so for them
+  // "verify without culling" is exactly "no pyramid". Handing them one at mode 1 made
+  // ORKID_HZB_OCCLUSION=1 cull HERE while it only counted THERE — one env var, two behaviours,
+  // which is how a mode meant as a diagnostic ended up changing pixels.
+  if (s_hzbMode != 2 or cullOcclusionDisabled()) // ORKID_DISABLE_OCCLUSION_CULL
+    return nullptr;
+  auto rcfd = ctx->topRenderContextFrameData();
+  if (not rcfd)
+    return nullptr;
+  auto v = rcfd->tryUserProperty<uint64_t>("HZB"_crc);
+  if (not v)
+    return nullptr;
+  auto* hzb = reinterpret_cast<HZBBuilder*>(uintptr_t(v.value()));
+  if (not(hzb and hzb->_valid and hzb->_ssbo))
+    return nullptr;
+  w    = hzb->_baseW;
+  h    = hzb->_baseH;
+  mips = hzb->_mips;
+  return hzb->_ssbo;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // per-FRAME (view-independent, ONCE before any viewport): the live dataflow graph re-eval.
 // IN-FRAME, manages its own dispatch phase — NOT a new frame. Also refreshes our
 // graphics-storage/args to the mesh's CURRENT channels (dynamic topology re-pools).
@@ -53,23 +89,14 @@ void ComputeDrawable::onPreRender(Context* ctx, const CameraMatrices& cammtx) co
   auto FXI = ctx->FXI();
   auto CI  = ctx->CI();
 
-  // HZB 1-phase occlusion (terrain cull only — gated on _hzbBlock): the per-frame max-depth pyramid,
-  // bound to sif_hzb on every pass below. Fetched here so misc.yzw (base w/h/mips) is written into the
-  // CamBlk in the same pass. nullptr => occlusion disabled this frame (cull stays frustum-only).
+  // HZB 1-phase occlusion (a compute-pass cull via _hzbBlock, or a task-stage one via
+  // _hzbGraphicsBlock): the per-frame max-depth pyramid. Fetched here so misc.yzw (base w/h/mips) is
+  // written into the CamBlk in the same pass — that header is how EITHER cull learns the pyramid's
+  // shape, and a zero in it is what makes both of them skip the occlusion test.
   FxShaderStorageBuffer* hzbBuf = nullptr;
   int hzb_w = 0, hzb_h = 0, hzb_mips = 0;
-  if (_hzbBlock) {
-    static const int s_hzbMode = []() { const char* e = getenv("ORKID_HZB_OCCLUSION"); return e ? atoi(e) : 2; }();
-    if (s_hzbMode != 0 and not cullOcclusionDisabled()) // ORKID_DISABLE_OCCLUSION_CULL: leave hzbBuf null -> misc.y==0 -> cull stays frustum-only
-      if (auto rcfd = ctx->topRenderContextFrameData())
-        if (auto v = rcfd->tryUserProperty<uint64_t>("HZB"_crc)) {
-          auto* hzb = reinterpret_cast<HZBBuilder*>(uintptr_t(v.value()));
-          if (hzb and hzb->_valid and hzb->_ssbo) {
-            hzbBuf = hzb->_ssbo;
-            hzb_w = hzb->_baseW; hzb_h = hzb->_baseH; hzb_mips = hzb->_mips;
-          }
-        }
-  }
+  if (_hzbBlock or _hzbGraphicsBlock)
+    hzbBuf = _frameHZB(ctx, hzb_w, hzb_h, hzb_mips);
 
   // CamBlk (std430): mat4 vp; mat4 inv_vp; vec4 eye; vec4 misc; — the cull/gen compute reads this.
   if (_camParamsSSBO) {
@@ -107,6 +134,30 @@ void ComputeDrawable::onPreRender(Context* ctx, const CameraMatrices& cammtx) co
     auto m = FXI->mapStorageBuffer(_camParamsSSBO, _camParamsOffset, sizeof(blk), BufferMapAccess::WRITE_ONLY);
     memcpy(m->_mappedaddr, &blk, sizeof(blk));
     m->unmap();
+    // ORKID_DEBUG_HZB=1 — throttled view of the header EVERY cull reads. hzb_w<0> is the one
+    // observable that separates "the pyramid never reached the culls" (no build, wrong extent,
+    // mode off) from "it reached them and occluded nothing" — the two failures look identical
+    // in a rejection count. Costs one printf per 64 dispatches when armed, nothing when not.
+    static const bool s_dbgmisc = (getenv("ORKID_DEBUG_HZB") != nullptr);
+    static int        s_miscctr = 0;
+    if (s_dbgmisc and ((s_miscctr++ & 63) == 0)) {
+      printf("[cullhdr] misc<%.3f %.0f %.0f %.0f>\n", blk.misc[0], blk.misc[1], blk.misc[2], blk.misc[3]);
+      fflush(stdout);
+    }
+    // ORKID_HZB_DUMP=<path> — one-shot CamBlk dump (<path>.cam) for the offline terrain cull oracle.
+    static const char* s_camdump = getenv("ORKID_HZB_DUMP");
+    static bool        s_camdone = false;
+    static int         s_camctr  = 0;
+    if (s_camdump and _hzbBlock and not s_camdone and (++s_camctr > 400)) {
+      s_camdone = true;
+      std::string p(s_camdump);
+      p += ".cam";
+      if (FILE* f = fopen(p.c_str(), "wb")) {
+        fwrite(&blk, sizeof(blk), 1, f);
+        fclose(f);
+        printf("[terrcull] CAMBLK -> %s  misc<%.3f %.0f %.0f %.0f>\n", p.c_str(), blk.misc[0], blk.misc[1], blk.misc[2], blk.misc[3]);
+      }
+    }
   }
 
   if (_perViewCompute) { // E.4: e.g. the hypermesh instance cull (own dispatch phase)
@@ -339,6 +390,16 @@ void ComputeDrawable::_renderIndirect(RenderContextInstData& RCID) const {
     if (pipe) {
       for (const auto& b : _graphicsStorage)
         pipe->bindStorage(b.first, b.second);
+      // TASK-STAGE occlusion (grass): the cull runs in the amplification stage, so its sif_hzb is a
+      // GRAPHICS descriptor and has to be re-pointed at this frame's pyramid here rather than on a
+      // dispatch. It is a declared block on the pipeline layout, so it must be bound EVERY frame
+      // whether or not occlusion is live — the cam SSBO stands in when it is not (the stage never
+      // reads it: onPreRender wrote a zero into CamBlk.misc.yzw, which is that stage's skip signal).
+      if (_hzbGraphicsBlock) {
+        int hw = 0, hh = 0, hm = 0;
+        auto* hzb = _frameHZB(RCID.context(), hw, hh, hm);
+        pipe->bindStorage(_hzbGraphicsBlock, hzb ? hzb : _camParamsSSBO);
+      }
       // shadow pass: re-point the instance blocks at the shadow OUT_M/OUT_A (idempotent map insert
       // keyed by block, so this OVERRIDES the eye instance bind above; vertex channels are shared).
       if (use_shadow)
@@ -575,6 +636,7 @@ drawable_ptr_t ComputeDrawableData::createDrawable() const {
   drw->_overlayIndexSSBO       = _overlayIndexSSBO;
   drw->_overlayPrimtype        = _overlayPrimtype;
   drw->_overlayIndexSize       = _overlayIndexSize;
+  drw->_sortkey                = _sortkey; // without this the reflected SortKey property is inert here
   auto draw_raw        = drw.get();
   drw->setRenderLambda([draw_raw](RenderContextInstData& RCID) { draw_raw->_renderIndirect(RCID); });
   return drw;

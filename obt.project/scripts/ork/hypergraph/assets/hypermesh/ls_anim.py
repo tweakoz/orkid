@@ -40,10 +40,21 @@ class LsAnim(Hypermesh):
                tropism=0.05, 
                jitter=0.35, 
                apical=0.3,
-               leaf_per_node=3, 
-               leaf_min_gen=4.0, 
-               leaf_size=0.1, 
-               leaf_jitter=0.3):
+               leaf_per_node=3,
+               leaf_min_gen=4.0,
+               leaf_max_radius=0.0,  # 0 = off; else segments fatter than this bear no cards (trunk wood)
+               leaf_embed=0.0,       # 0 = off; else the card base edge sits this fraction of the local
+                                     # radius UNDER the bark, so the blade emerges through the surface
+               leaf_twist=0.0,       # card roll about its own length axis (deg)
+               leaf_up_bias=0.0,     # -1..1 blend of the blade axis toward world up (+) / down (-)
+               leaf_jitter_deg=0.0,  # +/- deg of per-card azimuth/pitch/twist jitter (hash-seeded)
+               leaf_size=0.13,   # cutout compensation (aug09): the ovate blade keeps ~55% of the
+                                 # card — size up so canopy mass matches the old opaque rectangles
+               leaf_jitter=0.3,
+               leaf_style=LeafStyle.SINGLE,   # CROSS = 2 perpendicular quads/leaf (conifer tufts)
+               leaf_aspect=0.6,
+               leaf_pitch=50.0,
+               leaf_roll=137.5):  # phyllotaxis divergence; 180 = alternating flat sprays (conifer boughs)
     super().__init__()
     # skeleton -> swept trunk (lsystem returns the sweep mesh AND stashes self._skeleton for leaves()).
     trunk = self.lsystem(archetype=archetype,
@@ -62,11 +73,19 @@ class LsAnim(Hypermesh):
     # UPPER-BRANCH SPLIT: faces above foliage_y -> gid 1 (their own material); the rest stay gid 0 (bark).
     trunk = self.select(trunk, S.P.y > foliage_y, op=replace(group(0)))
     trunk = self.assign_gid(trunk, gid=1, slot=0)
-    leaves = self.leaves(style=LeafStyle.SINGLE,
+    leaves = self.leaves(style=leaf_style,
                          per_node=leaf_per_node,
                          min_gen=leaf_min_gen,
+                         max_radius=leaf_max_radius,
                          size=leaf_size,
-                         jitter=leaf_jitter)
+                         aspect=leaf_aspect,
+                         pitch=leaf_pitch,
+                         roll=leaf_roll,
+                         embed=leaf_embed,
+                         twist=leaf_twist,
+                         up_bias=leaf_up_bias,
+                         jitter=leaf_jitter,
+                         jitter_deg=leaf_jitter_deg)
     # BAKE: keep the trunk's gid 0/1 split (gid_a=None), stamp the leaf cards gid 2.
     n = self.merge(trunk, leaves, gid_a=None, gid_b=2)
     self.output(n)

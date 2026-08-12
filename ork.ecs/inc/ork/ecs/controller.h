@@ -161,6 +161,14 @@ struct Controller {
   void systemNotify(sys_ref_t sys, token_t evID, svar64_t data);
   void notifyAllSystems(token_t evID, svar64_t data);
   response_ref_t systemRequest(sys_ref_t sys, token_t evID, svar64_t data, void_lambda_t callback = nullptr);
+  // THE ANSWER to a systemRequest, read from outside the simulation. systemRequest hands
+  // back an opaque ref and the sim fills the response in when the request drains, so the
+  // asker polls this: null until the request has been serviced (or if that system answered
+  // with something other than a DataTable). The completion CALLBACK is not that signal —
+  // it belongs to the asynchronous responders (the probe bakes) that mark themselves ready;
+  // a system that answers inside its _onRequest never sets that flag. Poll from the UPDATE
+  // thread, which is the thread that fills it.
+  datatable_ptr_t systemResponseTable(response_ref_t rref);
 
   void componentNotify(comp_ref_t comp, token_t evID, svar64_t data);
   response_ref_t componentRequest(comp_ref_t comp, token_t evID, svar64_t data);

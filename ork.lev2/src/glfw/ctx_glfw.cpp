@@ -15,6 +15,7 @@
 #include <ork/lev2/ui/viewport.h>
 #include <ork/lev2/ui/context.h>
 #include <ork/lev2/ui/dock_coordinator.h>
+#include <ork/lev2/input/gamepaddevice.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/kernel/msgrouter.inl>
 #include <ork/math/basicfilters.h>
@@ -858,6 +859,12 @@ void CtxGLFW::_runloopIter(bool pollevents) {
   if(pollevents){
     glfwPollEvents();
   }
+
+  // Gamepad backends whose platform API is main-thread-only (macOS/GLFW) acquire here.
+  //  Deliberately OUTSIDE the pollevents guard: GLFW's joystick layer runs its own
+  //  event pump, so a lockstep frame that skips glfwPollEvents must still see the pad.
+  //  No-op on platforms whose backend owns a reader thread.
+  GamepadDevice::pumpMainThread();
 
   //////////////////////////////
   // run main thread app logic

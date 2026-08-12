@@ -27,6 +27,13 @@
 #include <unistd.h>
 #endif
 
+#if defined(__APPLE__)
+// Backend headers belong OUT here, not in gamepaddevice_glfw.inl: that file is included
+//  from inside namespace ork::lev2, where a system include would nest std:: under it.
+#include <GLFW/glfw3.h>
+#include <mutex>
+#endif
+
 namespace ork::lev2 {
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,6 +83,93 @@ bool GamepadState::buttonDown(GamepadButtonId id) const {
       return (buttons & (1u << i)) != 0u;
   return false;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+// GLFW gamepad BUTTON index -> GamepadState bit. Indices are fixed by the GLFW API
+// (GLFW_GAMEPAD_BUTTON_*), so this table is spelled out numerically and stays free of
+// the GLFW headers — which keeps it, and its test, building on every platform.
+//
+// The two orders agree for the first six entries and then diverge twice: GLFW runs
+// BACK/START/GUIDE before the thumbs where we run the thumbs first, and GLFW's dpad is
+// UP/RIGHT/DOWN/LEFT against our UP/DOWN/LEFT/RIGHT.
+////////////////////////////////////////////////////////////////////////////////
+
+static const int kGlfwBtnToBit[kNumGamepadButtons] = {
+    BIT_CROSS,      // 0  GLFW_GAMEPAD_BUTTON_A            (DS4 cross)
+    BIT_CIRCLE,     // 1  GLFW_GAMEPAD_BUTTON_B            (DS4 circle)
+    BIT_SQUARE,     // 2  GLFW_GAMEPAD_BUTTON_X            (DS4 square)
+    BIT_TRIANGLE,   // 3  GLFW_GAMEPAD_BUTTON_Y            (DS4 triangle)
+    BIT_L1,         // 4  GLFW_GAMEPAD_BUTTON_LEFT_BUMPER
+    BIT_R1,         // 5  GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER
+    BIT_SHARE,      // 6  GLFW_GAMEPAD_BUTTON_BACK
+    BIT_OPTIONS,    // 7  GLFW_GAMEPAD_BUTTON_START
+    BIT_PS,         // 8  GLFW_GAMEPAD_BUTTON_GUIDE
+    BIT_L3,         // 9  GLFW_GAMEPAD_BUTTON_LEFT_THUMB
+    BIT_R3,         // 10 GLFW_GAMEPAD_BUTTON_RIGHT_THUMB
+    BIT_DPAD_UP,    // 11 GLFW_GAMEPAD_BUTTON_DPAD_UP
+    BIT_DPAD_RIGHT, // 12 GLFW_GAMEPAD_BUTTON_DPAD_RIGHT
+    BIT_DPAD_DOWN,  // 13 GLFW_GAMEPAD_BUTTON_DPAD_DOWN
+    BIT_DPAD_LEFT,  // 14 GLFW_GAMEPAD_BUTTON_DPAD_LEFT
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+namespace gamepad_norm {
+
+static inline float clampUnit(float f) {
+  return f < -1.0f ? -1.0f : (f > 1.0f ? 1.0f : f);
+}
+
+float stickFromI16(int16_t v) {
+  return clampUnit(float(v) / 32767.0f);
+}
+
+float triggerFromI16(int16_t v) { // rest = -32767 -> 0, full = +32767 -> 1
+  float f = (float(v) + 32767.0f) / 65534.0f;
+  return f < 0.0f ? 0.0f : (f > 1.0f ? 1.0f : f);
+}
+
+float stickFromUnit(float v) {
+  float f = clampUnit(v);
+  return (f > -1e-3f and f < 1e-3f) ? 0.0f : f;
+}
+
+float triggerFromUnit(float v) { // rest = -1 -> 0, full = +1 -> 1
+  float f = (clampUnit(v) + 1.0f) * 0.5f;
+  return f < 0.0f ? 0.0f : (f > 1.0f ? 1.0f : f);
+}
+
+uint32_t hatToButtonBits(int16_t hx, int16_t hy) {
+  uint32_t bits = 0;
+  if (hx < -16000)
+    bits |= (1u << BIT_DPAD_LEFT);
+  else if (hx > 16000)
+    bits |= (1u << BIT_DPAD_RIGHT);
+
+  if (hy < -16000)
+    bits |= (1u << BIT_DPAD_UP);
+  else if (hy > 16000)
+    bits |= (1u << BIT_DPAD_DOWN);
+
+  return bits;
+}
+
+uint32_t bitsFromGlfwButtons(const unsigned char* buttons, size_t count) {
+  uint32_t bits = 0;
+  if (not buttons)
+    return bits;
+
+  if (count > kNumGamepadButtons)
+    count = kNumGamepadButtons;
+
+  for (size_t i = 0; i < count; i++)
+    if (buttons[i])
+      bits |= (1u << kGlfwBtnToBit[i]);
+
+  return bits;
+}
+
+} // namespace gamepad_norm
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -415,44 +509,44 @@ GamepadState GamepadDevice::sample() const {
   _impl->_sampleCalls++; // STAGE-1 liveness: proves the player update thread keeps polling
   if (not _impl->_connected)
     return st; // default: connected=false
-  auto norm = [](int16_t v) -> float {
-    float f = float(v) / 32767.0f;
-    return f < -1.0f ? -1.0f : (f > 1.0f ? 1.0f : f);
-  };
-  auto trig = [](int16_t v) -> float { // rest = -32767 -> 0, full = +32767 -> 1
-    float f = (float(v) + 32767.0f) / 65534.0f;
-    return f < 0.0f ? 0.0f : (f > 1.0f ? 1.0f : f);
-  };
-  st.lx = norm(_impl->_rawAxis[AX_LX]);
-  st.ly = norm(_impl->_rawAxis[AX_LY]);
-  st.l2 = trig(_impl->_rawAxis[AX_L2]);
-  st.rx = norm(_impl->_rawAxis[AX_RX]);
-  st.ry = norm(_impl->_rawAxis[AX_RY]);
-  st.r2 = trig(_impl->_rawAxis[AX_R2]);
-  uint32_t btns = _impl->_buttonBits;
-  int16_t hx    = _impl->_rawAxis[AX_DPADX];
-  int16_t hy    = _impl->_rawAxis[AX_DPADY];
-  if (hx < -16000)
-    btns |= (1u << BIT_DPAD_LEFT);
-  else if (hx > 16000)
-    btns |= (1u << BIT_DPAD_RIGHT);
-  if (hy < -16000)
-    btns |= (1u << BIT_DPAD_UP);
-  else if (hy > 16000)
-    btns |= (1u << BIT_DPAD_DOWN);
-  st.buttons   = btns;
+  st.lx = gamepad_norm::stickFromI16(_impl->_rawAxis[AX_LX]);
+  st.ly = gamepad_norm::stickFromI16(_impl->_rawAxis[AX_LY]);
+  st.l2 = gamepad_norm::triggerFromI16(_impl->_rawAxis[AX_L2]);
+  st.rx = gamepad_norm::stickFromI16(_impl->_rawAxis[AX_RX]);
+  st.ry = gamepad_norm::stickFromI16(_impl->_rawAxis[AX_RY]);
+  st.r2 = gamepad_norm::triggerFromI16(_impl->_rawAxis[AX_R2]);
+  st.buttons =
+      _impl->_buttonBits | gamepad_norm::hatToButtonBits(_impl->_rawAxis[AX_DPADX], _impl->_rawAxis[AX_DPADY]);
   st.connected = true;
   return st;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// The joydev reader thread owns acquisition; nothing to service on the main thread.
+////////////////////////////////////////////////////////////////////////////////
 
-#else // non-Linux stub — compiles clean, always disconnected. Real mac backend is a later slice.
+void GamepadDevice::pumpMainThread() {
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+#elif defined(__APPLE__)
+
+#include "gamepaddevice_glfw.inl"
+
+////////////////////////////////////////////////////////////////////////////////
+
+#else // no backend for this platform — compiles clean, always disconnected.
 
 struct GamepadDevice::Impl {};
 
 GamepadState GamepadDevice::sample() const {
   return GamepadState{}; // connected = false
+}
+
+// Must not touch instance(): pumping is not a reason to construct a device that can
+//  never report a pad.
+void GamepadDevice::pumpMainThread() {
 }
 
 #endif

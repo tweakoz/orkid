@@ -127,6 +127,11 @@ public:
   mutable std::function<pbrmaterial_ptr_t(const std::string&)> _material_resolver_named;
   // optional wireframe-overlay material (a Lines ptex3d) — same resolution contract.
   mutable material_ptr_t _resolved_overlay_material;
+  // set by a host that creates this drawable for a node which starts DISABLED (the ECS
+  // visgroup contract). Such a drawable never reaches onGpuUpdate until it is switched
+  // on, so it must not claim pending async work at stage time — it registers the
+  // section-bake marker itself, on the frame it actually starts building.
+  bool _launch_hidden = false;
   // filled by the lazy bootstrap on first onGpuUpdate; the host reads it for the pause
   // contract (live->_paused) and introspection. One live per drawable; with the current
   // one-drawable-per-data usage this back-pointer is unambiguous.

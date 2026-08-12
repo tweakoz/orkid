@@ -199,6 +199,151 @@ def make_render(d, size):
     Image.fromarray((mg * 255).astype(np.uint8), 'RGB').save(os.path.join(d, 'render_magenta.png'))
 
 
+# ----------------------------------------------------------------- foliage ---
+def _canopy(size, seed):
+    """Dark procedural canopy + bright sky + trunk silhouettes + real glints.
+
+    The clean twin deliberately carries the two things that false-FAIL a naive
+    brightness probe: a BRIGHT SKY band, and sky seen through a GAP between dark
+    trunks (bright, desaturated, ringed by dark = the shape cotton has, told
+    apart only by size). It also carries specular glints (bright core, dim rim).
+
+    The canopy carries LEAF-SCALE structure (high fbm octaves, coherent -- not
+    white noise, which would trip the render speckle checks): it is what tells a
+    whitened canopy apart from a smooth patch of sky.
+    """
+    rng = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:size, 0:size]
+    det = fbm(size, seed, octaves=6)
+    # leaf detail at the 2px scale: coherent (bicubic-upsampled), NOT white
+    # noise, so the clean twin still passes the render speckle checks.
+    fine = np.asarray(Image.fromarray(
+        (np.random.default_rng(seed + 1).random((size // 2, size // 2)) * 255).astype(np.uint8)
+    ).resize((size, size), Image.BICUBIC)).astype(np.float64) / 255.0
+    fol = (0.03 + 0.10 * det) * (0.30 + 1.55 * fine)
+    rgb = np.stack([fol * 0.55, fol * 1.00, fol * 0.45], axis=2)   # dark green
+    sky = np.stack([np.full((size, size), 0.72), np.full((size, size), 0.76),
+                    np.full((size, size), 0.86)], axis=2)
+    horizon = int(size * 0.32)
+    openness = np.clip((horizon - yy) / 12.0, 0, 1)                # sky band
+    gap = ((xx > size * 0.60) & (xx < size * 0.74) &
+           (yy > horizon) & (yy < size * 0.72))                    # sky through a trunk gap
+    m = np.maximum(openness, gap.astype(float))[..., None]
+    rgb = rgb * (1 - m) + sky * m
+    for cx in (int(size * 0.58), int(size * 0.76)):                # dark trunks
+        bar = (np.abs(xx - cx) < size * 0.02)
+        rgb[bar] *= 0.10
+    for _ in range(10):                                            # specular glints
+        cy = int(rng.integers(int(size * 0.40), size - 12))
+        cx = int(rng.integers(8, int(size * 0.55)))
+        rad = int(rng.integers(6, 9))
+        d = np.hypot(yy - cy, xx - cx)
+        g = (np.clip((rad - d) / 1.5, 0, 1)
+             * np.exp(-(d ** 2) / (2.0 * (rad * 0.45) ** 2)) * 0.62)[..., None]
+        rgb = rgb * (1 - g) + g
+    return np.clip(rgb, 0, 1)
+
+
+def make_foliage():
+    """Canopy-whitening ('cotton') twins. Probe region = the lower canopy band."""
+    d = _dir('foliage')
+    size = 512
+    clean = _canopy(size, SEED + 21)
+    Image.fromarray((clean * 255).astype(np.uint8), 'RGB').save(os.path.join(d, 'clean.png'))
+
+    rng = np.random.default_rng(SEED + 22)
+    yy, xx = np.mgrid[0:size, 0:size]
+    # cotton: FLAT white discs -- rim luminance == core luminance (UNIFORM), the
+    # signature the whitening defect has. Same footprint as the clean twin's
+    # glints; only the radial profile differs.
+    puffs = clean.copy()
+    for _ in range(22):
+        cy = int(rng.integers(int(size * 0.42), size - 12))
+        cx = int(rng.integers(8, int(size * 0.55)))
+        rad = int(rng.integers(6, 9))
+        g = (np.clip((rad - np.hypot(yy - cy, xx - cx)) / 1.5, 0, 1) * 0.62)[..., None]
+        puffs = puffs * (1 - g) + g
+    Image.fromarray((np.clip(puffs, 0, 1) * 255).astype(np.uint8), 'RGB').save(
+        os.path.join(d, 'cotton_puffs.png'))
+
+    # whole-canopy whitening: no discrete blobs at all -- one merged bright field
+    # that only the fixed-mask population check can see.
+    whole = clean.copy()
+    band = whole[int(size * 0.40):, :int(size * 0.55)]
+    k = (np.clip((band @ np.array([0.299, 0.587, 0.114]) - 0.03) / 0.10, 0, 1) * 0.55)[..., None]
+    whole[int(size * 0.40):, :int(size * 0.55)] = band * (1 - k) + 0.70 * k
+    Image.fromarray((np.clip(whole, 0, 1) * 255).astype(np.uint8), 'RGB').save(
+        os.path.join(d, 'cotton_wholecanopy.png'))
+
+
+# ------------------------------------------------------------------- atlas ---
+def _sprite_atlas(size, seed):
+    """Impostor-style sprite sheet: leaf clusters with real alpha coverage."""
+    rng = np.random.default_rng(seed)
+    yy, xx = np.mgrid[0:size, 0:size]
+    alpha = np.zeros((size, size))
+    rgb = np.zeros((size, size, 3))
+    cell = size // 4
+    for j in range(4):
+        for i in range(4):
+            cy, cx = j * cell + cell // 2, i * cell + cell // 2
+            for _ in range(9):
+                oy = int(rng.integers(-cell // 3, cell // 3))
+                ox = int(rng.integers(-cell // 3, cell // 3))
+                rad = int(rng.integers(cell // 8, cell // 4))
+                m = np.hypot(yy - (cy + oy), xx - (cx + ox)) < rad
+                alpha[m] = 1.0
+                tint = 0.55 + 0.45 * rng.random()
+                rgb[m] = np.array([0.10 * tint, 0.34 * tint, 0.08 * tint])
+    return rgb, alpha
+
+
+def _edge_extend(rgb, alpha, iters=32):
+    """Author-correct background: flood the silhouette colour outward."""
+    c = rgb.copy()
+    known = alpha > 0.02
+    for _ in range(iters):
+        acc = np.zeros_like(c)
+        cnt = np.zeros(c.shape[:2])
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            acc += np.roll(np.roll(c, dy, 0), dx, 1) * np.roll(np.roll(known, dy, 0), dx, 1)[..., None]
+            cnt += np.roll(np.roll(known, dy, 0), dx, 1)
+        fill = (cnt > 0) & ~known
+        if not fill.any():
+            break
+        c[fill] = acc[fill] / cnt[fill][..., None]
+        known = known | fill
+    return c
+
+
+def make_atlas():
+    """Impostor-atlas twins: background bleed (2 flavours) and mip drift."""
+    d = _dir('atlas')
+    size = 256
+    rgb, alpha = _sprite_atlas(size, SEED + 31)
+
+    def save(name, c):
+        Image.fromarray((np.clip(np.dstack([c, alpha]), 0, 1) * 255).astype(np.uint8),
+                        'RGBA').save(os.path.join(d, name))
+
+    clean = _edge_extend(rgb, alpha)
+    save('clean.png', clean)                       # extended bg: no bleed, no drift
+
+    bg = alpha < 0.02
+    white = clean.copy()
+    white[bg] = 1.0                                # cleared-to-white canvas
+    save('whitebg.png', white)
+
+    rng = np.random.default_rng(SEED + 32)
+    speck = clean.copy()
+    speck[bg & (rng.random(bg.shape) < 0.06)] = 1.0   # sparse white texels
+    save('specklebg.png', speck)
+
+    black = clean.copy()
+    black[bg] = 0.0                                # unextended: mip drift ONLY
+    save('blackbg.png', black)
+
+
 # ------------------------------------------------------------------- hmap ----
 def make_hmap():
     d = _dir('hmap')
@@ -310,6 +455,7 @@ def main():
     # optional selector: `make_corpus.py audio` regenerates ONE type, so adding
     # a new instrument does not churn the other types' committed binaries.
     makers = {'audio': make_audio, 'image': make_image, 'hmap': make_hmap,
+              'foliage': make_foliage, 'atlas': make_atlas,
               'mesh': make_mesh, 'movie': make_movie}
     want = [a for a in sys.argv[1:] if not a.startswith('-')] or list(makers)
     for name in want:

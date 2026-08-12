@@ -1,50 +1,44 @@
 #!/usr/bin/env ork.python
 ################################################################################
-# SPVR — OUTPUT-NODE SELECTION (linux/NV, offscreen).
+# SPVR — OUTPUT-NODE SELECTION (offscreen).
 #
-# WHICH NODE DOES A GIVEN PRESET + ENVIRONMENT ACTUALLY INSTALL? Every answer
-# below was previously demonstrated only by hand, in scratch runs, and every one
-# of them is a SILENT wrong answer when it regresses: installing the dual-mono
-# node where the single-pass node was asked for renders a correct picture, twice
-# as expensively; installing the single-pass node where the caller demanded the
-# literal dual-mono one breaks the committed DMVR gate's premise. Neither shows
-# up in pixels, in validation, or in a frame time anybody is watching.
+# WHICH NODE DOES A GIVEN PRESET + ENVIRONMENT ACTUALLY INSTALL? Single-pass stereo
+# is the ONLY VR output model, and BOTH VR preset strings route to it. That routing
+# is a silent thing when it regresses: a preset string that stopped resolving, or a
+# device that quietly rendered something else, shows up in neither pixels nor
+# validation nor a frame time anybody is watching. The no-multiview answer is a
+# THROW, and a throw that stops throwing is just as silent.
 #
-# WHY EVERY LEG IS ITS OWN PROCESS. All three env switches are read through
-# function-local `static const bool` initializers — read ONCE per process, by
-# design (they are announced once). Two arms in one process would measure the
-# first arm twice. So each row below is a subprocess with its own environment,
-# and the parent only compares the node class each one reports.
+# WHY EVERY LEG IS ITS OWN PROCESS. The capability switch is read through a
+# function-local `static const bool` initializer — read ONCE per process, by design
+# (it announces itself once). Two arms in one process would measure the first arm
+# twice. So each row below is a subprocess with its own environment, and the parent
+# only compares what each one reports.
 #
-# THE MATRIX (each row: env -> preset -> expected output node)
-#   1  (none)                          FWDPBRSPVR  -> SinglePassStereoVr
-#   2  ORKID_SPVR_NO_MULTIVIEW=1       FWDPBRSPVR  -> DualMonoVr   (FALLBACK ARM:
-#      the explicit ask degrades instead of failing at the first layered pass;
-#      this is the only way a multiview-capable box can exercise that path)
-#   3  (none)                          FWDPBRVRDM  -> DualMonoVr   (autoselect is
-#      OFF by default — the preset string stays literal)
-#   4  ORKID_SPVR=1                    FWDPBRVRDM  -> SinglePassStereoVr
-#      (autoselect ARMED: same preset string in, better node out)
-#   5  ORKID_SPVR=1 + ORKID_FORCE_DMVR FWDPBRVRDM  -> DualMonoVr
-#   6  ORKID_FORCE_DMVR                FWDPBRSPVR  -> SinglePassStereoVr
+# THE MATRIX (each row: env -> preset -> expected outcome)
+#   1  (none)                       FWDPBRSPVR -> SinglePassStereoVr
+#   2  (none)                       FWDPBRVRDM -> SinglePassStereoVr (SYNONYM: the
+#      older VR preset string names the same one VR output node)
+#   3  ORKID_SPVR_NO_MULTIVIEW=1    FWDPBRSPVR -> THROW, child exits NONZERO
+#   4  ORKID_SPVR_NO_MULTIVIEW=1    FWDPBRVRDM -> THROW, child exits NONZERO
 #
-#   Rows 5 and 6 together are what ORKID_FORCE_DMVR's LITERAL meaning is: it
-#   disables AUTOSELECT and nothing else. It is not a global "no single-pass
-#   stereo" switch — an explicitly named preset is not gated by it. Row 5 alone
-#   would be satisfied by a knob that turned the whole feature off; row 6 is what
-#   forbids that reading, and the committed DMVR gate depends on this exact
-#   semantic ("this node", not "the best node available").
+#   Rows 3/4 are the FAIL-LOUD contract: a device that cannot run single-pass stereo
+#   gets a named runtime_error (the preset asked for + the concrete capability
+#   reason), never a degrade to some other renderer. ORKID_SPVR_NO_MULTIVIEW=1 is
+#   the only way a multiview-capable box can exercise that path.
 #
-#   7  REPORTING SURFACES: Scene.hzb (the occlusion-pyramid provenance handle) is
+#   5  REPORTING SURFACES: Scene.hzb (the occlusion-pyramid provenance handle) is
 #      present and, once built, carries sourceDepthFrame/valid; and the
 #      ORKID_HZB_ALLOW_SAMEFRAME revert knob is present at its read site with its
 #      announcement. Reporting semantics only — nothing culls on either, and this
 #      leg claims only PRESENCE, since the knob is read in C++ during forward
 #      rendering and no python surface exposes its armed state.
 #
-# SKIP DISCIPLINE: on a device without multiview, rows 1/4/6 have no meaningful
-# answer and the whole test SKIPs loudly with the capability printed. It never
-# passes by not looking.
+# SKIP DISCIPLINE: on a device without multiview, rows 1/2 have no meaningful answer
+# and the whole test SKIPs loudly with the capability printed — it never passes by
+# not looking. Note that rows 3/4 ARE the default behaviour on such a device, so
+# they would pass trivially there; that is exactly why the skip covers the run
+# rather than letting the fail-loud rows carry it alone.
 #
 # Self-configuring: ORKID_VULKAN_VALIDATE=2 in-code. Default invocation needs no
 # arguments and no environment.
@@ -74,23 +68,24 @@ FWD_TOP_CPP = os.path.join(_ROOT, "ork.lev2", "src", "gfx", "renderer",
                            "NodeCompositor", "forward", "fwdnode_impl_top.cpp")
 
 SPVR = "SinglePassStereoVrOutputNode"
-DMVR = "DualMonoVrOutputNode"
 
-# (name, env overrides, preset, expected node class, why)
+# the expectation sentinel for a row that must FAIL: the child exits nonzero and its
+# transcript carries the resolver's named message.
+FAILLOUD = "<FAIL-LOUD>"
+# the distinctive substring of that runtime_error (scenegraph.cpp). Asserted, not
+# just "some exception happened" — a different failure must not read as this one.
+THROW_TEXT = "single-pass stereo is the only VR output model"
+
+# (name, env overrides, preset, expectation, why)
 CASES = (
     ("explicit_spvr", {}, "FWDPBRSPVR", SPVR,
      "the explicit single-pass preset on a multiview-capable device"),
-    ("fallback_arm", {"ORKID_SPVR_NO_MULTIVIEW": "1"}, "FWDPBRSPVR", DMVR,
-     "capability forced unavailable -> the explicit ask DEGRADES to dual-mono"),
-    ("autoselect_off", {}, "FWDPBRVRDM", DMVR,
-     "autoselect is off by default -> the preset string stays literal"),
-    ("autoselect_on", {"ORKID_SPVR": "1"}, "FWDPBRVRDM", SPVR,
-     "autoselect armed -> the same preset string resolves to the single-pass node"),
-    ("force_dmvr_beats_autoselect", {"ORKID_SPVR": "1", "ORKID_FORCE_DMVR": "1"},
-     "FWDPBRVRDM", DMVR,
-     "ORKID_FORCE_DMVR disables autoselect"),
-    ("force_dmvr_is_autoselect_only", {"ORKID_FORCE_DMVR": "1"}, "FWDPBRSPVR", SPVR,
-     "...and ONLY autoselect: an explicitly named preset is not gated by it"),
+    ("synonym_vrdm", {}, "FWDPBRVRDM", SPVR,
+     "the older VR preset string is a SYNONYM -- same one VR output node"),
+    ("no_multiview_spvr", {"ORKID_SPVR_NO_MULTIVIEW": "1"}, "FWDPBRSPVR", FAILLOUD,
+     "capability forced unavailable -> the ask THROWS by name, never degrades"),
+    ("no_multiview_vrdm", {"ORKID_SPVR_NO_MULTIVIEW": "1"}, "FWDPBRVRDM", FAILLOUD,
+     "the synonym string throws the same way -- one routing, one failure mode"),
 )
 
 HZB_ENV = "ORKID_HZB_ALLOW_SAMEFRAME"
@@ -119,24 +114,34 @@ def _probe(preset, outpath):
     params.DiffuseIntensity = 1.0
     params.AmbientLight = core.vec3(0.0)
     params.DepthFogDistance = float(1e6)
-    scene = lev2.scenegraph.Scene(params)
+    # the resolver THROWS on a device that cannot run single-pass stereo. Caught here
+    #  (and reported, then re-signalled through the exit code) so the app still tears
+    #  down through the harness -- an exception escaping the context manager leaves a
+    #  wedged teardown, which reads as a hang instead of a verdict.
+    scene = None
+    try:
+      scene = lev2.scenegraph.Scene(params)
+    except Exception as e:                      # noqa: BLE001
+      result["throw"] = str(e)
+      print("SELECTION preset=%s THROW <%s>" % (preset, result["throw"]), flush=True)
 
-    node = scene.compositoroutputnode
-    result["node"] = repr(node).split("(")[0] if node is not None else None
-    # the HZB provenance handle: present as a property before any render (null
-    #  until the forward node builds a pyramid), and typed when it is not.
-    result["hzb_property"] = hasattr(scene, "hzb")
-    hzb = getattr(scene, "hzb", None)
-    result["hzb_built"] = hzb is not None
-    if hzb is not None:
-      result["hzb_sourceDepthFrame"] = int(hzb.sourceDepthFrame)
-      result["hzb_valid"] = bool(hzb.valid)
-    print("SELECTION preset=%s node=%s multiview=%s"
-          % (preset, result["node"], result["multiview"]), flush=True)
+    if scene is not None:
+      node = scene.compositoroutputnode
+      result["node"] = repr(node).split("(")[0] if node is not None else None
+      # the HZB provenance handle: present as a property before any render (null
+      #  until the forward node builds a pyramid), and typed when it is not.
+      result["hzb_property"] = hasattr(scene, "hzb")
+      hzb = getattr(scene, "hzb", None)
+      result["hzb_built"] = hzb is not None
+      if hzb is not None:
+        result["hzb_sourceDepthFrame"] = int(hzb.sourceDepthFrame)
+        result["hzb_valid"] = bool(hzb.valid)
+      print("SELECTION preset=%s node=%s multiview=%s"
+            % (preset, result["node"], result["multiview"]), flush=True)
 
   with open(outpath, "w") as f:
     json.dump(result, f, indent=1)
-  return 0
+  return 0 if scene is not None else 3
 
 
 ################################################################################
@@ -148,10 +153,9 @@ def _run_case(name, envmap, preset, outdir):
   outpath = os.path.join(outdir, "case_%s.json" % name)
   env = dict(os.environ)
   env["ORKID_VULKAN_VALIDATE"] = "2"
-  # start from a CLEAN slate for every switch this test owns, so a value left in
-  # the caller's shell cannot decide a row.
-  for k in ("ORKID_SPVR", "ORKID_SPVR_NO_MULTIVIEW", "ORKID_FORCE_DMVR"):
-    env.pop(k, None)
+  # start from a CLEAN slate for the switch this test owns, so a value left in the
+  # caller's shell cannot decide a row.
+  env.pop("ORKID_SPVR_NO_MULTIVIEW", None)
   env.update(envmap)
   argv = [sys.executable, os.path.abspath(__file__), "--probe", preset, outpath]
   proc = subprocess.run(argv, env=env, stdout=subprocess.PIPE,
@@ -187,41 +191,59 @@ def main():
   t0 = time.time()
   fails = []
 
-  # ---- row 1 first: it also answers the capability question the skip needs.
+  # ---- row 1 first: it also answers the capability question the skip needs. Its
+  #  child records the capability BEFORE it builds the scene, so the record is
+  #  readable even when the build threw.
   rc, out, rec = _run_case(*CASES[0][:3], outdir)
-  if rc != 0:
-    print(out, flush=True)
-    print("TESTVERDICT FAIL: probe child exited rc=%d" % rc, flush=True)
-    return 1
   if not rec.get("multiview"):
+    print(out, flush=True)
     print("SKIP: device reports multiview=%s max_views=%s -- single-pass stereo has "
-          "no meaningful answer here" % (rec.get("multiview"), rec.get("max_views")),
+          "no meaningful answer here, and the fail-loud rows below are simply this "
+          "device's default behaviour" % (rec.get("multiview"), rec.get("max_views")),
           flush=True)
     print("test_spvr_node_selection: SKIP in %.1fs" % (time.time() - t0), flush=True)
     return 0
+  if rc != 0:
+    print(out, flush=True)
+    print("TESTVERDICT FAIL: probe child exited rc=%d on a multiview-capable device"
+          % rc, flush=True)
+    return 1
   print("selection: multiview=%s max_views=%s"
         % (rec.get("multiview"), rec.get("max_views")), flush=True)
 
-  results = {CASES[0][0]: rec}
+  results = {CASES[0][0]: (rc, out, rec)}
   for case in CASES[1:]:
-    rc, out, r = _run_case(case[0], case[1], case[2], outdir)
-    if rc != 0:
-      print(out, flush=True)
-      fails.append("case %s: probe child exited rc=%d" % (case[0], rc))
-    results[case[0]] = r
+    results[case[0]] = _run_case(case[0], case[1], case[2], outdir)
 
   for (name, envmap, preset, expected, why) in CASES:
-    got = results.get(name, {}).get("node")
+    rc, out, r = results.get(name, (None, "", {}))
     envtxt = ",".join("%s=%s" % kv for kv in sorted(envmap.items())) or "(none)"
-    status = "PASS" if got == expected else "FAIL"
-    print("LEG_SELECT %-30s %-11s env<%s> -> %s (expected %s) %s"
-          % (name, preset, envtxt, got, expected, status), flush=True)
-    if got != expected:
-      fails.append("SELECTION %s: preset %s with env<%s> installed %s, expected %s -- %s"
-                   % (name, preset, envtxt, got, expected, why))
+    if expected is FAILLOUD:
+      # the contract is BOTH halves: a nonzero exit AND the named message. A child
+      #  that died for some other reason must not read as this row passing.
+      thrown = r.get("throw") or ""
+      named = (THROW_TEXT in thrown) or (THROW_TEXT in out)
+      ok = (rc != 0) and named
+      got = ("rc=%s throw<%s>" % (rc, thrown[:90])) if thrown else ("rc=%s (no throw text)" % rc)
+      print("LEG_SELECT %-20s %-11s env<%s> -> %s (expected FAIL-LOUD) %s"
+            % (name, preset, envtxt, got, "PASS" if ok else "FAIL"), flush=True)
+      if not ok:
+        if rc == 0:
+          print(out, flush=True)
+        fails.append("SELECTION %s: preset %s with env<%s> gave %s, expected a nonzero "
+                     "exit naming <%s> -- %s" % (name, preset, envtxt, got, THROW_TEXT, why))
+      continue
+    got = r.get("node")
+    ok = (rc == 0) and (got == expected)
+    print("LEG_SELECT %-20s %-11s env<%s> -> %s (expected %s) %s"
+          % (name, preset, envtxt, got, expected, "PASS" if ok else "FAIL"), flush=True)
+    if not ok:
+      print(out, flush=True)
+      fails.append("SELECTION %s: preset %s with env<%s> installed %s (rc=%s), expected "
+                   "%s -- %s" % (name, preset, envtxt, got, rc, expected, why))
 
-  # ---- row 7: the reporting surfaces
-  base = results.get("explicit_spvr", {})
+  # ---- row 5: the reporting surfaces
+  base = results.get("explicit_spvr", (None, "", {}))[2]
   print("LEG_HZB_SURFACE property=%s built=%s"
         % (base.get("hzb_property"), base.get("hzb_built")), flush=True)
   if not base.get("hzb_property"):
@@ -238,9 +260,10 @@ def main():
     print("TESTVERDICT FAIL (%d): %s" % (len(fails), "; ".join(fails[:6])), flush=True)
     print("test_spvr_node_selection: FAIL in %.1fs" % dt, flush=True)
     return 1
-  print("TESTVERDICT PASS -- %d selection rows correct (fallback arm, autoselect "
-        "default-off and armed, ORKID_FORCE_DMVR literal in both directions), HZB "
-        "provenance surface and revert knob present (%.1fs)" % (len(CASES), dt), flush=True)
+  print("TESTVERDICT PASS -- %d selection rows correct (both VR preset strings install "
+        "the single-pass stereo node; both throw by name when multiview is forced "
+        "unavailable), HZB provenance surface and revert knob present (%.1fs)"
+        % (len(CASES), dt), flush=True)
   return 0
 
 

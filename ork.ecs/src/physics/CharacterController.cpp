@@ -472,7 +472,12 @@ void CharacterControllerSystem::_onUpdate(Simulation* psi) {
     // [0,1] = analog fraction of base speed (unchanged); above 1 it multiplies BOTH
     // the drive force and the max-speed cap, up to kSpeedScaleMax. The input script
     // owns the per-source scales (keyboard 1x, dpad 2x, stick 4x).
-    constexpr float kSpeedScaleMax = 4.0f;
+    //
+    // THE CEILING IS A SANITY BOUND, NOT A FEEL KNOB, and it has to clear the fastest
+    // scale any input script offers or that script's top steps silently do nothing: the
+    // autowalk speed ring (walk_input_system.py) reaches 16x, so a 4x ceiling would have
+    // made its last two steps print a number the body never moved at.
+    constexpr float kSpeedScaleMax = 16.0f;
     float speed_scale = 1.0f;
     if (dmag > 1.0f) {
       speed_scale = std::min(dmag, kSpeedScaleMax);

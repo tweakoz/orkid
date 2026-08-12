@@ -1,7 +1,7 @@
 #!/usr/bin/env ork.python
 ###############################################################################
 # ork.bench.walkperf.py — the STEREO WALK BENCH runner: play a walkable scene
-# offscreen at DMVR stereo (2560x1280, no vsync) while a deterministic camera
+# offscreen at VR stereo (2560x1280, no vsync) while a deterministic camera
 # walks a GRAND TOUR of the map, log every displayed frame's wall time, then
 # report percentiles PER LOCATION AND PER DIRECTION.
 #
@@ -25,7 +25,6 @@
 #   --offscreen                       hidden window, no present surface, so the
 #                                     ezapp frame governor is disabled: FREERUN
 #                                     (it also forces DRM off by itself)
-#   --no-devkeys                      dev keys inject an ACES+HSVG post chain
 #   ORKEXP_SCENE_WRAP                 preset -> FWDPBRVRDM + the walk driver, and
 #                                     sky-IBL refiltering OFF by default
 #                                     (BENCH_IBL=live restores it — see the wrap)
@@ -97,7 +96,7 @@ def parse_args():
                   help="seconds to wait for the sim to go live before failing (default 300)")
   ap.add_argument("--size", default=None, metavar="WxH",
                   help="window size for the player (-W/-H). REQUIRED for a valid "
-                       "BENCH_PRESET mono-vs-stereo comparison: the DMVR preset renders "
+                       "BENCH_PRESET mono-vs-stereo comparison: the VR preset renders "
                        "two 1280x1280 eyes regardless of the window, while a mono preset "
                        "renders the WINDOW, which defaults to 1280x720 — so the two runs "
                        "differ in pixels as well as in passes unless the mono leg is given "
@@ -186,7 +185,7 @@ def main():
   env["ORKID_FRAME_WALLTIME_LOG"] = walltime_log
   env["WALK_WITNESS_LOG"] = witness_log
 
-  cmd = [viewer, args.scene, "--offscreen", "--no-devkeys"]
+  cmd = [viewer, args.scene, "--offscreen"]
   if args.size is not None:
     try:
       w, h = (int(v) for v in args.size.lower().split("x"))

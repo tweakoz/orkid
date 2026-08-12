@@ -199,6 +199,7 @@ public:
   fxparam_constptr_t _paramDiffuseLevel    = nullptr;
   fxparam_constptr_t _paramSpecularLevel   = nullptr;
   fxparam_constptr_t _paramSkyboxLevel     = nullptr;
+  fxparam_constptr_t _paramDiffuseBrdfModel = nullptr;
 
   fxparam_constptr_t _paramSSAOTexture    = nullptr;
   fxparam_constptr_t _paramSSAOWeight    = nullptr;
@@ -294,7 +295,7 @@ public:
   // SKYLIGHT lane A — sun cascade UBO block + cascade depth-array sampler.
   fxparamblock_constptr_t _parSunBlock     = nullptr;
   fxparam_constptr_t _parSunShadowMap      = nullptr;
-  // sun COOKIE (cloud shadows) — the transmittance map sampled by _sun_cookie_factor.
+  // sun COOKIE (cloud shadows) — the transmittance map sampled by _sun_cookie_sample.
   fxparam_constptr_t _parSunCookie         = nullptr;
 
   // SKYLIGHT lane B — the ublk_sky_atmo members FWD_SKYBOX_PROC actually reads,
@@ -311,6 +312,18 @@ public:
   fxparam_constptr_t _parSkyMoonIlluminance   = nullptr;
   fxparam_constptr_t _parSkyViewLut           = nullptr;
   fxparam_constptr_t _parSkyTransmittanceLut  = nullptr;
+  // AERIAL PERSPECTIVE — the rest of ublk_sky_atmo, which only the forward
+  // haze march reads (the skybox technique gets its medium from the LUTs).
+  // Null on any shader without lib_sky, same as the set above.
+  fxparam_constptr_t _parSkyRayleighScatter   = nullptr;
+  fxparam_constptr_t _parSkyMieScatter        = nullptr;
+  fxparam_constptr_t _parSkyOzoneAbsorb       = nullptr;
+  fxparam_constptr_t _parSkyOzoneTent         = nullptr;
+  fxparam_constptr_t _parSkyMultiScatterLut   = nullptr;
+  fxparam_constptr_t _parSkyHazeDensity       = nullptr;
+  fxparam_constptr_t _parSkyHazeScatterTint   = nullptr;
+  fxparam_constptr_t _parSkyHazeInscatterTint = nullptr;
+  fxparam_constptr_t _parSkyHazeGeom          = nullptr;
   // cloud occlusion of the discs (ublk_sky_cookie / sset_sky_cookie — the
   // procedural skybox technique only)
   fxparam_constptr_t _parSkyCookieParams      = nullptr;
@@ -407,7 +420,7 @@ public:
 
   fxtechnique_constptr_t _tek_FWD_SKYBOX_MO = nullptr;
   fxtechnique_constptr_t _tek_FWD_SKYBOX_ST = nullptr;
-  // SKYLIGHT lane B — procedural sky. DMVR gets per-eye rays free from the mono
+  // SKYLIGHT lane B — procedural sky. A mono pass gets its rays free from the mono
   // IVP provider; single-pass stereo cannot (one draw, both views, asymmetric
   // per-eye frusta) and takes the _ST peer, which unprojects through ublk_stereo.
   fxtechnique_constptr_t _tek_FWD_SKYBOX_PROC = nullptr;
@@ -639,6 +652,31 @@ public:
 
 FxPipeline::statelambda_t createBasicStateLambda(const PBRMaterial* mtl);
 FxPipeline::statelambda_t createLightingLambda(const PBRMaterial* mtl);
+
+// AERIAL PERSPECTIVE (SKYLIGHT lane B) — the one haze bind, shared by the forward
+// lighting lambda, by the standalone lambda the lighting-free pipelines carry, and
+// by the quarter-res shaft pass. The march reads ONE atmosphere, so it gets ONE
+// binder; the shaft pass is a FreestyleMaterial rather than a PBRMaterial, which is
+// why the handles travel in a struct instead of being read off the material.
+struct SkyHazeParamSet {
+  fxparam_constptr_t _density            = nullptr;
+  fxparam_constptr_t _rayleighScatter    = nullptr;
+  fxparam_constptr_t _mieScatter         = nullptr;
+  fxparam_constptr_t _ozoneAbsorb        = nullptr;
+  fxparam_constptr_t _ozoneTent          = nullptr;
+  fxparam_constptr_t _radii              = nullptr;
+  fxparam_constptr_t _sunDirection       = nullptr;
+  fxparam_constptr_t _sunIlluminance     = nullptr;
+  fxparam_constptr_t _scatterTint        = nullptr;
+  fxparam_constptr_t _inscatterTint      = nullptr;
+  fxparam_constptr_t _geom               = nullptr;
+  fxparam_constptr_t _transmittanceLut   = nullptr;
+  fxparam_constptr_t _multiScatterLut    = nullptr;
+  fxparam_constptr_t _viewLut            = nullptr;
+};
+void bindSkyHazeState(const SkyHazeParamSet& params, const RenderContextInstData& RCID);
+void bindSkyHazeState(const PBRMaterial* mtl, const RenderContextInstData& RCID);
+FxPipeline::statelambda_t createSkyHazeStateLambda(const PBRMaterial* mtl);
 
 pbrmaterial_ptr_t default3DMaterial(Context* ctx);
 

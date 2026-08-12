@@ -184,6 +184,91 @@ void VkRtGroupImpl::_transitionToRenderTarget(vkpricmdbufimpl_ptr_t cb) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// MULTIVIEW MSAA DEPTH RESOLVE.
+//
+// Under multiview one pass rasterizes every view, and the depth TEST reads the
+// multisample attachment — so the rendered image is depth-correct in every eye whether or
+// not any resolve happens. What no shader can sample is that attachment: every
+// sampler-side depth consumer (the stereo occlusion pyramid, DEPTH_MAP for SSAO/water)
+// reads the SINGLE-SAMPLE copy instead. Filling that copy is the resolve's whole job, and
+// the render pass's own pResolveAttachment cannot do it for more than one view: Metal's
+// resolve names ONE array slice per pass, and MoltenVK's instanced multiview is a single
+// Metal pass. Measured on this backend at 4 samples, that in-pass resolve filled NEITHER
+// eye — the single-sample copy sat at the 1.0 far clear across both layers, so the stereo
+// occlusion pyramid read max(far, far) and rejected nothing at all (the safe direction,
+// and a silent one). With the per-layer passes below, both layers carry scene depth and
+// the same scene rejects as it does with multisampling off.
+//
+// So the resolve is driven here instead, ONE LAYER AT A TIME: a single-layer render pass
+// per view, no draws, whose only work is the load/resolve/store the driver performs at
+// pass end. That is the portable expression of a per-view depth resolve — there is no
+// depth equivalent of vkCmdResolveImage (it is color-only), and sampling the multisample
+// depth in a kernel would need a sampled multisample image this backend does not create.
+// Same path on every driver: a resolve that is only correct where the implementation
+// happens to loop over views is not one we can reason about.
+///////////////////////////////////////////////////////////////////////////////
+
+bool VkRtGroupImpl::_needsManualDepthResolve() const {
+  if (not _depth_buffer_impl)
+    return false;
+  if (not _depth_buffer_impl->_msaa_imgobj)
+    return false; // no MSAA -> the sampled image IS the rendered one
+  if (not _rtgroup)
+    return false;
+  return _rtgroup->_multiview and (_rtgroup->_numLayers > 1);
+}
+
+void VkRtGroupImpl::_resolveMultiviewDepth(vkpricmdbufimpl_ptr_t cb) {
+  if (not _needsManualDepthResolve())
+    return;
+  auto dbuf = _depth_buffer_impl;
+  int  nlay = _rtgroup->_numLayers;
+
+  // Both images are in an attachment layout here: the pass that just ended put them
+  // there, and _transitionToRenderTarget keeps the pair in step.
+  VkImageLayout msaa_layout    = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+  VkImageLayout resolve_layout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+
+  for (int l = 0; l < nlay; l++) {
+    VkRenderingAttachmentInfo dai;
+    initializeVkStruct(dai, VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO);
+    VkImageView msaa_view    = dbuf->layerView(l, true);
+    VkImageView resolve_view = dbuf->layerView(l, false);
+    OrkAssertI(
+        msaa_view != VK_NULL_HANDLE and resolve_view != VK_NULL_HANDLE,
+        "multiview MSAA depth has no per-layer attachment view — nothing could resolve this eye");
+    dai.imageView   = msaa_view;
+    dai.imageLayout = msaa_layout;
+    // SAMPLE_ZERO is the only depth resolve mode required of every implementation, and
+    // it is what the single-view path has always used — one sample of the depth, not an
+    // average across samples that lie on different surfaces.
+    dai.resolveMode        = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+    dai.resolveImageView   = resolve_view;
+    dai.resolveImageLayout = resolve_layout;
+    // LOAD/STORE, never clear: this pass draws nothing, so a clear would erase the depth
+    // it exists to copy, and the color pass still depth-tests against the multisample
+    // image afterwards.
+    dai.loadOp                        = VK_ATTACHMENT_LOAD_OP_LOAD;
+    dai.storeOp                       = VK_ATTACHMENT_STORE_OP_STORE;
+    dai.clearValue.depthStencil.depth = 1.0f;
+
+    VkRenderingInfo ri;
+    initializeVkStruct(ri, VK_STRUCTURE_TYPE_RENDERING_INFO);
+    ri.viewMask               = 0; // NOT multiview: one view, named explicitly
+    ri.layerCount             = 1;
+    ri.renderArea.offset      = {0, 0};
+    ri.renderArea.extent      = {uint32_t(_width), uint32_t(_height)};
+    ri.colorAttachmentCount   = 0;
+    ri.pColorAttachments      = nullptr;
+    ri.pDepthAttachment       = &dai;
+    ri.pStencilAttachment     = nullptr;
+
+    _contextVK->_vkCmdBeginRenderingKHR(cb->_vkcmdbuf, &ri);
+    _contextVK->_vkCmdEndRenderingKHR(cb->_vkcmdbuf);
+  }
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void VkRtGroupImpl::_invalidateAttachments() {
   __attachments = nullptr;

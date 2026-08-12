@@ -167,6 +167,13 @@ struct CompositingPassData {
   // (union-sun-culled) instead of the eye set. False on every other pass (color, spot depth, probe)
   // -> those keep reading the eye set unchanged. Copied by clone() (member-wise cpd = *this).
   bool _sunCascadeShadowPass = false;
+  // CULLSETS: which caster FAMILIES this cascade band's cullset subscribes to (a
+  // ShadowFamily bit mask), and which band is being drawn (census only). Read at
+  // the depth-pass enqueue gate — a drawable whose family is not in the mask is
+  // never enqueued into this band. Default = every family = the one implicit
+  // all-families cullset, i.e. exactly the pre-cullset behavior.
+  uint32_t _sunCascadeCullFamilies = kShadowFamilyAll;
+  int _sunCascadeBand              = 0;
   // cloud-shadow (sun cookie) fill: set true on the CLONED CPD _update_sun_cookie pushes. The pass
   // consumes ALPHA only, so a material that can produce its alpha without scene lighting selects an
   // alpha-only technique off this (FxPipelinePermutation::_is_sun_cookie) instead of the full forward
@@ -256,9 +263,8 @@ public:
   RenderPresetContext presetForwardPBR(render_preset_data_ptr_t pdata = nullptr);
   RenderPresetContext presetPBRVR(render_preset_data_ptr_t pdata = nullptr);
   RenderPresetContext presetForwardPBRVR(render_preset_data_ptr_t pdata = nullptr);
-  RenderPresetContext presetForwardPBRVRDM(render_preset_data_ptr_t pdata = nullptr);
-  // SPVR — the single-pass-stereo peer of presetForwardPBRVRDM. Same forward render
-  //  node, same content, layered targets and one scene pass instead of two.
+  // SPVR — THE VR preset: forward PBR into layered stereo targets, one scene pass
+  //  for both eyes.
   RenderPresetContext presetForwardPBRSPVR(render_preset_data_ptr_t pdata = nullptr);
 
   compositingscene_constptr_t findScene(const std::string& named) const;

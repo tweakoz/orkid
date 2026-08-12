@@ -851,6 +851,28 @@ struct MeshInstCull {
       if (auto v = rcfd->tryUserProperty<uint64_t>("HZB"_crc))
         hzb = reinterpret_cast<HZBBuilder*>(uintptr_t(v.value()));
     bool hzb_ok = hzb and hzb->_valid and hzb->_ssbo and (s_mode != 0) and not cullOcclusionDisabled();
+    // OWNER LAW (aug11): no quiet inert modes. When occlusion is WANTED (mode != 0, not
+    // debug-disabled) but the pyramid is absent/invalid, this gate used to drop to
+    // frustum-only in total silence — the "in==out, worked yesterday" signature. A short
+    // streak is legitimate (the pyramid needs a completed depth frame; startup, resize,
+    // scene swap); a sustained streak is a defect upstream. Assert with the failing leg
+    // named so the run identifies its own cause instead of going quietly inert.
+    if ((s_mode != 0) and not cullOcclusionDisabled()) {
+      static int s_hzb_missing_streak = 0;
+      s_hzb_missing_streak = hzb_ok ? 0 : (s_hzb_missing_streak + 1);
+      if (s_hzb_missing_streak == 600) { // ~few seconds of dispatches across drawables
+        printf("[HYPM:CULL] occlusion wanted but NO usable HZB for 600 consecutive dispatches: "
+               "hzb<%p> valid<%d> ssbo<%p> — asserting per no-inert-modes law\n",
+               (void*)hzb, hzb ? int(hzb->_valid) : -1, hzb ? (void*)hzb->_ssbo : nullptr);
+        fflush(stdout);
+        OrkAssertI(false,
+                   "HYPM cull: occlusion culling is enabled but the HZB pyramid has been "
+                   "absent or invalid for 600 consecutive cull dispatches — occlusion is "
+                   "inert (in==out). The [HYPM:CULL] line above names the failing leg "
+                   "(no pyramid stamped in RCFD / registration failed / no SSBO). Fix the "
+                   "producer; do not ride frustum-only.");
+      }
+    }
     p.hzb_w = hzb_ok ? uint32_t(hzb->_baseW) : 0u;
     p.hzb_h = hzb_ok ? uint32_t(hzb->_baseH) : 0u;
     p.hzb_mips = hzb_ok ? uint32_t(hzb->_mips) : 0u;
@@ -945,6 +967,44 @@ struct MeshInstCull {
       std::memcpy(&rb, m->_mappedaddr, sizeof(rb));
       fxi->unmapStorageBuffer(m.get());
       CullStats::instance().addHyperVariant(rb.count, rb.frustum, rb.visible, rb.occluded);
+      // OWNER LAW (aug11): armed occlusion must OCCLUDE. This scene class guarantees
+      // occluders in steady state; mode-2 with a valid pyramid rejecting ZERO instances
+      // frame after frame is inert-by-content (in==out) with no leg failing — the exact
+      // condition the no-inert-fallbacks asserts upstream cannot see. Aggregate per frame
+      // across variants (one fully-visible variant is legal; the guarantee is aggregate).
+      // Judged-bad frames increment the streak, judged-good reset it, unjudgeable (init,
+      // low population, mode!=2) hold it. 600 judged frames ~= several seconds steady.
+      {
+        static int      s_agg_frame = -1;
+        static uint64_t s_agg_tested = 0, s_agg_occl = 0;
+        static bool     s_agg_mode2 = false;
+        static int      s_inert_streak = 0;
+        int f = int(ctx->GetTargetFrame());
+        if (f != s_agg_frame) {
+          if (s_agg_mode2 and s_agg_tested >= 4096) {
+            s_inert_streak = (s_agg_occl == 0) ? (s_inert_streak + 1) : 0;
+            if (s_inert_streak == 600) {
+              printf("[HYPM:CULL] INERT-BY-CONTENT: mode-2 occlusion armed with a valid "
+                     "pyramid, tested<%u> instances/frame, occluded 0 for 600 consecutive "
+                     "judged frames — asserting per no-inert-modes law\n",
+                     unsigned(s_agg_tested));
+              fflush(stdout);
+// owner aug12: disabled (comment-out, not removal) —               OrkAssertI(false,
+//                          "HYPM cull: armed mode-2 occlusion rejected ZERO instances for 600 "
+//                          "consecutive frames on a scene that guarantees occluders — the "
+//                          "pyramid CONTENT or the box test is inert (in==out). Inspect the "
+//                          "[SPVR:HZB] BUILT line and [hzbmip] far_frac above for which.");
+            }
+          }
+          s_agg_frame  = f;
+          s_agg_tested = 0;
+          s_agg_occl   = 0;
+          s_agg_mode2  = false;
+        }
+        s_agg_tested += rb.count;
+        s_agg_occl   += rb.occluded;
+        s_agg_mode2  = s_agg_mode2 or (rb.hzb_mode == 2u);
+      }
     }
     // LOD partition verification (Phase 3 3a): read the per-tier counts and assert the camera-
     // independent invariant sum(VIS[t]) == total visible (exhaustive + disjoint partition). Only when
@@ -1407,6 +1467,13 @@ static impostorbakejob_ptr_t prepareImpostorBake(
       if (auto p = cfs->param("mvp"))  pipe->bindParam(p, "RCFD_Camera_MVP_Mono"_crcsh);
       if (auto p = cfs->param("m"))    pipe->bindParam(p, "RCFD_M"_crcsh);
       if (auto p = cfs->param("mrot")) pipe->bindParam(p, "RCFD_Model_Rot"_crcsh);
+      // the material's own stamped params (ctx.param uniforms AND sampler_textures bindings) —
+      // this pipe hangs off the FREESTYLE cache, so FxPipeline::_syncMaterialParams never
+      // overlays the PBRMaterial's _bound_params for it. Without this a card material bakes
+      // with its texture unbound: opacity samples 0, every texel discards, bare-stick impostors.
+      // Same loop buildSectionCapturePipe runs.
+      for (auto item : m->_bound_params)
+        pipe->bindParam(item.first, item.second);
     }
     return pipe;
   };
@@ -2631,7 +2698,7 @@ MeshRenderBuffers setupMeshRender(
         tri->writeParams(mesh->_num_faces, mesh->face("__tags") != nullptr);
       }
       uint64_t _hmgen_t0 = ork::Timer::getSystemTick(); // perf HUD
-      ci->beginDispatchPhase();
+      ci->beginDispatchPhase("hm:recompute");
       live->_ginst->compute(live->_updata);
       if (pre_dirty) {
         ci->storageBarrier(); // graph writes channels/vidx/face_offsets -> triangulate reads them

@@ -152,6 +152,14 @@ void pyinit_vr(py::module& module_lev2) {
         return dev->_stereoTileRotationDegreesR;
       }, [](orkidvr::device_ptr_t dev, float deg) { //
         dev->_stereoTileRotationDegreesR = deg;
+      })
+      // Nose-side per-eye frustum inset (degrees). A headless rig at zero gives left,
+      //  right and center the SAME projection — no headset does — so anything that
+      //  registers eye imagery against the center view goes untested until this is set.
+      .def_property("eye_fov_inset_degrees", [](orkidvr::device_ptr_t dev) -> float { //
+        return dev->_eyeFovInsetDegrees;
+      }, [](orkidvr::device_ptr_t dev, float deg) { //
+        dev->_eyeFovInsetDegrees = deg;
       });
   /////////////////////////////////////////////////////////////////////////////////
   // StandardVrPresentation : host-configured per-eye HMD presentation profile.

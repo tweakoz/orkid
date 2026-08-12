@@ -47,6 +47,10 @@ void SceneGraphNodeItemData::describeX(object::ObjectClass* clazz) {
   clazz->directVectorProperty("MultiLayers", &SceneGraphNodeItemData::_multilayers);
   clazz->directProperty("DrawableAssetName", &SceneGraphNodeItemData::_drawable_asset_name);
   clazz->directProperty("EnvmapPath",        &SceneGraphNodeItemData::_envmap_path);
+  // Without this registration the flag dies at serialization: tojson -> player runs
+  // dropped it silently (defaulting false), so every scene-authored skip_auto_dpp —
+  // including the stars/cloud-deck sky shells — only ever worked in live-Python mode.
+  clazz->directProperty("SkipAutoDepthPrepass", &SceneGraphNodeItemData::_skipAutoDepthPrepass);
   clazz->directObjectProperty("DrawableData", &SceneGraphNodeItemData::_drawabledata)
       ->annotate<ConstString>("editor.factorylistbase", "DrawableData");
 }

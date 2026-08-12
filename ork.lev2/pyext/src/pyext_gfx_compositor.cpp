@@ -770,37 +770,8 @@ void pyinit_gfx_compositor(py::module& module_lev2) {
   type_codec->registerStdCodec<vroutnode_ptr_t>(vroutnode_type);
   /////////////////////////////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////
-  using dualmonovroutnode_ptr_t = std::shared_ptr<DualMonoVrOutputNode>;
-  auto dmvroutnode_type         = //
-      py::class_<DualMonoVrOutputNode, OutputCompositingNode, dualmonovroutnode_ptr_t>(module_lev2, "DualMonoVrOutputNode")
-          .def(
-              "createExternalViewer",
-              [](dualmonovroutnode_ptr_t self, orkezapp_ptr_t app, const EzSecondaryWinConfig& cfg, bool mono) -> ezsecondarywin_ptr_t {
-                return self->createExternalViewer(app, cfg, mono);
-              },
-              py::arg("app"),
-              py::arg("cfg"),
-              py::arg("mono") = true)
-          .def("closeExternalViewer", [](dualmonovroutnode_ptr_t self) { //
-            self->closeExternalViewer();
-          })
-          .def(
-              "downsampledEyeRtGroup",
-              [](dualmonovroutnode_ptr_t self, bool left) -> rtgroup_ptr_t { //
-                return self->downsampledEyeRtGroup(left);
-              },
-              py::arg("left"))
-          .def("__repr__", [](dualmonovroutnode_ptr_t n) -> std::string {
-            fxstring<64> fxs;
-            fxs.format("DualMonoVrOutputNode(%p)", n.get());
-            return fxs.c_str();
-          });
-  type_codec->registerStdCodec<dualmonovroutnode_ptr_t>(dmvroutnode_type);
-  /////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////
-  // SPVR. downsampledEyeRtGroup carries the SAME contract it does on the dual-mono
-  //  node — same name, same per-eye buffer shape — so a two-slot parity harness can
-  //  read both nodes through one call site.
+  // SPVR — THE VR output node. downsampledEyeRtGroup(left) hands back the per-eye
+  //  final downsampled buffer (the one the XR runtime and the mirror blit consume).
   using spvroutnode_ptr_t = std::shared_ptr<SinglePassStereoVrOutputNode>;
   auto spvroutnode_type   = //
       py::class_<SinglePassStereoVrOutputNode, OutputCompositingNode, spvroutnode_ptr_t>(

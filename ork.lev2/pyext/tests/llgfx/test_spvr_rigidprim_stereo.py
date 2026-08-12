@@ -192,7 +192,7 @@ def _render(outdir):
         ctx.endFrame()
       # the eye buffers are read back in a FRESH frame: capturing inside the frame
       #  that produced them leaves them in a host-read layout the composite then
-      #  asserts on (the DMVR gate's finding, same accessor, same shape).
+      #  asserts on (the capture gate's finding, same accessor, same shape).
       outnode = scene.compositoroutputnode
       ctx.beginFrame()
       caps = {}
@@ -269,7 +269,6 @@ def _run_child(outdir, force_mono):
   env["ORKID_VULKAN_VALIDATE"] = "2"
   env.pop("ORKID_GATE0_FORCE_MONO_TEK", None)
   env.pop("ORKID_SPVR_NO_MULTIVIEW", None)
-  env.pop("ORKID_FORCE_DMVR", None)
   if force_mono:
     env["ORKID_GATE0_FORCE_MONO_TEK"] = "1"
   argv = [sys.executable, os.path.abspath(__file__), "--render", outdir]

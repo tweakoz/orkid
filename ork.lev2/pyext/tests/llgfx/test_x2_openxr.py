@@ -62,9 +62,21 @@ procA = run_child({"ORKID_OPENXR_SELFTEST": "1"})
 linesA = [l for l in procA.stdout.splitlines() if l.startswith("ORKID_OPENXR_SELFTEST:")]
 for l in linesA:
     print(l)
+# diagnostics the fixtures emit only on failure (separate prefix so the verdict
+# parse below — a substring match on fixture names — never sees them).
+for l in procA.stdout.splitlines():
+    if l.startswith("ORKID_OPENXR_SELFTEST_DETAIL:"):
+        print(l)
 verdicts = {
     "pose_identity": None, "pose_translation": None, "pose_yaw90": None,
     "pose_combined": None, "fov_symmetric_matches_engine_helper": None,
+    # FULL-CHAIN pure-yaw: synthetic yaw-only head poses + a zero-relative-rotation
+    # IPD rig pushed through the runtime's own composition helpers. Catches yaw->roll
+    # coupling in the composed view matrices (the primitives above cannot).
+    "chain_yaw_center_no_roll": None,
+    "chain_yaw_eyes_no_roll": None,
+    "chain_yaw_ipd_pure_translation": None,
+    "chain_yaw_usertrans_no_roll": None,
     # XR projection polarity vs native/NoVR (cross-convention): the eye projection's
     # Y-scale sign + determinant sign must match fmtx4::perspective, else the projection
     # is Y-flipped -> inverted winding -> inside-out backface culling in XR mode.

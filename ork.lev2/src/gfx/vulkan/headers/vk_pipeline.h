@@ -9,6 +9,39 @@
 ////////////////////////////////////////////////////////////////////////////////
 namespace ork::lev2::vulkan {
 ////////////////////////////////////////////////////////////////////////////////
+// SHADER-SIDE PIPELINE KEY BUDGET
+//
+// _pipeline_bits_composite (built by VkFxInterface::_pipelineBitsForShader) packs three
+// process-lifetime counters; it is the sh_pbits field of the 64-bit pipeline hash in
+// vulkan_fxi_pipelines.cpp:
+//
+//   field                 shift  width  budget
+//   program index           0     12     4096   (never recycles — grows all session long)
+//   vertex interface id    12      8      256   (distinct vertex-input layouts)
+//   geometry interface id  20      8      256   (distinct geometry-stage inputs)
+//                                 ---
+//   composite width                28           (fits a positive int; -1 = compute sentinel)
+//
+// The program index was 8 bits and a long VR session exhausted it (the next shader load
+// tripped the assert mid-frame). Widening it moved the interface fields up — every shift
+// below and the sh_pbits width in the pipeline hash move together.
+////////////////////////////////////////////////////////////////////////////////
+
+static constexpr int kbits_pipeline_bits_prg = 12;
+static constexpr int kbits_pipeline_bits_vif = 8;
+static constexpr int kbits_pipeline_bits_gif = 8;
+
+static constexpr int kshift_pipeline_bits_prg = 0;
+static constexpr int kshift_pipeline_bits_vif = kshift_pipeline_bits_prg + kbits_pipeline_bits_prg;
+static constexpr int kshift_pipeline_bits_gif = kshift_pipeline_bits_vif + kbits_pipeline_bits_vif;
+
+static constexpr int kbits_pipeline_bits_composite = kshift_pipeline_bits_gif + kbits_pipeline_bits_gif;
+
+static constexpr int kmax_pipeline_bits_prg = (1 << kbits_pipeline_bits_prg);
+static constexpr int kmax_pipeline_bits_vif = (1 << kbits_pipeline_bits_vif);
+static constexpr int kmax_pipeline_bits_gif = (1 << kbits_pipeline_bits_gif);
+
+////////////////////////////////////////////////////////////////////////////////
 
 struct VkFxShaderUniformSetItem {
   std::string _datatype;
@@ -339,6 +372,8 @@ struct VkFxShaderPass {
   vk_merged_resources_ptr_t _merged_resources;
   rasterstate_ptr_t         _stateblock_rasterstate;
 
+  // shader-side pipeline key fields — layout + budgets at the top of this header.
+  // -1 = not yet assigned (compute passes keep the -1 composite sentinel).
   int _pipeline_bits_prg       = -1;
   int _pipeline_bits_composite = -1;
   std::unordered_map<std::string, vkfxssmpset_ptr_t> _vk_samplersets;
@@ -405,6 +440,12 @@ struct VkPipelineState {
 
   vkviewporttracker_ptr_t _viewport;
   vkviewporttracker_ptr_t _scissor;
+
+  // true iff this pipeline declared VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE. Issuing
+  // vkCmdSetDepthWriteEnable for a pipeline that bakes depth-write statically is an error
+  // (VUID-vkCmdDraw-None-08608), so _bindPipeline gates the setter on this flag. Only the
+  // MESH path declares it today — see _createPipelineMesh.
+  bool _dynamicDepthWrite = false;
 
   // Storage for merged resource descriptor set layouts
   std::vector<VkDescriptorSetLayout> _dset_layouts;

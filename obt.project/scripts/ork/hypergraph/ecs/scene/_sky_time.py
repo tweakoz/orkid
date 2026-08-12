@@ -89,6 +89,7 @@ class SkyTimeControl:
     # bookkeeping for the telemetry line (written by the consumers)
     self.report = {}
     self.changes = 0              # ops applied — a monotone liveness counter
+    self._pending_hour = None     # an hour set BEFORE adoption (see adopt())
 
   ###########################################################################
   # attach
@@ -107,6 +108,14 @@ class SkyTimeControl:
       self._anchor_abstime = 0.0
       self._anchor_days = model._epoch_days
       self._scale = model.time_scale
+      # AN HOUR ASKED FOR BEFORE ANY BODY ATTACHED IS STILL THE ASKER'S. Adoption
+      # takes the CALENDAR and the RATE from the scene, but the hour is a control
+      # value, and overwriting it here is how a host that sets the clock during
+      # startup (the player restoring a saved time of day, which it must do before
+      # the first tick) got its op counted and its hour thrown away.
+      if self._pending_hour is not None:
+        self._anchor_days = math.floor(self._anchor_days) + self._pending_hour / 24.0
+        self._pending_hour = None
       return True
     same = (abs(model._epoch_days - self._authored_days) < 1.0e-12
             and model.time_scale == self._authored_scale)
@@ -191,6 +200,10 @@ class SkyTimeControl:
     hour = float(hour)
     def _m():
       self._anchor_days = math.floor(self._anchor_days) + hour / 24.0
+      # before adoption the anchor is not on the scene's date yet, so hold the hour
+      # for adopt() to place rather than letting the authored instant erase it
+      if not self._adopted:
+        self._pending_hour = hour
     self._apply(abstime, _m)
 
   def set_day_of_year(self, abstime, day_of_year):

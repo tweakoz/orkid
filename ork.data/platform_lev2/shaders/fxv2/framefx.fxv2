@@ -248,7 +248,7 @@ fragment_shader ps_maskbright //
   : ub_frg_FFX                //
   : samplers_all {            //
   vec3 texc = texture(MrtMap0, frg_uv).xyz;
-  if(texc.x>MaskThreshold || texc.x>MaskThreshold || texc.x>MaskThreshold){
+  if(texc.x>MaskThreshold || texc.y>MaskThreshold || texc.z>MaskThreshold){
 
   }
   else{
@@ -316,7 +316,13 @@ fragment_shader ps_hsvg //
   : lib_dither          //
   : ub_frg_FFX          //
   : samplers_all {      //
+  // FLOOR AT ZERO before any conversion: a negative HDR pixel (e.g. an
+  // additive-subtract composite gone below zero at a silhouette) turns to NaN
+  // in the hue divide, and NaN then survives every later clamp — including the
+  // tonemap stage's own floor (max(NaN,0) is implementation-defined). Kill the
+  // negative at the first stage that sees it.
   vec4 inprgb = texture(MrtMap0, frg_uv);
+  inprgb.xyz = max(inprgb.xyz, vec3(0.0));
   vec3 hsv   = rgb2hsv(inprgb.xyz);
   hsv.x      = mod(hsv.x + Hue + 1.0, 1.0);
   hsv.y      = clamp(hsv.y * Saturation,0,1);
@@ -664,7 +670,12 @@ fragment_shader ps_aces //
   : lib_dither           //
   : ub_frg_FFX           //
   : samplers_all {       //
-  vec3 hdr = texture(MrtMap0, frg_uv).xyz;
+  // FLOOR AT ZERO: negative HDR must clamp to black here, not enter the filmic
+  // fit — the Narkowicz rational flips sign below x ~= -0.012 and races back to
+  // WHITE (x=-1 evaluates ~1.25), so any upstream negative-radiance source
+  // (e.g. an additive-subtract composite gone below zero at a silhouette)
+  // renders as a bright flash instead of darkness without this.
+  vec3 hdr = max(texture(MrtMap0, frg_uv).xyz, vec3(0.0));
   vec3 display = hdr;
   if (Exposure > 0.0) {
     vec3 exposed = hdr * Exposure;

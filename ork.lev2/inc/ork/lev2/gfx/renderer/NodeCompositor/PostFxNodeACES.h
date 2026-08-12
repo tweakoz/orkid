@@ -111,6 +111,12 @@ public:
   // window lands on the DAY or the FLOOR anchor instead of on a black frame.
   float sceneAdaptation(float luminance, float seed_sun_elevation_sin) const;
 
+  // This node's output is a SINGLE display-referred buffer; every HDR-MRT
+  // effect has to be behind it.
+  int chainStage() const final {
+    return CHAINSTAGE_TONE;
+  }
+
   void doGpuInit(lev2::Context* pTARG, int w, int h) final;
   void DoRender(CompositorDrawData& drawdata) final;
 

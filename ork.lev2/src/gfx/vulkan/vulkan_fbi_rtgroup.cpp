@@ -15,6 +15,58 @@ namespace ork::lev2::vulkan {
 static logchannel_ptr_t logchan_rtgroup = logger()->configureChannel("VKRTG", fvec3(0.8, 0.2, 0.5), true);
 // constexpr uint32_t VK_RENDERING_RESUMING_BIT = 0x00000004;
 ///////////////////////////////////////////////////////////////////////////////
+// TEMPORARY (aug11) rtg/depth-image IDENTITY trace — ORKID_DEBUG_RTGID=1.
+///////////////////////////////////////////////////////////////////////////////
+static bool rtgidTrace() {
+  static int v = -1;
+  if (v < 0) {
+    auto e = getenv("ORKID_DEBUG_RTGID");
+    v      = (e and atoi(e)) ? 1 : 0;
+  }
+  return v == 1;
+}
+static void rtgidDump(const char* tag, vkcontext_rawptr_t ctxVK, vkrtgrpimpl_ptr_t impl, const char* extra) {
+  if (not rtgidTrace())
+    return;
+  static int s_count = 0;
+  int        frame   = ctxVK ? ctxVK->GetTargetFrame() : -1;
+  if (s_count > 400 and (frame % 500) != 0)
+    return;
+  s_count++;
+  auto rtg   = impl ? impl->_rtgroup : nullptr;
+  auto dbuf  = impl ? impl->_depth_buffer_impl : nullptr;
+  void* ss   = (dbuf and dbuf->_imgobj) ? (void*)dbuf->_imgobj->_vkimage : nullptr;
+  void* ms   = (dbuf and dbuf->_msaa_imgobj) ? (void*)dbuf->_msaa_imgobj->_vkimage : nullptr;
+  void* tex  = (rtg and rtg->_depthBuffer) ? (void*)rtg->_depthBuffer->_texture.get() : nullptr;
+  // the image the SAMPLER side actually reads: rtbuffer _teximpl -> VulkanTextureObject
+  void* tex_img = nullptr;
+  if (dbuf) {
+    if (auto tt = dbuf->_teximpl.tryAsShared<VulkanTextureObject>())
+      tex_img = tt.value()->_imgobj[0] ? (void*)tt.value()->_imgobj[0]->_vkimage : nullptr;
+  }
+  printf(
+      "[RTGID] %-8s f<%d> rtg<%p:%s> impl<%p> wh<%dx%d> lay<%d> mv<%d> msaa<%d> dbuf<%p> ss_img<%p> ms_img<%p> tex<%p> teximg<%p> lyt<%d> ro<%d> %s\n",
+      tag,
+      frame,
+      (void*)rtg,
+      (rtg and rtg->_name.length()) ? rtg->_name.c_str() : "?",
+      (void*)impl.get(),
+      impl ? impl->_width : -1,
+      impl ? impl->_height : -1,
+      rtg ? rtg->_numLayers : -1,
+      rtg ? int(rtg->_multiview) : -1,
+      rtg ? msaaEnumToInt(rtg->_msaa_samples) : -1,
+      (void*)dbuf.get(),
+      ss,
+      ms,
+      tex,
+      tex_img,
+      dbuf ? int(dbuf->_currentLayout) : -1,
+      impl ? int(impl->_depthReadOnlyMode) : -1,
+      extra ? extra : "");
+  fflush(stdout);
+}
+///////////////////////////////////////////////////////////////////////////////
 vkrtgrpimpl_ptr_t VkFrameBufferInterface::_createRtGroupImpl(const VkRtgCreateOptions& options) {
   vkrtgrpimpl_ptr_t RTGIMPL = std::make_shared<VkRtGroupImpl>(_contextVK,options._rtgroup);
   RTGIMPL->_width           = options._width;
@@ -187,6 +239,8 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     if (_contextVK->_renderPassActive) {
       auto& CB = _contextVK->primary_cb()->_vkcmdbuf;
       _contextVK->_vkCmdEndRenderingKHR(CB);
+      _contextVK->_gpuSliceClosePass(); // GPU timing: after the end, never inside (multiview)
+      _endedDepthWritePass(_contextVK->_activeRenderPassRTG);
       _contextVK->_renderPassActive    = false;
       _contextVK->_activeRenderPassRTG = nullptr;
     }
@@ -253,19 +307,6 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
         break;
     } // switch (rtgroup->_usage) {
 
-#ifdef ORK_PROFILER_ENABLE
-    // STEP 3: Start per-RTG GPU perf block only when transitioning to a new RTG.
-    // Retain profiler_series lookup/creation on rtgroup so it doesn't need to happen every cycle for every RTG.
-    if (rtgroup->_profiler_series == nullptr) {
-      std::string name = rtgroup->_name.empty() ? FormatString("rtg:%p", (void*)rtgroup) : std::string("rtg:") + rtgroup->_name;
-      rtgroup->_profiler_series = Profiler::acquireSeries<SampleProfilerSeries>(CHANNEL_GPU, name);
-    }
-    // _profiler_owner tracks which stack entry owns the sample lifetime so that nested push/pop and resume cycles don't create orphaned begin/end pairs.
-    stack_impl->_profiler_owner = (_active_rtgroup != rtgroup);
-    if (stack_impl->_profiler_owner)
-      rtgroup->_profiler_series->sampleBegin();
-#endif
-
     // Unpaired-setter guard: a read-only-depth flag that outlived the frame
     // that set it is always a bug — every draw in the pass we are about to
     // begin would silently lose its depth write (S3 turned that leak from a
@@ -285,6 +326,11 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
     auto rinfo = RTGIMPL->renderinfo();
     rinfo->_renderinfo.flags &= (~VK_RENDERING_RESUMING_BIT);
+    // GPU timing: open this pass instance's slice BEFORE the begin (a timestamp
+    // inside a multiview instance consumes one query per view). The name is the
+    // rtgroup's; an unnamed rtgroup lands under one stable bucket rather than a
+    // pointer that changes every run.
+    _contextVK->_gpuSliceOpenPass(rtgroup->_name.empty() ? std::string("rtg:unnamed") : "rtg:" + rtgroup->_name);
     _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
 
     // STEP 5: Update tracking state
@@ -294,6 +340,7 @@ void VkFrameBufferInterface::_pushRtGroup(rtgroup_rawptr_t rtgroup) {
 
     stack_impl->_did_begin_rendering = true;
     stack_impl->_was_redundant       = false;
+    rtgidDump("PUSH", _contextVK, RTGIMPL, nullptr);
   } else {
     // Redundant push - same rtgroup already active
     stack_impl->_did_begin_rendering = false;
@@ -315,12 +362,6 @@ void VkFrameBufferInterface::_popRtGroup() {
   auto stack_impl   = popped_item._impl.getShared<VkRtgStackItemImpl>();
   auto finished_rtg = popped_item._rtgroup;
 
-#ifdef ORK_PROFILER_ENABLE
-  // End per-RTG GPU perf block only for the entry that owns the sample lifetime.
-  if (stack_impl->_profiler_owner)
-    finished_rtg->_profiler_series->sampleEnd();
-#endif
-
   if (0)
     logchan_rtgroup->log(
         "_popRtGroup: RTG %p usage=%llu, did_begin_rendering=%d mRtGroupStack=%d",
@@ -340,6 +381,8 @@ void VkFrameBufferInterface::_popRtGroup() {
     // end dynamic rendering
     //////////////////////////////////////////////
     _contextVK->_vkCmdEndRenderingKHR(CB);
+    _contextVK->_gpuSliceClosePass(); // GPU timing: after the end, never inside (multiview)
+    _endedDepthWritePass(_contextVK->_activeRenderPassRTG);
 
     // Track that render pass has ended
     _contextVK->_renderPassActive    = false;
@@ -425,6 +468,9 @@ void VkFrameBufferInterface::_popRtGroup() {
     RTGIMPL->_transitionToRenderTarget(_contextVK->primary_cb());
     auto rinfo = RTGIMPL->renderinfo();
     rinfo->_renderinfo.flags |= VK_RENDERING_RESUMING_BIT;
+    // GPU timing: the resumed instance is a NEW segment under the rtgroup it
+    // belongs to; GpuPassStats sums the segments of one name.
+    _contextVK->_gpuSliceOpenPass(next_rtg->_name.empty() ? std::string("rtg:unnamed") : "rtg:" + next_rtg->_name);
     _contextVK->_vkCmdBeginRenderingKHR(CB, &rinfo->_renderinfo);
 
     // Track that we've resumed a render pass
@@ -437,6 +483,32 @@ void VkFrameBufferInterface::_popRtGroup() {
         "PopRtGroup: RTG %p, primary CB %p",
         (void*)_active_rtgroup,
         _contextVK->primary_cb() ? (void*)_contextVK->primary_cb().get() : nullptr);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////////////////////
+// Called wherever a dynamic-rendering pass ENDS, with the rtg it was rendering.
+// A multiview MSAA depth attachment leaves its render pass unresolved by design
+// (VulkanRenderInfo forces resolveMode=NONE there — one pass cannot resolve several
+// views), so the single-sample copy every sampler reads is filled here instead, per
+// layer. Only after a pass that could WRITE depth: a read-only-depth segment has
+// nothing new to copy down.
+///////////////////////////////////////////////////////////////////////////////
+
+void VkFrameBufferInterface::_endedDepthWritePass(vkrtgrpimpl_ptr_t impl) {
+  if (not impl)
+    return;
+  if (impl->_depthReadOnlyMode) {
+    rtgidDump("ENDDPW", _contextVK, impl, "SKIP:readonly");
+    return;
+  }
+  if (not impl->_needsManualDepthResolve()) {
+    rtgidDump("ENDDPW", _contextVK, impl, "SKIP:no-manual-resolve");
+    return;
+  }
+  rtgidDump("ENDDPW", _contextVK, impl, "RESOLVE");
+  impl->_resolveMultiviewDepth(_contextVK->primary_cb());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -455,6 +527,7 @@ void VkFrameBufferInterface::transitionDepthForSampling(rtgroup_ptr_t rtg) {
   // So it's safe to call while another RTG's render pass is active.
   impl->_depthReadOnlyMode     = true;
   impl->_depthReadOnlySetFrame = _contextVK->GetTargetFrame();
+  rtgidDump("SAMPLE", _contextVK, impl, "hzb-seed");
 
   // Invalidate cached renderinfo so the next renderinfo() call rebuilds
   // with _rainfo_depth.imageLayout = VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL

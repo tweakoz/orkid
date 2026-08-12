@@ -180,6 +180,15 @@ void pyinit_scene(py::module& module_ecs) {
           "node_prefix",
           [](scenedata_ptr_t scenedata) -> std::string { return scenedata->_node_prefix; },
           [](scenedata_ptr_t scenedata, std::string p) { scenedata->_node_prefix = p; })
+      // THE SCENE'S SOURCE .py, set by whoever composes the SceneData and reflected out
+      // as "ScriptFile" — the one channel through which a host learns which authored
+      // scene it is running (the player keys its saved editor values on it). Write it in
+      // PORTABLE token form (<ork_data>/scenes/scn_x.py); an absolute path baked here
+      // names a directory the next machine does not have.
+      .def_property(
+          "scene_script_path",
+          [](scenedata_ptr_t scenedata) -> std::string { return scenedata->_sceneScriptPath.c_str(); },
+          [](scenedata_ptr_t scenedata, std::string p) { scenedata->_sceneScriptPath = p.c_str(); })
       .def("removeSceneObject", [](scenedata_ptr_t scenedata, sceneobject_ptr_t sobj) {
         scenedata->RemoveSceneObject(sobj);
       })

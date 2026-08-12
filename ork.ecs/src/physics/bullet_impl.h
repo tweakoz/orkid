@@ -120,7 +120,7 @@ virtual void  drawSphere (btScalar radius, const btTransform &transform, const b
   bool _hasRefPoint  = false;
   float _refRadius   = 100.0f; // meters; ORKID_PHYSDBG_RADIUS_M overrides
   size_t _linesDropped = 0;    // per sim frame, cap overflow only
-  static constexpr size_t kMaxLines = 200000; // 400k verts per eye pass; 800k/frame dual-mono VR (< the 1M shared ring)
+  static constexpr size_t kMaxLines = 200000; // 400k verts per eye pass (< the 1M shared ring)
 
   static constexpr int kmaxbuffers =20;
     //mDBRecs[i]; //._bulletSystem = system

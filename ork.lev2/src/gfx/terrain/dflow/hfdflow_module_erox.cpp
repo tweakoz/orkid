@@ -22,22 +22,35 @@ namespace ork::lev2::terrain {
 // Internal field units: terr, water, sed all in METERS; velocity in m/s; flux in
 // m^3/s. 4 passes/iter, each its own submit (the
 // one-descriptor-set-per-pipeline rule). Materials-ready: terr is the total column,
-// sed is suspended load, and the erosion strength is an isolated per-cell-READY scalar.
+// sed is suspended load, and the erosion strength is an isolated per-cell scalar — the
+// optional "Erodibility" field multiplies it per cell (Milestone B).
 ///////////////////////////////////////////////////////////////////////////////
 
-// The physical scalars live in a PARAMS SSBO (si_p, float P[16]) read at runtime — NOT
+// erodibility CEILING (the wired field is clamped to [0,kErodMax]): a stability guard on
+// authored data, not an artistic knob — 16x the nominal rate is already extreme, and a
+// negative multiplier would run erosion BACKWARDS (deposit on a carving cell). It rides
+// the params SSBO (P[15]) like every other scalar, never the shader text.
+static constexpr float kErodMax = 16.0f;
+
+// creep FLOOR, in smoothing-lengths-per-cell (see the scale-aware creep law in hfdflow.h):
+// a numerical guard only — half a cell of diffusion per pass is far below anything an
+// author would notice, and it keeps a creep_m2ps of exactly 0 from leaving the bed with no
+// diffusion at all. The CEILING is the authored `creep_max_cells` plug.
+static constexpr float kCreepFloorCells = 0.5f;
+
+// The physical scalars live in a PARAMS SSBO (si_p, float P[17]) read at runtime — NOT
 // baked into the text. The grid dim is ALSO runtime now (P[13]) and the storage arrays are
 // runtime-sized, so the shader text is dim-INDEPENDENT; the disk shader cache (DataBlockCache,
 // keyed by text hash) hits across all param values AND dims AND runs, and changing an erosion
 // knob or resolution no longer recompiles. P layout (filled by _fillParams):
 //   0 DT  1 CELL  2 (reserved)  3 KFLUX  4 CELLAREA  5 RAIN  6 EVAP  7 KC  8 KSDT  9 KDDT
-//  10 VMAX  11 KDIFF  12 SEDDIFF  13 DIM
+//  10 VMAX  11 KDIFF  12 SEDDIFF  13 DIM  14 ERODWIRED  15 ERODMAX  16 CLAMPF
 static std::string _erox_text(const char* name, const char* sifaces, const char* siflist,
                               const char* body) {
   // dim is RUNTIME (params SSBO P[13]); the arrays are runtime-sized and the text no longer
   // carries dim, so one compile serves every resolution.
   return std::string("\nfxconfig fxcfg_default {}\n") + sifaces +
-    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float P[16]; }; }\n"
+    "storage_interface si_p (descriptor_set 0) { buffer layout(std430) pb { float P[17]; }; }\n"
     "compute_interface iface { storage { " + siflist + " si_p } inputs { layout(local_size_x = 8, local_size_y = 8, local_size_z = 1); } }\n"
     "compute_shader " + name + " : iface {\n"
     "  uint u_dim = uint(P[13]);\n"
@@ -48,7 +61,7 @@ static std::string _erox_text(const char* name, const char* sifaces, const char*
     "  uint i  = uint(yi) * u_dim + uint(xi);\n"
     "  float DT=P[0]; float CELL=P[1]; float KFLUX=P[3]; float CELLAREA=P[4];\n"
     "  float RAIN=P[5]; float EVAP=P[6]; float KC=P[7]; float KSDT=P[8]; float KDDT=P[9];\n"
-    "  float VMAX=P[10]; float KDIFF=P[11]; float SEDDIFF=P[12];\n"
+    "  float VMAX=P[10]; float KDIFF=P[11]; float SEDDIFF=P[12]; float CLAMPF=P[16];\n"
     + body + "\n}\n";
 }
 
@@ -65,6 +78,9 @@ struct EroxModuleInst : public TerrainComputeInst {
     _eros    = _floatPlug(this, _d, "erosion_rate_per_s");
     _depo    = _floatPlug(this, _d, "deposition_rate_per_s");
     _creep   = _floatPlug(this, _d, "creep_m2ps");
+    _clampf  = _floatPlug(this, _d, "bed_clamp_frac");
+    _creepmx = _floatPlug(this, _d, "creep_max_cells");
+    _erod    = typedInputNamed<HfImagePlugTraits>("Erodibility"); // OPTIONAL (absent = uniform)
   }
   void bakeAcquire(dflow::GraphInst* inst) final {
     auto env = inst->_impl.getShared<BakeEnv>();
@@ -78,13 +94,17 @@ struct EroxModuleInst : public TerrainComputeInst {
     _sedB  = env->createStorageBuffer(nf * sizeof(float));
     _flux  = env->createStorageBuffer(nf * 4 * sizeof(float));
     _vel   = env->createStorageBuffer(nf * 2 * sizeof(float));
-    _params= env->createStorageBuffer(16 * sizeof(float)); // physical scalars, filled per-compute
+    _params= env->createStorageBuffer(17 * sizeof(float)); // physical scalars, filled per-compute
 
     // shaders are now param- AND dim-INDEPENDENT -> compiled once / disk-cache hits across
     // param tweaks and resolutions; the physical scalars + dim are uploaded to _params.
     auto ET = [&](const char* nm, const char* ifc, const char* names, const char* body) {
       return fxi->computeShader(fxi->shaderFromShaderText(nm, _erox_text(nm, ifc, names, body)), nm);
     };
+    // the erodibility plug is OPTIONAL: wiring is a LINK-time fact (the connection), while the
+    // field's ssbo only exists once the producer has run — so the flag is settled here and the
+    // buffer is fetched at compute().
+    _erodWired = (_srcImg(_erod) != nullptr);
     _fillParams(env.get()); // fill the params SSBO here (pre-dispatch-phase: a host map mid-phase is not visible)
     // --- INIT: terr=In, water/sed/flux=0. binds 0 terr(w) 1 in(r) 2 water(w) 3 sed(w) 4 flux(w)
     {
@@ -128,7 +148,7 @@ struct EroxModuleInst : public TerrainComputeInst {
     }
     // --- WATER+ERODE: update depth from flux divergence, derive PHYSICAL velocity + slope,
     //     capacity C=KC*sin(slope)*|v|, erode (C>s) or deposit (C<s), add rain, evaporate.
-    //     binds 0 terrOut(w) 1 terrIn(r) 2 water(rw) 3 flux(r) 4 sed(rw) 5 vel(w)
+    //     binds 0 terrOut(w) 1 terrIn(r) 2 water(rw) 3 flux(r) 4 sed(rw) 5 vel(w) 6 erod(r)
     {
       const char* ifc =
         "storage_interface si_o (descriptor_set 0) { buffer layout(std430) ob { float terr_o[]; }; }\n"
@@ -136,7 +156,8 @@ struct EroxModuleInst : public TerrainComputeInst {
         "storage_interface si_w (descriptor_set 0) { buffer layout(std430) wb { float water[]; }; }\n"
         "storage_interface si_f (descriptor_set 0) { buffer layout(std430) fb { float flux[]; }; }\n"
         "storage_interface si_s (descriptor_set 0) { buffer layout(std430) sb { float sed[]; }; }\n"
-        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[]; }; }\n";
+        "storage_interface si_v (descriptor_set 0) { buffer layout(std430) vb { float vel[]; }; }\n"
+        "storage_interface si_e (descriptor_set 0) { buffer layout(std430) eb { float erod[]; }; }\n";
       const char* body =
         "  float b = terr_i[i];\n  float d = water[i] + RAIN;\n"
         "  float inL = (xi>0)   ? flux[4u*(i-1u)+1u] : 0.0;\n"        // left's R
@@ -160,14 +181,31 @@ struct EroxModuleInst : public TerrainComputeInst {
         "  float sina = slope/sqrt(slope*slope+1.0);\n"
         "  sina = max(sina, 1e-3);\n"
         "  float C = KC*sina*vmag;\n"                                            // capacity (m)
-        "  float s = sed[i];\n  float bnew=b, snew=s;\n"
-        "  float Kerod = KSDT;\n"                                                // MATERIALS HOOK (M-C: per-cell erodibility*dt)
-        "  if (C > s) { float amt = Kerod*(C-s);        bnew = b - amt; snew = s + amt; }\n" // erode (terr is meters)
-        "  else       { float amt = min(KDDT*(s-C), s); bnew = b + amt; snew = s - amt; }\n" // deposit (<= available)
-        "  bnew += KDIFF*(bL + bR + bD + bU - 4.0*b);\n"  // creep/diffusion: kills the Nyquist checkerboard, hillslope creep
+        "  float s = sed[i];\n"
+        // per-cell ERODIBILITY (dimensionless, 1.0 = the uniform rate). P[14]==0 -> the plug is
+        // UNWIRED and si_e is a placeholder binding: the constant branch is uniform across the
+        // dispatch, so erod[] is never read and the result is bit-identical to the uniform solver.
+        "  float EROD = (P[14] > 0.5) ? clamp(erod[i], 0.0, P[15]) : 1.0;\n"
+        "  float Kerod = KSDT * EROD;\n"                                         // erosion strength * dt
+        // SIGNED bed change (meters): negative carves into the bed, positive settles out of
+        // suspension (capped at the sediment actually present, so snew can never go negative).
+        "  float dz = (C > s) ? -(Kerod*(C-s)) : min(KDDT*(s-C), s);\n"
+        // PER-STEP EXCHANGE LIMIT — bound |dz| by a fraction of the LOCAL RELIEF (flow_erode's
+        // clamp_frac idiom): a cell can be carved no lower than its lowest neighbour and built
+        // no higher than its highest, per step. This is what makes the grid-axis 2-cell mode
+        // DECAY instead of ring — a checkerboard peak has up=0 (may only carve), a pit has
+        // down=0 (may only fill) — and a central-difference slope is blind to that mode, so
+        // without this the only thing holding it down was creep.
+        "  float bmin = min(min(bL,bR), min(bD,bU));\n"
+        "  float bmax = max(max(bL,bR), max(bD,bU));\n"
+        "  float down = max(b - bmin, 0.0); float up = max(bmax - b, 0.0);\n"
+        "  dz = clamp(dz, -CLAMPF*down, CLAMPF*up);\n"
+        // mass conserved by construction: whatever leaves the bed enters suspension.
+        "  float bnew = b + dz;\n  float snew = s - dz;\n"
+        "  bnew += KDIFF*(bL + bR + bD + bU - 4.0*b);\n"  // hillslope creep (scale-aware ceiling, see hfdflow.h)
         "  terr_o[i] = bnew;\n  water[i] = dnew*(1.0 - EVAP);\n  sed[i] = max(snew, 0.0);\n"
         "  vel[2u*i+0u]=u; vel[2u*i+1u]=v;";
-      _csWater = ET("cs_erox_water", ifc, "si_o si_t si_w si_f si_s si_v", body);
+      _csWater = ET("cs_erox_water", ifc, "si_o si_t si_w si_f si_s si_v si_e", body);
     }
     // --- TRANSPORT: semi-Lagrangian advect sediment by PHYSICAL velocity (v*dt/cell texels;
     //     no ADV hack). binds 0 sedOut(w) 1 sedIn(r) 2 vel(r)
@@ -199,7 +237,17 @@ struct EroxModuleInst : public TerrainComputeInst {
     float vmax = std::max(_vmax->value(), 0.01f);
     float dt   = cfl * cell / vmax;                           // CFL-bounded timestep (s)
     _iterations = std::max(1, int(std::ceil(_simTime->value() / dt)));
-    float P[16] = {0};
+    // SCALE-AWARE CREEP (the law is stated in hfdflow.h): creep_m2ps stays a physical
+    // diffusivity, but its per-node smoothing LENGTH sqrt(4*D*T) is bounded in CELLS, so a
+    // value tuned at coarse cells cannot erase everything a fine grid resolves. Coarse grids
+    // sit under the ceiling and keep the authored value verbatim (existing graphs unchanged).
+    float simT  = std::max(_simTime->value(), 1e-6f);
+    float dcap  = std::max(_creepmx->value(), kCreepFloorCells) * cell;  // ceiling length (m)
+    float dflr  = kCreepFloorCells * cell;                               // floor length (m)
+    float Dcap  = (dcap * dcap) / (4.0f * simT);
+    float Dflr  = (dflr * dflr) / (4.0f * simT);
+    float Deff  = std::min(std::max(_creep->value(), Dflr), Dcap);
+    float P[17] = {0};
     P[0]  = dt;
     P[1]  = cell;
     P[2]  = 0.0f;                                             // reserved (was HS; heights are meters -> no vertical scale)
@@ -211,9 +259,12 @@ struct EroxModuleInst : public TerrainComputeInst {
     P[8]  = _eros->value() * dt;                              // KSDT (erosion rate * dt)
     P[9]  = _depo->value() * dt;                              // KDDT (deposition rate * dt)
     P[10] = vmax;
-    P[11] = std::min(_creep->value() * dt / (cell * cell), 0.2f);        // KDIFF hillslope creep
-    P[12] = std::min(2.0f * _creep->value() * dt / (cell * cell), 0.1f); // SEDDIFF sediment mixing
+    P[11] = std::min(Deff * dt / (cell * cell), 0.2f);                   // KDIFF hillslope creep
+    P[12] = std::min(2.0f * Deff * dt / (cell * cell), 0.1f);            // SEDDIFF sediment mixing
     P[13] = float(dim);                                                  // grid dim (runtime, was baked into text)
+    P[14] = _erodWired ? 1.0f : 0.0f;                                    // per-cell erodibility present?
+    P[15] = kErodMax;                                                    // its clamp ceiling
+    P[16] = std::max(_clampf->value(), 0.0f);                            // per-step |dz| / local relief
     auto fxi = env->_ctx->FXI();
     auto m   = fxi->mapStorageBuffer(_params, 0, sizeof(P), BufferMapAccess::WRITE_ONLY);
     std::memcpy(m->_mappedaddr, P, sizeof(P));
@@ -225,6 +276,21 @@ struct EroxModuleInst : public TerrainComputeInst {
     auto in  = _srcImg(_input);
     OrkAssert(in && in->_ssbo);
     int g = (env->_w + 7) / 8;
+    // OPTIONAL erodibility: a WIRED field must be a live R32F of the bake dim (a mismatch is an
+    // authoring error, never a silently-ignored input). UNWIRED binds the input height as a
+    // never-read placeholder — the descriptor must exist, the shader's P[14] gate keeps it dead.
+    FxShaderStorageBuffer* erodbuf = in->_ssbo;
+    if (_erodWired) {
+      auto ero = _srcImg(_erod);
+      if (not(ero and ero->_ssbo and ero->_w == env->_w and ero->_h == env->_h and ero->_channels == 1)) {
+        printf("terrain erox<%s>: Erodibility is wired but unusable (ssbo=%p %dx%d ch=%d; expected a "
+               "%dx%d single-channel field) — unwire it or feed a mono field of the bake dim\n",
+               _dgmodule_data->_name.c_str(), ero ? (void*)ero->_ssbo : nullptr,
+               ero ? ero->_w : 0, ero ? ero->_h : 0, ero ? ero->_channels : 0, env->_w, env->_h);
+        OrkAssert(false);
+      }
+      erodbuf = ero->_ssbo;
+    }
     FxShaderStorageBuffer* terr[2] = {_output->_value->_ssbo, _terrB};
     FxShaderStorageBuffer* sed[2]  = {_sedA, _sedB};
     auto submitNext = [&]() { ci->endDispatchPhase(); ci->beginDispatchPhase(); }; // descriptor-set gotcha
@@ -251,7 +317,8 @@ struct EroxModuleInst : public TerrainComputeInst {
       ci->bindStorageBuffer(_csWater, 3, _flux);
       ci->bindStorageBuffer(_csWater, 4, sed[sc]);
       ci->bindStorageBuffer(_csWater, 5, _vel);
-      ci->bindStorageBuffer(_csWater, 6, _params);
+      ci->bindStorageBuffer(_csWater, 6, erodbuf);
+      ci->bindStorageBuffer(_csWater, 7, _params);
       ci->dispatchCompute(_csWater, g, g, 1);
       tc = 1 - tc;
       submitNext(); // pass 3: sediment transport (sed ping-pong)
@@ -269,7 +336,7 @@ struct EroxModuleInst : public TerrainComputeInst {
   bool cookCacheDefault() const final { return true; }
   uint64_t cookComputeHash(const std::vector<uint64_t>& ih, uint64_t ctx) const final {
     auto h = DataBlock::createHasher();
-    h->accumulateString("terrain.erox.v9"); // v9: heights in meters (dropped HS scale + per-op exag plug); v8: OPEN boundaries
+    h->accumulateString("terrain.erox.v11"); // v11: per-step bed-change limiter + scale-aware creep ceiling; v10: optional per-cell Erodibility input; v9: heights in meters (dropped HS scale + per-op exag plug); v8: OPEN boundaries
     // hash the PHYSICAL params (dim-free identity); the cook CONTEXT hash carries
     // (dim, extent_m), so two resolutions share node id, differ in context.
     h->accumulateItem<float>(_simTime->value());
@@ -280,6 +347,8 @@ struct EroxModuleInst : public TerrainComputeInst {
     h->accumulateItem<float>(_eros->value());
     h->accumulateItem<float>(_depo->value());
     h->accumulateItem<float>(_creep->value());
+    h->accumulateItem<float>(_clampf->value());
+    h->accumulateItem<float>(_creepmx->value());
     _mixTail(h, ctx, ih);
     h->finish();
     return h->result();
@@ -287,8 +356,10 @@ struct EroxModuleInst : public TerrainComputeInst {
 
   const EroxModuleData* _d;
   hfimg_outpluginst_ptr_t _output;
-  hfimg_inpluginst_ptr_t _input;
+  hfimg_inpluginst_ptr_t _input, _erod;
+  bool _erodWired = false; // is the OPTIONAL erodibility field connected? (settled in bakeAcquire)
   dflow::float_inp_pluginst_ptr_t _simTime, _rain, _evap, _vmax, _cap, _eros, _depo, _creep;
+  dflow::float_inp_pluginst_ptr_t _clampf, _creepmx; // the two stability laws (see hfdflow.h)
   FxShaderStorageBuffer *_terrB = nullptr, *_water = nullptr, *_sedA = nullptr, *_sedB = nullptr, *_flux = nullptr, *_vel = nullptr;
   FxShaderStorageBuffer *_params = nullptr; // 16 physical scalars, uploaded per-compute (no recompile on tweak)
   const FxComputeShader *_csInit = nullptr, *_csFlux = nullptr, *_csWater = nullptr, *_csXport = nullptr;
@@ -305,8 +376,18 @@ static void _reshapeEroxIOs(dataflow::moduledata_ptr_t data) {
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "capacity_Kc")->setValue(1.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "erosion_rate_per_s")->setValue(1.0f);
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "deposition_rate_per_s")->setValue(1.0f);
-  // hillslope creep / numerical diffusion (m^2/s); also the anti-checkerboard stabilizer.
+  // hillslope creep — a PHYSICAL diffusivity (m^2/s), bounded per-bake by the scale-aware
+  // ceiling below (the anti-checkerboard duty moved to bed_clamp_frac).
   dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "creep_m2ps")->setValue(4.0f);
+  // per-step bed change as a fraction of the LOCAL RELIEF (flow_erode's clamp_frac, same
+  // 0.5 default): the magnitude limiter that makes the grid-axis 2-cell mode decay.
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "bed_clamp_frac")->setValue(0.5f);
+  // creep smoothing-length CEILING in CELLS (the scale-aware damping law): the effective
+  // diffusivity is capped so one pass never diffuses further than this many cells.
+  dflow::ModuleData::createInputPlug<dflow::FloatPlugTraits>(data, dflow::EPR_UNIFORM, "creep_max_cells")->setValue(4.0f);
+  // OPTIONAL per-cell erodibility (dimensionless multiplier on erosion_rate_per_s; 1.0 = the
+  // uniform rate, 0 = armored). UNWIRED is the default and is bit-identical to the uniform solver.
+  dflow::ModuleData::createInputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Erodibility");
   dflow::ModuleData::createOutputPlug<HfImagePlugTraits>(data, dflow::EPR_UNIFORM, "Out");
 }
 EroxModuleData::EroxModuleData() {}

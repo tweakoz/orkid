@@ -67,6 +67,18 @@ struct VklRtBufferImpl {
   // Per-face image views for cubemap rendering (6 views, one per face)
   std::array<VkImageView, 6> _cubeFaceViews = {VK_NULL_HANDLE};
   bool _hasCubeFaceViews = false;
+
+  // A 2D-ARRAY view of exactly ONE array layer — what a single-layer render pass needs to
+  // name an individual eye of a multiview target (VkRtGroupImpl::_resolveMultiviewDepth).
+  // LAZY and keyed on the VkImage they view, never built with the image: _imgobj is
+  // REPLACED after creation on every rtbuffer that owns a texture (the RTG texture image
+  // supersedes the one _vkCreateImageForBuffer made), so views cut at creation time end up
+  // aimed at an image nothing renders to — a resolve that runs and writes nowhere.
+  VkImageView layerView(int layer, bool multisample);
+  std::vector<VkImageView> _layerViews;     // of _imgobj      (single-sample / resolve target)
+  std::vector<VkImageView> _msaaLayerViews; // of _msaa_imgobj (multisample / resolve source)
+  VkImage _layerViewsImage     = VK_NULL_HANDLE; // image _layerViews were cut from
+  VkImage _msaaLayerViewsImage = VK_NULL_HANDLE; // image _msaaLayerViews were cut from
 };
 ///////////////////////////////////////////////////////////////////////////////
 struct VkRtGroupImpl {
@@ -83,6 +95,14 @@ struct VkRtGroupImpl {
   void _transitionToHostRead(vkpricmdbufimpl_ptr_t cb);
   void _updateMainSurface(VkFrameBufferInterface* fbi);
   void _invalidateAttachments();
+  // MULTIVIEW MSAA DEPTH: true when this group renders more than one view in one pass
+  // into a multisample depth attachment. In that shape the render pass's own
+  // pResolveAttachment resolve is NOT usable (see _resolveMultiviewDepth) and the
+  // renderinfo leaves resolveMode at NONE.
+  bool _needsManualDepthResolve() const;
+  // Resolve the multisample depth into the single-sample copy everything samples, ONE
+  // LAYER AT A TIME. Emitted by the FBI right after the render pass that wrote depth ends.
+  void _resolveMultiviewDepth(vkpricmdbufimpl_ptr_t cb);
   void _setupCubeFaceRendering(int face_index);
   int layoutBits(); // pipeline-hash contribution keyed by attachment layout (see impl)
 

@@ -22,12 +22,12 @@ def texbake_material_source(mat_cls, fallback_src=None):
   execs under the synthetic module name `terrain_dsl_module` with no __file__ — inspect then
   raises "is a built-in class" for it. Keying off the class NAME in that case would silently make
   the cache blind to every material edit (stale atlas, no rebake), so an unreadable class demands
-  the caller's `fallback_src` (the DSL file text — where the class actually lives) or it raises."""
+  the caller's `fallback_src` (the DSL file text — where the class actually lives) or it raises.
+
+  Importable classes hash their WHOLE MODULE text, not inspect.getsource(class): the classifier
+  leans on module-level helpers (strata_phase / _tan_deg / the strata constants) whose edits
+  change baked pixels just as surely as a class-body edit."""
   import inspect, sys
-  try:
-    return inspect.getsource(mat_cls)
-  except Exception:
-    pass
   mod  = sys.modules.get(getattr(mat_cls, "__module__", ""), None)
   path = getattr(mod, "__file__", None)
   if path:
@@ -36,6 +36,10 @@ def texbake_material_source(mat_cls, fallback_src=None):
         return f.read()
     except Exception:
       pass
+  try:
+    return inspect.getsource(mat_cls)
+  except Exception:
+    pass
   if fallback_src is not None:
     return fallback_src
   raise RuntimeError("texbake cache key: no source for material class <%s.%s> and no fallback — "
@@ -52,11 +56,22 @@ def texbake_material_digest(mat_cls, mat_params, cap_targets, fallback_src=None)
   executes one byte-identical technique (FWD_SSBO_CUSTOM_CAPTURE, forced by the drawable) and the
   baked pixels cannot differ. Key off what the pixels DO depend on — material source + params +
   capture targets + codegen version — mirroring the terrain half (hashed from DSL SOURCE) and the
-  hm.section precedent that deliberately keeps ORKID_SECTION_MIPS out of its cook key."""
+  hm.section precedent that deliberately keeps ORKID_SECTION_MIPS out of its cook key.
+
+  The source half walks the material's WHOLE MRO (up to the Ptex3d base): a fork like
+  XXX3GrassMat now INHERITS its classifier from XXX3Mat (shared method, not a body copy),
+  so keying the leaf class alone would go blind to shared-classifier edits in the base's
+  file — a stale atlas would warm-bind forever. Base classes with importable source hash
+  their own file text; the exec'd DSL leaf falls back to the DSL file text as before."""
   import hashlib
-  from ork.hypergraph.ptex3d import CODEGEN_VERSION
+  from ork.hypergraph.ptex3d import CODEGEN_VERSION, Ptex3d
+  srcs = []
+  for c in mat_cls.__mro__:
+    if c in (Ptex3d, object) or issubclass(Ptex3d, c):
+      break                       # engine base — covered by CODEGEN_VERSION discipline
+    srcs.append(texbake_material_source(c, fallback_src))
   key = "\x00".join([TEXBAKE_KEY_SCHEME, CODEGEN_VERSION,
-                     texbake_material_source(mat_cls, fallback_src),
+                     "\x00".join(srcs),
                      repr(sorted((mat_params or {}).items())), repr(list(cap_targets))])
   return "material_" + hashlib.sha1(key.encode("utf-8")).hexdigest()[:16]
 
@@ -253,13 +268,17 @@ class TerrainMixin:
           cam_far      = 100000.0,   # generous flat far (clears any terrain) — sizing it to extent_m was
                                      # too tight: the far edge sat at the far plane and clipped
           move_force   = 8000.0,
-          max_speed    = 10.0,
+          # halved from 10.0 (owner, aug07) — a village walk, not a jog; sprint still
+          # scales from this base via SetSprint.
+          max_speed    = 5.0,
           jump_impulse = 660.0,
           eye_height   = 1.7,    # TRUE human eye height above the ground (the old 4.85-above-
                                  # capsule-center vista default made every terrain read as a
                                  # miniature; scenes wanting an elevated view pass eye_height=)
           cam_distance = 0.0,    # first person
-          gravity      = vec3(0.0, -9.8, 0.0)
+          # -9.8 * 1.25 (owner, aug07): heavier planet — snappier jump arcs, faster
+          # kiva/ledge falls. jump_impulse unscaled, so jump HEIGHT drops ~20%.
+          gravity      = vec3(0.0, -12.25, 0.0)
           )
       if isinstance(walkable, dict):
         walker_kw.update(walkable)
@@ -281,7 +300,7 @@ class TerrainMixin:
     asset wrapper (or its name string); physics scale comes from the asset's manifest
     at load. Heights are TRUE METERS: the C++ shape wraps Bullet's centered heightfield
     in a compound whose child offset restores absolute meters, so the entity sits at
-    y = 0 and world y == the baked height. Ensures BulletSystem (default gravity -9.8
+    y = 0 and world y == the baked height. Ensures BulletSystem (default gravity -12.25
     if absent). `render_dimension` (0 = full EXR res): when the HeightField bakes at a
     higher bake_dimension than the rendered mesh, pass the render grid here so the
     collider high-quality-downsamples to it (Image::resampledOf) and physics matches
@@ -297,7 +316,7 @@ class TerrainMixin:
     from orkengine import ecs as _ecs
     explicit = gravity is not None
     if gravity is None:
-      gravity = vec3(0.0, -9.8, 0.0)
+      gravity = vec3(0.0, -12.25, 0.0)  # matches the walker default (-9.8 * 1.25, owner aug07)
     self._ensure_system("BulletSystem", linGravity=gravity)
     if explicit:  # an EXPLICIT gravity is authoritative regardless of helper order
       self._systems["BulletSystem"].kwargs["linGravity"] = gravity

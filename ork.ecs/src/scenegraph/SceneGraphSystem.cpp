@@ -1122,6 +1122,15 @@ bool SceneGraphSystem::_onLink(Simulation* psi) // final
       }
       pos = (comma == std::string::npos) ? buf.size() : (comma + 1);
     }
+    // STAGE ORDER OVERRIDES DECLARATION ORDER (PostCompositingNode::chainStage).
+    // _postfx_order records the sequence names were DECLARED in, and a scene
+    // declares its sky — hence the tone stage — before the material that later
+    // auto-attaches an HDR effect. Left alone that put the tone stage first,
+    // where its single-buffer output is not something an MRT effect can read.
+    std::stable_sort(chain.begin(), chain.end(), //
+                     [](const lev2::compositorpostnode_ptr_t& a, const lev2::compositorpostnode_ptr_t& b) {
+                       return a->chainStage() < b->chainStage();
+                     });
     if(0)printf("[SGS::_onLink P3.D] assembled PostFxChain size=%zu\n", chain.size());
     fflush(stdout);
     if (!chain.empty()) {
@@ -1361,11 +1370,26 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
           int numsamps = as_int.value();
           _scene->_pbr_common->_ssaoNumSamples = numsamps;
         }
+      // Live direct-diffuse lobe change (the player's POST editor row). Carried
+      // as the model's crc, not its ordinal: the ordinal is the shader's private
+      // currency, and a saved editor state that outlives a renumbering must not
+      // silently mean a different lobe.
+      const auto& diffusebrdf = table["DiffuseBrdfModel"_tok];
+        if( auto as_crc = diffusebrdf.tryAs<uint64_t>() ){
+          lev2::pbr::DiffuseBrdfModel model;
+          if (lev2::pbr::diffuseBrdfModelFromCrc(as_crc.value(), model))
+            _scene->_pbr_common->_diffuseBrdfModel = model;
+          else
+            logchan_sgsys->log(
+                "UpdatePbrCommon: unknown DiffuseBrdfModel crc<0x%zx> - valid: %s",
+                as_crc.value(),
+                lev2::pbr::diffuseBrdfModelValidSet().c_str());
+        }
       break;
     }
     // Interactive envmap swap (#43-proven path): re-filter the IBL from the named
-    // .xir and live-swap it into the bound _radiance_maps. Fired by the player's
-    // --devkeys [E] cycle (host owns the cycle list); the async kick is thread-safe
+    // .xir and live-swap it into the bound _radiance_maps. Fired by a host's envmap
+    // cycle (the host owns the cycle list); the async kick is thread-safe
     // and the pointer swap is the same benign race the python viewer accepts.
     case "SetEnvmap"_crcu: {
       const auto& table = *data.getShared<DataTable>();
@@ -1379,8 +1403,8 @@ void SceneGraphSystem::_onNotify(token_t evID, evdata_t data) {
       }
       break;
     }
-    // Terrain material-override cycle (SetEnvmap sibling): the player's --devkeys [M] key
-    // cycles declared(0)/normals(1)/slope(2)/white(3) and fires this. The mode lands on
+    // Terrain material-override cycle (SetEnvmap sibling): a host cycles
+    // declared(0)/normals(1)/slope(2)/white(3) and fires this. The mode lands on
     // pbr_common (runtime-only, like enable_SSSS); the terrain drawable's render lambda reads
     // it via the RCFD "PBR_COMMON" userProperty and forces the matching debug technique
     // (ptex3d FWD_SSBO_CUSTOM_NORMALS/SLOPE/WHITE, PATH 1). Mode 0 = declared = today's path.

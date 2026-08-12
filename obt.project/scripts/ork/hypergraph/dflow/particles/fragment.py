@@ -39,6 +39,7 @@
 #   ctx.griddim       float  flipbook grid dimension
 #   ctx.cookie(t=, uv=)  vec4  flipbook cell sample (defaults: life, quad uv)
 #   ctx.ramp(t=)         vec4  gradient ramp sample (default: life)
+#   ctx.soft_fade()      float soft-particle depth fade in [0,1] (opt-in)
 #   ctx.is_streak     bool   TRACE-TIME geometry kind
 #
 # The PREMA contract: output rgb ADDS, output a OCCLUDES — author both.
@@ -79,6 +80,7 @@ class FragmentCtx:
     self.is_streak = bool(is_streak)
     self._is_heat = bool(_is_heat)
     self._heat_queried = False
+    self._softfade_queried = False
 
   @property
   def is_heat(self):
@@ -107,6 +109,22 @@ class FragmentCtx:
     t = _wrap(t) if t is not None else self.unit_age
     return Op("_ptcfrag_ramp({0})", [t], "vec4", libsrc=_RAMP_SRC)
 
+  def soft_fade(self):
+    """Soft-particle DEPTH FADE factor in [0,1]: 0 where the sprite touches
+    the scene surface behind it, 1 once it clears the material's
+    soft_fade_distance. Multiply it into the authored alpha to kill the hard
+    intersection edge a billboard cuts against ground/stone.
+
+    CALLING THIS OPTS THE WHOLE SHADER IN: the generated fxv2 then declares
+    DepthMap + the SoftFadeDistance/NearFar uniforms, and the material binds
+    them. Not calling it = the shader is byte-identical to the un-faded one.
+    The fade is still OFF at runtime until the material's reflected
+    soft_fade_distance goes above 0 (A8: the distance is a live uniform, never
+    baked into this text), and it REQUIRES the depth prepass — the material
+    refuses it by name otherwise."""
+    self._softfade_queried = True
+    return Op("_ptcfrag_softfade()", [], "float", libsrc=_SOFTFADE_SRC)
+
 
 _COOKIE_SRC = """
 vec4 _ptcfrag_cookie(float cell_t, vec2 quad_uv) {   // flipbook cell select + sample
@@ -119,6 +137,51 @@ vec4 _ptcfrag_cookie(float cell_t, vec2 quad_uv) {   // flipbook cell select + s
 
 _RAMP_SRC = """
 vec4 _ptcfrag_ramp(float t) { return texture(GradientMap, vec2(t, 0.0)); }
+"""
+
+# Window depth IS ndc here: VkMatrixStackInterface::Frustum emits a Vulkan
+# [0,1]-depth projection and the viewport transform is minDepth=0/maxDepth=1,
+# so eye distance = n*f / (f - z*(f-n)) — n at z=0, f at z=1. (The *2-1 spelling
+# in gbuftools/water is the GL-range form and does NOT apply to this path.)
+# SoftFadeDistance <= 0 means the material has the fade off, or the engine
+# REFUSED it (no depth prepass -> DEPTH_MAP is not a valid scene depth); either
+# way the term must be an exact 1.0 no-op, not a fade against garbage.
+_SOFTFADE_SRC = """
+float _ptcfrag_softfade() {
+  if (SoftFadeDistance <= 0.0)
+    return 1.0;
+  vec2 duv      = gl_FragCoord.xy / vec2(textureSize(DepthMap, 0));
+  float n       = NearFar.x;
+  float f       = NearFar.y;
+  float fmn     = f - n;
+  float scene_z = (n * f) / (f - texture(DepthMap, duv).r * fmn);
+  float frag_z  = (n * f) / (f - gl_FragCoord.z * fmn);
+  return clamp((scene_z - frag_z) / SoftFadeDistance, 0.0, 1.0);
+}
+"""
+
+_DEPTH_SSET_DECL = """sampler_set sset_ptcfrag_depth (descriptor_set 0) {
+  sampler2D DepthMap;
+}
+"""
+
+_SOFTFADE_DECL = """///////////////////////////////////////////////////////////////
+// SOFT-PARTICLE DEPTH FADE (ctx.soft_fade()) — the scene depth the fade reads
+// (RCFD_DEPTH_MAP, the read-only prepass depth) plus its live knobs. Declared
+// ahead of lib_ptcfrag because the fade helper lives in that libblock.
+//
+// MEMBER ORDER IS LOAD-BEARING. Vulkan uniform_sets merge into ONE push-constant
+// block in declaration order, and the CPU-side offsets (shadlang's
+// LayoutStandard430) pack scalars/vectors TIGHTLY while glslang lays the block
+// out to real std430 alignment. The two only agree while every vector lands on
+// its natural boundary: uset_frg_grid contributes one float (GridDim @0), so
+// SoftFadeDistance @4 keeps NearFar 8-aligned @8. Putting the vec2 first puts it
+// at 4 on the CPU and 8 in the shader — the fade then silently reads 0 and does
+// nothing (that WAS the first version of this block).
+""" + _DEPTH_SSET_DECL + """uniform_set uset_ptcfrag_softfade {
+  float SoftFadeDistance;
+  vec2 NearFar;
+}
 """
 
 
@@ -171,6 +234,7 @@ def generate_fragment_fxv2(dsl_class, **params):
   bodies = {}
   libsrcs, inherits, imports = [], set(), set()
   heat_opted = False
+  softfade_opted = False
   variants = [("sprites", False, False), ("streaks", True, False)]
   for kind, is_streak, is_heat in variants:
     ctx = FragmentCtx(is_streak, _is_heat=is_heat)
@@ -186,6 +250,7 @@ def generate_fragment_fxv2(dsl_class, **params):
         libsrcs.append(s)
     inherits |= inh
     imports |= imp
+    softfade_opted = softfade_opted or ctx._softfade_queried
     # ctx.is_heat queried during a base trace -> the class authors a heat
     # variant; trace the heat pair too (appended once, after the base pair)
     if not is_heat and ctx._heat_queried and not heat_opted:
@@ -193,6 +258,16 @@ def generate_fragment_fxv2(dsl_class, **params):
       variants += [("sprites_heat", False, True), ("streaks_heat", True, True)]
   if "lib_mmnoise" in inherits:
     imports.add("orkshader://misctools.i2")
+
+  # ctx.soft_fade() puts DepthMap/SoftFadeDistance/NearFar in the LIBBLOCK
+  # helper, so their declarations must precede it — hoisted ONLY when the fade
+  # is opted in, so a heat-only shader's generated text stays byte-identical.
+  decl_block = ""
+  softfade_iface = ""
+  if softfade_opted:
+    decl_block = _SOFTFADE_DECL
+    softfade_iface = " : sset_ptcfrag_depth : uset_ptcfrag_softfade"
+    inherits |= {"sset_ptcfrag_depth", "uset_ptcfrag_softfade"}
 
   import_lines = "\n".join('  import "%s";' % i for i in
                            ["orkshader://particle_common.i2",
@@ -218,19 +293,21 @@ def generate_fragment_fxv2(dsl_class, **params):
     occl = ("  vec2 _suv = gl_FragCoord.xy / vec2(textureSize(DepthMap, 0));\n"
             "  if (gl_FragCoord.z > texture(DepthMap, _suv).r)\n"
             "    discard;\n")
+    # the depth sampler is already hoisted above the libblock when the fade is
+    # opted in — declaring it twice is a redefinition, not a merge
+    heat_sset = "" if softfade_opted else _DEPTH_SSET_DECL
+    heat_iface = " : sset_ptcfrag_depth" + (
+        " : uset_ptcfrag_softfade" if softfade_opted else "") + lib_ref
     heat_block = """///////////////////////////////////////////////////////////////
 // AUX "heat" channel variants (ctx.is_heat traces) — additive into the
 // forward node's aux_heat RT; .r = heat intensity. Scene-depth occluded
 // (manual test — the aux RTG has no depth attachment).
-sampler_set sset_ptcfrag_depth (descriptor_set 0) {
-  sampler2D DepthMap;
-}
-///////////////////////////////////////////////////////////////
-fragment_shader ps_dsl_sprites_heat : fface_psys_grid : sset_ptcfrag_depth%s {
+%s///////////////////////////////////////////////////////////////
+fragment_shader ps_dsl_sprites_heat : fface_psys_grid%s {
 %s
 }
 ///////////////////////////////////////////////////////////////
-fragment_shader ps_dsl_streaks_heat : fface_psys_grid : sset_ptcfrag_depth%s {
+fragment_shader ps_dsl_streaks_heat : fface_psys_grid%s {
 %s
 }
 ///////////////////////////////////////////////////////////////
@@ -250,8 +327,9 @@ technique tfreestyleparticle_streaks_heat {
     state_block     = sb_default;
   }
 }
-""" % (lib_ref, occl + bodies["sprites_heat"],
-       lib_ref, occl + bodies["streaks_heat"])
+""" % (heat_sset,
+       heat_iface, occl + bodies["sprites_heat"],
+       heat_iface, occl + bodies["streaks_heat"])
 
   return """///////////////////////////////////////////////////////////////
 // GENERATED by ork.hypergraph.dflow.particles.fragment — DO NOT EDIT.
@@ -262,7 +340,7 @@ fxconfig fxcfg_default {
   glsl_version = "330";
 %s
 }
-%s///////////////////////////////////////////////////////////////
+%s%s///////////////////////////////////////////////////////////////
 fragment_shader ps_dsl_sprites : fface_psys_grid%s {
 %s
 }
@@ -287,8 +365,9 @@ technique tfreestyleparticle_streaks {
     state_block     = sb_default;
   }
 }
-%s""" % (dsl_class.__name__, import_lines, lib_block,
-       lib_ref, bodies["sprites"], lib_ref, bodies["streaks"], heat_block)
+%s""" % (dsl_class.__name__, import_lines, decl_block, lib_block,
+       softfade_iface + lib_ref, bodies["sprites"],
+       softfade_iface + lib_ref, bodies["streaks"], heat_block)
 
 
 ###############################################################################

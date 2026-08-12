@@ -16,7 +16,7 @@ namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
 // VrHudOverlay : render-thread bridge that lets a host draw a debug HUD into a VR
 //  headset. The host renders the HUD content into an offscreen RT and publishes
-//  its texture here; a VR output node (DualMonoVr) reads it and draws ONE
+//  its texture here; the VR output node (SinglePassStereoVr) reads it and draws ONE
 //  head-locked textured quad into EACH eye's final buffer (natural stereo
 //  disparity places it at _distance_m in front of the head). Both the XR handoff
 //  and the desktop mirror inherit it.
@@ -28,6 +28,12 @@ namespace ork::lev2 {
 ////////////////////////////////////////////////////////////////////////////////
 struct VrHudOverlay {
   static VrHudOverlay& instance();
+
+  // THE PANEL SLATE, in one place. The VR output node draws it as a straight-ALPHA quad
+  // under the premultiplied text (the split FontMan's glyph blend forces), and the
+  // DESKTOP HUD draws the same rgba behind its own text block — so the two presentations
+  // are the same panel, and re-tinting it moves both. rgb + a, straight alpha.
+  float _slate_rgba[4] = {0.0f, 0.0f, 0.0f, 0.5f};
 
   std::atomic<bool> _enabled{false}; // false => the VR node draws nothing (zero cost)
   texture_ptr_t     _texture;        // panel content (nullptr => nothing to draw)

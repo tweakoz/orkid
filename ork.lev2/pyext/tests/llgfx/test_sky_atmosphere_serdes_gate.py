@@ -15,6 +15,11 @@
 #      object node — proving the value came back as the CONCRETE ptr type the
 #      scenegraph reads with typedValueForKey<skyatmospheredata_ptr_t>, not as
 #      a bare object_ptr_t or an empty var.
+#   3. HAZE TIER: the aerial-perspective / ground-haze knobs survive a decode +
+#      re-encode at off-default values. These are authored at the JSON tier
+#      rather than through python properties because they are reflected but not
+#      yet pybound — and that is the point: the .ecs rail is what a scene file
+#      actually travels on, so it is the rail that has to carry them.
 #
 # Non-render gate: no frames, no capture — serialization only.
 ###############################################################################
@@ -65,6 +70,26 @@ DEFAULT_GRANULARITY = 0
 # frames-only again and its perceived length goes back to being a function of
 # the frame rate on every procedural-sky scene.
 DEFAULT_CROSSFADE_MAX_SECS = 0.5
+
+# the ground-haze layer ships at density ZERO — aerial perspective is then the
+# pure geophysical medium. Asserted because that zero is what makes the graded
+# look opt-IN: a nonzero default would put an artist haze on every procedural-sky
+# scene in the repo at once.
+DEFAULT_HAZE_DENSITY = 0.0
+
+# haze knob values authored straight into the .ecs, deliberately off every
+# default. Property NAMES here are the reflected names from describeX — a rename
+# on the C++ side must break this gate, which is the coverage the round trip
+# through python properties cannot give while the fields are unbound.
+HAZE_AUTHORED = {
+  "AerialPerspectiveEnable": False,
+  "HazeDensity":             0.25,
+  "HazeScaleHeight":         1.5,
+  "HazePhaseG":              0.75,
+  "HazeScatterTint":         [1.0, 0.9, 0.75],
+  "HazeInscatterTint":       [1.1, 0.75, 0.45],
+  "HazeMaxDistanceKm":       80.0,
+}
 
 
 def _find_atmo(node):
@@ -137,6 +162,24 @@ def _assert_knobs(props, tag):
   assert abs(props["SunDiscIntensity"] - SUN_DISC_INTENS) < 1e-6, (tag, props)
 
 
+def _assert_haze_defaults(props):
+  """the shipped haze tier, as it reaches a .ecs with no scene authoring"""
+  assert props["AerialPerspectiveEnable"] is True, props
+  assert abs(props["HazeDensity"] - DEFAULT_HAZE_DENSITY) < 1e-9, (
+      "ground haze default density moved to %f" % props["HazeDensity"])
+
+
+def _assert_haze(props, tag):
+  for key, want in HAZE_AUTHORED.items():
+    got = props[key]
+    if isinstance(want, list):
+      assert len(got) == 3 and all(abs(a - b) < 1e-6 for a, b in zip(got, want)), (tag, key, got)
+    elif isinstance(want, bool):
+      assert got is want, (tag, key, got)
+    else:
+      assert abs(got - want) < 1e-6, (tag, key, got)
+
+
 def main():
   ezapp = ecs.headless_appinit(use_subsystems=['opq', 'core', 'gpu', 'lev2'])
   ezapp.mainThreadBegin()
@@ -147,6 +190,7 @@ def main():
     props1 = _find_atmo(json.loads(js1))
     assert props1 is not None, "no pbr::SkyAtmosphereData node in the .ecs:\n" + js1
     _assert_knobs(props1, "encode")
+    _assert_haze_defaults(props1)
     print("sky atmosphere ENCODE PASS (%d reflected properties)" % len(props1), flush=True)
 
     js2    = Object.deserializeJson(js1).serializeJson()
@@ -155,6 +199,18 @@ def main():
     _assert_knobs(props2, "decode")
     assert props2 == props1, "round trip altered the medium"
     print("sky atmosphere DECODE PASS (round trip identical)", flush=True)
+
+    # haze tier — authored into the .ecs text (reflected, not yet pybound), then
+    # decoded and re-encoded. _find_atmo hands back the live sub-dict, so the
+    # update below edits the tree that gets re-serialized.
+    tree3 = json.loads(js1)
+    _find_atmo(tree3).update(HAZE_AUTHORED)
+    js3    = Object.deserializeJson(json.dumps(tree3)).serializeJson()
+    props3 = _find_atmo(json.loads(js3))
+    assert props3 is not None, "haze round trip LOST the atmosphere:\n" + js3
+    _assert_haze(props3, "haze")
+    _assert_knobs(props3, "haze")
+    print("sky atmosphere HAZE PASS (%d haze knobs round tripped)" % len(HAZE_AUTHORED), flush=True)
     ok = True
   except Exception:
     import traceback

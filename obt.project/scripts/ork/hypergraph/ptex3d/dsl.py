@@ -933,7 +933,9 @@ class Ptex3d:
   def surface(self, *, albedo=None, metallic=None, roughness=None,
               normal=None, emissive=None, ao=None, opacity=None,
               blend="off", depth_test="leq", depth_write=True, cull="front",
-              alpha_to_coverage=False, alpha_cutout=None, **lobes):
+              alpha_to_coverage=False, alpha_cutout=None, shadow_filter=None,
+              shadow_ambient=None,
+              **lobes):
     """LIT PBR surface. The TEXTURED channels (albedo/metallic/roughness/normal/emissive/ao + the
     optional per-pixel `opacity`) take SurfNode expressions. Extra kwargs are glTF PBR LOBES
     (transmission/ior/clearcoat/sheen/subsurface/...) — material-level CONSTANT uniforms.
@@ -946,7 +948,16 @@ class Ptex3d:
     ctx.param) — the codegen then emits a MASKED depth prepass that evaluates ONLY the
     opacity subgraph and discards below the cutoff, so holes stop z-occluding and stop
     casting solid-card shadows (sun cascades / spot shadows / main-view prepass). Keep it
-    equal to the color pass's own discard threshold. Requires an `opacity` channel."""
+    equal to the color pass's own discard threshold. Requires an `opacity` channel.
+
+    shadow_filter (float or ctx.param): opt THIS material into the REDUCED sun-shadow
+    filter — one bilinear depth compare per fragment instead of the PCSS blocker search
+    plus tent PCF (4 texel fetches against up to 45). Above 0.5 selects it, 0 keeps the
+    full evaluator, and a ctx.param makes it a live A/B. It is a per-MATERIAL trade, not
+    a quality setting: declare it on surfaces whose own detail is finer than any shadow
+    kernel (a grass carpet, dense foliage cards), where the penumbra the full evaluator
+    computes is smaller than the geometry hiding it. The surface still RECEIVES the
+    cascades — same maps, same bias, same normal offset, cheaper filter."""
     chans = {}
     for name, val in (("albedo", albedo), ("metallic", metallic), ("roughness", roughness),
                       ("normal", normal), ("emissive", emissive), ("ao", ao), ("opacity", opacity)):
@@ -958,6 +969,10 @@ class Ptex3d:
         raise TypeError("surface(): alpha_cutout requires an opacity channel (the masked "
                         "depth prepass evaluates the opacity subgraph)")
       self._alpha_cutout = _wrap(alpha_cutout)
+    if shadow_filter is not None:
+      self._shadow_filter = _wrap(shadow_filter)
+    if shadow_ambient is not None:
+      self._shadow_ambient = _wrap(shadow_ambient)
     self._surface_mode = "lit"
     # A2C (order-independent foliage): fragment alpha -> MSAA coverage; needs an MSAA RTG + per-pixel opacity.
     self._raster = dict(blend=blend, depth_test=depth_test, depth_write=depth_write, cull=cull,
@@ -1338,6 +1353,11 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, mode="proc", **
   # emit a capture technique. Pop BOTH unconditionally so neither leaks into the surface DSL.
   _wants_impostor = bool(params.pop("impostor", False))
   _wants_capture  = bool(params.pop("capture", False))
+  # ENVIRONMENT-SPECULAR GAIN — a PER-INSTANCE shading knob, popped here (not a DSL ctor param)
+  # so ANY dsl_class can carry it without declaring it: three assets off one Solid class can each
+  # pick their own. It lands as a bindable ublk_ptex_params member (never a baked literal), so it
+  # stays live-rebindable via material.bindParam("EnvSpecularGain", x).
+  _env_specular = params.pop("env_specular", None)
   inst = dsl_class(SurfaceCtx(), **params)
   caps         = getattr(inst, "_captures", None)
   stored_chans = getattr(inst, "_stored_channels", None)
@@ -1404,6 +1424,32 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, mode="proc", **
     masked_kwargs = dict(masked_dpp_body="\n".join(aem.lines),
                          masked_dpp_expr=a_final,
                          masked_dpp_cutout=c_expr)
+
+  # REDUCED SUN FILTER (surface(shadow_filter=...)) — a param member or a literal, never
+  # a per-pixel expression: it selects a code path, and a path that changes per fragment is
+  # both filters' cost plus a branch. Merged into the param specs so a ctx.param declared
+  # ONLY here still lands in ublk_ptex_params and stays rebindable (A8).
+  shadow_kwargs = {}
+  _shfilt = getattr(inst, "_shadow_filter", None)
+  if _shfilt is not None:
+    sem = _Emitter()
+    sh_expr = _coerce(sem.expr(_shfilt), _shfilt._type, "float")
+    if sem.lines:
+      raise ValueError("surface(shadow_filter=) must be a param or constant, not a "
+                       "compound expression")
+    pspecs = _merge_param_specs(pspecs, _emitter_deps(sem)[3])
+    shadow_kwargs = dict(shadow_filter=sh_expr)
+    # shadow_ambient rides only with a declared shadow_filter (the Q entry carries
+    # both); same param-or-literal restriction, same param-spec merge.
+    _shamb = getattr(inst, "_shadow_ambient", None)
+    if _shamb is not None:
+      sem2 = _Emitter()
+      amb_expr = _coerce(sem2.expr(_shamb), _shamb._type, "float")
+      if sem2.lines:
+        raise ValueError("surface(shadow_ambient=) must be a param or constant, not a "
+                         "compound expression")
+      pspecs = _merge_param_specs(pspecs, _emitter_deps(sem2)[3])
+      shadow_kwargs["shadow_ambient"] = amb_expr
 
   height_kwargs = {}
   height   = getattr(inst, "_height", None)
@@ -1475,13 +1521,17 @@ def _build_ptex3d(dsl_class, name_hint=None, vertex_source=None, mode="proc", **
   # to the codegen. Defaults (lit / opaque) keep every existing material byte-identical.
   _mode   = getattr(inst, "_surface_mode", "lit")
   _raster = getattr(inst, "_raster", {})
+  envspec_kwargs = {}
+  if _env_specular is not None:
+    pspecs = _merge_param_specs(pspecs, [("EnvSpecularGain", "float", float(_env_specular))])
+    envspec_kwargs = dict(env_specular="EnvSpecularGain.x")
   path = materialize_surface_fxv2(body, libblock=libblock, lib_inherits=inherits,
                                   extra_imports=imports, params=pspecs, samplers=samplers,
                                   array_samplers=array_samplers,
                                   name_hint=name_hint or dsl_class.__name__.lower(),
                                   surface_mode=_mode, wants_capture=wants_capture, **_raster,
                                   **height_kwargs, **vskw, **matkw, **capture_kwargs,
-                                  **masked_kwargs)
+                                  **masked_kwargs, **shadow_kwargs, **envspec_kwargs)
   lobes = dict(getattr(inst, "_lobes", None) or {})   # class-declared PBR lobes
   return path, pspecs, lobes, capture_kwargs.get("capture_targets", ())
 

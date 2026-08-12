@@ -71,6 +71,11 @@ struct LightData : public DrawableData {
   DeclareAbstractX(LightData, DrawableData);
 
 public:
+  // CONSTANT DEPTH BIAS IN WORLD METRES — the slack between an occluder and a
+  // receiver under which the receiver stays lit. Authored in metres because the
+  // sun's cascade bands each have their own fitted depth range (the ladder's
+  // ranges differ by 3x and more), and an ndc constant is therefore a DIFFERENT
+  // world slack in every band; the evaluator divides by the band's own range.
   float GetShadowBias() const {
     return mShadowBias;
   }
@@ -355,7 +360,9 @@ public:
   drawable_ptr_t createDrawable() const final;
 
   // SKYLIGHT lane A — cascade shadow tunables (all reflected; A8 law).
-  // Storage reserves 4 cascades and the runtime count may use all of them.
+  // Storage reserves kSunCascadeStorage cascades and the runtime count may use
+  // all of them; the DEFAULT stays 4, so growing the storage costs a scene that
+  // authors nothing exactly nothing (same ladder, same slices, same bytes).
   int _shadowCascadeCount  = 4;      // 2..kSunCascadeStorage
   float _shadowMaxDistance = 250.0f; // CASTER CEILING (meters ABOVE a band) — NOT the coverage
                                      //  radius: world-anchored bands set coverage (see below).
@@ -369,7 +376,9 @@ public:
   // _shadowBandRadius * _shadowBandRatio^i (10/40/160/640m by default). Fitting
   // is view-INDEPENDENT by construction — no frustum, no camera forward — so a
   // pure rotation can never invalidate a fit, and each band's world texel size
-  // (2*radius/mapdim) is a constant that a refit cannot change.
+  // (2*radius/mapdim) is a constant that a refit cannot change. A fifth band
+  // continues the same ladder (2560m at the stock knobs) — km-scale coverage for
+  // the haze march and distant ground, bought with no new radius knob.
   float _shadowBandRadius = 10.0f; // band-0 coverage radius (meters)
   float _shadowBandRatio  = 4.0f;  // radius multiplier per band outward
   // PER-BAND RESOLUTION (S2b). The array stays ONE allocation at the NEAR
@@ -401,6 +410,31 @@ public:
   // change — caster flip (sun->moon) or a rig edit that moves the maps
   // themselves — refits early; see ForwardPbrNodeImpl::_update_sun_cascades.
   float _shadowSnapshotInterval = 0.0f;
+  // REFRESH GATE — what makes the UNDECLARED cadence (interval 0) take a new
+  // snapshot. Without it "no declared interval" means "refit every frame", and
+  // a scene with a frozen sun and a standing viewer paid a full fit + cull +
+  // four depth passes to redraw the maps it already had (measured: 1.4 ms/frame
+  // in the forest).
+  //  The gate reads exactly three things — the viewer's POSITION, the light's
+  // DIRECTION and the CASTER SET — because those are the premises the fit is a
+  // function of (bands are world spheres about the anchor; orientation is
+  // deliberately not read, W7). NONE OF THEM MOVED MEANS NO REFIT: the held
+  // snapshot is reused for as long as that stays true (owner ruling,
+  // 2026-08-05), and the price is that a caster which moves WITHOUT changing
+  // the set — wind in a canopy, a walker's limbs — keeps the shadow it had.
+  // Frozen leaf-shimmer is accepted; a quarter-second re-fit clock that costs
+  // ~1.9 ms on a paused frame is not.
+  //  The ceiling is therefore OFF by default and exists only for a scene that
+  // wants that shimmer back: above 0 it refits on a wall clock regardless of
+  // the premises, at whatever rate is declared.
+  //  A DECLARED interval (above) overrides all of it: the declaration is the
+  // cadence, and a drift trigger under it would make the declared number
+  // advisory (owner ruling, 2026-07-30). All three at 0 = gate disarmed = refit
+  // every frame, the pre-gate path exactly — which is why the ceiling's OFF
+  // value is only OFF while one of the other two is armed.
+  float _shadowRefreshAngleDeg = 0.1f; // sun travel since the snapshot, degrees
+  float _shadowRefreshDistance = 0.5f; // viewer travel from the snapshot anchor, meters
+  float _shadowRefreshMaxSecs  = 0.0f; // wall-clock ceiling; 0 = none (see above)
   // SNAPSHOT AMORTIZATION + FLIP (S2a). Both 0 = the shipped path exactly: one
   // set of maps, every band rendered in the frame the snapshot is taken, and a
   // hard swap the moment it lands. Either one above 0 double-buffers the
@@ -424,6 +458,25 @@ public:
   int _shadowSnapshotBandsPerFrame = 0;
   int _shadowCrossfadeFrames       = 0;
   float _shadowCrossfadeSecs       = 0.2f;
+  // CULLSETS (both empty = the one implicit all-families set = the shipped
+  // path, byte for byte). A cullset is a NAMED list of caster FAMILIES
+  // (ShadowFamily tokens: terrain / instanced / other); each band subscribes to
+  // exactly one. A set is culled ONCE against the union of only ITS bands' fit
+  // radii, and its bands draw only its families — which is what keeps a 10 km
+  // outer band from dragging a scattered canopy through every near band's depth
+  // pass (one union volume + one survivor list put every instance in every
+  // band's draw).
+  //  Spelling — two flat strings so the whole rig rides the reflected .ecs the
+  // author/player split demands, and so a new partition is a scene edit with no
+  // C++ in it:
+  //   _shadowCullSets     "near=terrain,instanced,other;far=terrain"
+  //   _shadowBandCullSets "near,near,near,near,far"   (one name PER BAND)
+  // The band list's length must equal the cascade count, every name must be a
+  // declared set, and every family token must be a known one — all three are
+  // hard errors, because a mis-spelled family that silently matched nothing
+  // reads as a broken shadow, not as a typo.
+  std::string _shadowCullSets;
+  std::string _shadowBandCullSets;
   // CLOUD SHADOWS — the sun COOKIE, filled by the forward prologue by drawing
   // the scene's cloud-deck layer from a sun-aligned ortho camera (one shared
   // occlusion source: the decks' own transmittance, never a second model).
@@ -440,6 +493,19 @@ public:
   float _cloudShadowSoftness = 2.0f;    // cookie mip-LOD bias (GROUND penumbra)
   float _cloudShadowDepth    = 30000.0f;// toward-light extrusion (must clear the deck altitude)
   int _cloudShadowMapSize    = 512;     // cookie resolution (mipped)
+  // COOKIE CADENCE — how many frames one cookie fill serves (1 = refill every
+  // frame). The fill draws every deck of the sky into a mipped ortho target and
+  // regenerates its mip chain; the thing it captures is a slab of cloud
+  // kilometers across, moving at cloud speed, sampled through a mip bias whose
+  // whole job is to blur it. Nothing in that image can change meaningfully in
+  // one frame.
+  //  HOLDING IS FREE OF SKEW because the cookie is a WORLD-space field: the
+  // published matrix travels with the texture it describes, so a held cookie
+  // keeps painting the same shadow on the same ground while the viewer moves
+  // (the only drift is the ortho window's anchor, and that window is kilometers
+  // wide). The DISARM path is never held — a cookie must not outlive its decks.
+  int _cloudShadowRefreshFrames = 4;
+
   // BEER-LAMBERT extinction of the direct beam: transmittance = exp(-tau * a),
   // with a the cookie's accumulated occlusion and tau THIS number. The cookie's
   // alpha is a coverage-like union of shell occlusions, so a = 1 is read as "one
@@ -462,6 +528,39 @@ public:
   // filtering it wants is enough to stop single-texel aliasing as the deck
   // advects.
   float _cloudDiscSoftness = 0.5f;
+
+  // SHADOW WEIGHT AGAINST THE IMAGE-BASED TERM. A shadow factor scales the
+  // DIRECT beam; whether it may also pull the ambient/IBL term down is a
+  // question about WHAT SOLID ANGLE the occluder covers, and the two occluders
+  // here answer it differently:
+  //   A CLOUD occludes a broad wedge of the SKY, so the sky light itself is
+  // reduced under it. With the env term carrying ~90% of a daylit frame's
+  // energy, a cookie that touches only the direct beam is invisible — which is
+  // exactly what was measured before this knob existed.
+  //   A TREE occludes the sun DISC and almost none of the sky dome, so a
+  // cascade must keep its hands off the env term. That is an asserted invariant
+  // (the shadow-attribution gate), which is why the cascade weight defaults to
+  // OFF; nonzero is scene experimentation, not physics.
+  //  Both act on BOTH env channels (diffuse SH irradiance and specular IBL) —
+  // a cloud dims the reflection of the sky as much as the light off it — but
+  // not on the same quantity: the cascade rides its shadow factor,
+  // mix(1, factor, weight), while the cloud rides COVERAGE,
+  // mix(1, 1 - strength*alpha, weight). The beam's transmittance is
+  // exp(-tau*alpha) and saturates near-binary past alpha ~ 0.3, which is the
+  // right answer for a disc that is or is not blocked and the wrong one for a
+  // dome that is partly covered; coverage grades with the deck. The cloud
+  // default is deliberately short of 1 — sky light reaches a shaded patch from
+  // beyond the cloud too, so full black under a deck would be wrong. The
+  // darkening is LINEAR in this number, and it is a look: scenes author it
+  // (Scene.sun(cloud_ibl_weight=...)) rather than editing this default.
+  float _cloudShadowIblWeight   = 0.65f;
+  float _cascadeShadowIblWeight = 0.0f;
+  // Cascade shadow FLOOR on the direct term: shadowed direct light keeps this
+  // fraction instead of going to zero (mix(floor, 1, cascade) in fwdtools).
+  // Lifts shadow brightness ABOVE the stock look — the IBL weight above can
+  // only darken. 0 = stock. A look number; scenes author it (Scene.sun(
+  // cascade_floor=...)).
+  float _cascadeShadowFloor     = 0.0f;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -864,12 +963,19 @@ public:
   // gates).
   //
   // SETS (S2a) — the double buffer is a SLICE RANGE of this one array, not a
-  // second texture: sets=2 allocates 2*kSunCascadeStorage slices and the
-  // shader picks a set by adding a base to its band index, so the crossfade
-  // costs no extra sampler and no extra descriptor. sets=1 is byte-identical
-  // to the single-buffered allocation this shipped with.
-  static constexpr int kSunCascadeStorage = 4; // per-set storage reserved (L5); runtime count 2..4
-  void ensureSunCascades(Context* ctx, int dim, int sets = 1);
+  // second texture: sets=2 allocates 2*bands slices and the shader picks a set
+  // by adding a base to its band index, so the crossfade costs no extra sampler
+  // and no extra descriptor. sets=1 is byte-identical to the single-buffered
+  // allocation this shipped with.
+  //
+  // ALLOCATION FOLLOWS THE RUNTIME BAND COUNT, not the storage ceiling: a slice
+  // is a full dim² Z32F surface (16 MB at the default 2048²), so sizing the
+  // array by the ceiling would charge every 4-band scene for a fifth map it
+  // never renders into. _sun_cascade_bands is therefore THE slice stride — set
+  // base = set * _sun_cascade_bands — and every consumer must read it rather
+  // than assume the ceiling.
+  static constexpr int kSunCascadeStorage = 5; // per-set storage CEILING (L5); runtime count 2..5
+  void ensureSunCascades(Context* ctx, int dim, int bands, int sets = 1);
 
   // SUN COOKIE fill target — one small MIPPED RGBA8 RTG the prologue draws the
   // cloud decks into (see ForwardPbrNodeImpl::_update_sun_cookie). Rebuilt only
@@ -910,9 +1016,10 @@ public:
   rtgroup_ptr_t _sun_cookie_rtg;
   int _sun_cookie_dim = 0;
   std::vector<texturearraysliceref_ptr_t> _sun_cascade_slices; // keep alive: RTG->_slice is a raw ptr
-  std::vector<rtgroup_ptr_t> _sun_cascade_rtgs;                // indexed set*kSunCascadeStorage + band
-  int _sun_cascade_dim  = 0;
-  int _sun_cascade_sets = 0;
+  std::vector<rtgroup_ptr_t> _sun_cascade_rtgs;                // indexed set*_sun_cascade_bands + band
+  int _sun_cascade_dim   = 0;
+  int _sun_cascade_sets  = 0;
+  int _sun_cascade_bands = 0; // THE slice stride of the allocation above
   bool _needs_gpu_init = true;
   int _nextDepthSliceAlloc = 0;
   int _nextColorSliceAlloc = 0;
@@ -920,6 +1027,41 @@ public:
 };
 
 using lightmanager_ptr_t = std::shared_ptr<LightManager>;
+
+///////////////////////////////////////////////////////////////////////////////
+// SUN CASCADE CULLSETS — the resolved form of the two authored strings on
+// DirectionalLightData. Built once per SNAPSHOT (not per frame) by the forward
+// prologue; the band->set map drives the fit's per-set volume fold, the cull
+// fan-out's family filter, and the depth pass's enqueue gate.
+//
+// UNAUTHORED = ONE SET named "all", every family, every band subscribed. That
+// is the compatibility contract: one cull against one union volume and one
+// draw per band, i.e. the pre-cullset engine exactly.
+///////////////////////////////////////////////////////////////////////////////
+
+struct SunCullSetPlan {
+  // A band ladder cannot use more distinct sets than it has bands.
+  static constexpr int kMaxSets = LightManager::kSunCascadeStorage;
+
+  int _numSets   = 1;
+  bool _authored = false; // false => the implicit all-families set (no filtering anywhere)
+  std::string _names[kMaxSets];
+  uint32_t _familyMask[kMaxSets]                 = {0};
+  int _bandSet[LightManager::kSunCascadeStorage] = {0};
+  // bands in DRAW ORDER, grouped by set: the snapshot culls a set once and then
+  // draws all of that set's bands, so the number of shadow culls a snapshot
+  // costs is the number of SETS and never the number of bands.
+  int _drawOrder[LightManager::kSunCascadeStorage] = {0};
+};
+
+// Parse + VALIDATE the authored pair against a cascade count. Fails loud (named
+// error, offending token quoted) on an unknown family token, an unknown set
+// name, a band-list length mismatch, a duplicate set name, or more sets than
+// bands. Empty/empty yields the implicit all-families plan.
+SunCullSetPlan resolveSunCullSets(
+    const std::string& sets_spec,  //
+    const std::string& bands_spec, //
+    int cascade_count);
 
 struct HeadLightManager {
   ork::fmtx4 mHeadLightMatrix;

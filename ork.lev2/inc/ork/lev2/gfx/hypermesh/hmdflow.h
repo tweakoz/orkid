@@ -869,6 +869,11 @@ using lsweepmoduledata_ptr_t = std::shared_ptr<LSweepModuleData>;
 // grammar's own SLOT ops (areoles, blooms, windows, gear mounts) — and places at each slot's WORLD
 // frame (owning node xform * slot local). SLOTS is the grammar-authored placement: `_min_gen` does
 // not apply (the grammar already chose the attachment points), `_per_node` reads as cards per slot.
+//
+// Node admission is generation AND thickness: `_max_radius` vetoes segments fatter than the threshold
+// so foliage never roots in trunk/bough wood. `_embed` anchors each card's base edge under the bark
+// (the LSweep surface = centerline + radius * radial) instead of on the skeleton centerline, and
+// `_twist` / `_up_bias` / `_jitter_deg` orient the blade (all default to the pre-embedding placement).
 ///////////////////////////////////////////////////////////////////////////////
 struct LeafScatterModuleData : public MeshModuleData {
   DeclareConcreteX(LeafScatterModuleData, MeshModuleData);
@@ -879,11 +884,19 @@ struct LeafScatterModuleData : public MeshModuleData {
   int   _source   = 0;      // 0 = NODES (phyllotaxis on eligible nodes), 1 = SLOTS (XfSlot attachment points)
   int   _per_node = 3;      // leaf cards placed per eligible node
   float _min_gen  = 4.0f;   // only nodes with _attrs[1] (generation) >= this bear leaves
+  float _max_radius = 0.0f; // 0 = off; else nodes whose radius (_attrs[0]) EXCEEDS this bear none
+                            // (trunk/bough wood — generation cannot separate a thick base from a thin apex)
   float _size     = 0.35f;  // leaf blade length
   float _aspect   = 0.6f;   // blade width / length
   float _roll     = 137.5f; // phyllotactic golden angle (deg) between successive leaves
   float _pitch    = 50.0f;  // leaf droop from the stem heading (deg)
+  float _embed    = 0.0f;   // 0 = off (base edge on the centerline); else the base edge anchors on the
+                            // outward radial, recessed this fraction of the local segment radius under
+                            // the bark, so the blade emerges THROUGH the surface
+  float _twist    = 0.0f;   // card rotation about its own length axis (deg; 0 = faces radially out)
+  float _up_bias  = 0.0f;   // -1..1 blend of the length axis toward world up (+) / down (-) after pitch
   float _jitter   = 0.25f;  // 0..1 random pitch/roll/size jitter
+  float _jitter_deg = 0.0f; // +/- degrees of deterministic per-card jitter on azimuth / pitch / twist
   int   _seed     = 1;
 };
 using leafscattermoduledata_ptr_t = std::shared_ptr<LeafScatterModuleData>;

@@ -18,6 +18,43 @@ namespace ork::lev2::vulkan {
 ///////////////////////////////////////////////////////////////////////////////
 static logchannel_ptr_t logchan_vkpip = logger()->configureChannel("VKPIP", fvec3(1, 1, .2), false);
 ///////////////////////////////////////////////////////////////////////////////
+// PIPELINE HASH LAYOUT (the key of the _pipelines map, 64 bits available)
+//
+//   field                  shift  width   source
+//   vertex format            0      4     VkVtxBuffer::pipelineBitsForFormat (0xF/0xE sentinels)
+//   rtgroup layout           4      4     VkRtGroupImpl::layoutBits
+//   primclass                8      4     VkGeometryBufferInterface primclass registry
+//   shader composite        12     28     VkFxInterface::_pipelineBitsForShader (prg|vif|gif)
+//   rasterstate             40      8     VkRasterState::_pipeline_bits
+//                                 ----
+//   used                            48    -> 16 bits headroom
+//
+// The shader composite field grew 24 -> 28 when the program index went 8 -> 12 bits
+// (see vk_pipeline.h); the rasterstate shift followed it. All three pack sites below
+// share these constants — they must never be spelled out per-site again.
+///////////////////////////////////////////////////////////////////////////////
+
+static constexpr int kshift_plhash_vb  = 0;
+static constexpr int kshift_plhash_rtg = 4;
+static constexpr int kshift_plhash_pc  = 8;
+static constexpr int kshift_plhash_sh  = 12;
+static constexpr int kshift_plhash_rs  = kshift_plhash_sh + kbits_pipeline_bits_composite; // 40
+
+static constexpr int kbits_plhash_vb  = 4;
+static constexpr int kbits_plhash_rtg = 4;
+static constexpr int kbits_plhash_pc  = 4;
+static constexpr int kbits_plhash_rs  = 8;
+
+static_assert((kshift_plhash_rs + kbits_plhash_rs) <= 64, "pipeline hash overflows 64 bits");
+
+// nbits can reach 28+, so the mask must be built in 64-bit (1<<nbits on int is UB at 31).
+static uint64_t check_plbits_range(uint64_t inp, int nbits) {
+  uint64_t maxval = (1ull << nbits);
+  OrkAssertIFMT(inp < maxval, "pipeline key field overflow: value<%llu> budget<%llu>", (unsigned long long)inp, (unsigned long long)maxval);
+  return inp;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 VkPipelineState::VkPipelineState(vkcontext_rawptr_t ctx) {
   _descriptorSetCache = std::make_shared<VulkanDescriptorSetCacheState>(ctx);
@@ -136,33 +173,26 @@ vkpipelinestate_rawptr_t VkFxInterface::_fetchPipeline(
   // compute pipeline bits (for hashing pipeline state)
   /////////////////////////////////////////////////////////////////////
 
-  auto check_plbits_range = [](uint64_t inp, int nbits) -> uint64_t {
-    uint64_t maxval = (1 << nbits);
-    // printf( "check_plbits_range nbits<%d> maxval<%d> inp<%d>\n", nbits, maxval, inp);
-    OrkAssert(inp < maxval);
-    return inp;
-  };
+  uint64_t rtg_pbits = check_plbits_range(rtg_impl->layoutBits(), kbits_plhash_rtg);
+  uint64_t pc_pbits  = check_plbits_range(primclass->_pipeline_bits, kbits_plhash_pc);
 
-  uint64_t rtg_pbits = check_plbits_range(rtg_impl->layoutBits(), 4);
-  uint64_t pc_pbits  = check_plbits_range(primclass->_pipeline_bits, 4);
-
-  int vb_pbits = check_plbits_range(vb->pipelineBitsForFormat(), 4);
+  uint64_t vb_pbits = check_plbits_range(vb->pipelineBitsForFormat(), kbits_plhash_vb);
 
   uint64_t sh_pbits = _pipelineBitsForShader(shprog);
-  sh_pbits          = check_plbits_range(sh_pbits, 24);
+  sh_pbits          = check_plbits_range(sh_pbits, kbits_pipeline_bits_composite);
 
-  uint64_t rs_pbits = check_plbits_range(vkrstate->_pipeline_bits, 8);
+  uint64_t rs_pbits = check_plbits_range(vkrstate->_pipeline_bits, kbits_plhash_rs);
 
   if (0)
     printf("RS_PBITS<%llx>\n", (ull)rs_pbits);
 
   // hash renderpass ?
 
-  uint64_t pipeline_hash = vb_pbits            // 4  (4)
-                           | (rtg_pbits << 4)  // 4  (8)
-                           | (pc_pbits << 8)   // 4  (12)
-                           | (sh_pbits << 12)  // 24 (36)
-                           | (rs_pbits << 36); // 8  (44)
+  uint64_t pipeline_hash = (vb_pbits << kshift_plhash_vb)     //
+                           | (rtg_pbits << kshift_plhash_rtg) //
+                           | (pc_pbits << kshift_plhash_pc)   //
+                           | (sh_pbits << kshift_plhash_sh)   //
+                           | (rs_pbits << kshift_plhash_rs);  //
 
   ////////////////////////////////////////////////////
   // find or create pipeline
@@ -284,25 +314,19 @@ vkpipelinestate_rawptr_t VkFxInterface::_fetchPipelineSSBO(vkprimclass_ptr_t pri
   // compute pipeline hash (without vertex buffer format)
   /////////////////////////////////////////////////////////////////////
 
-  auto check_plbits_range = [](uint64_t inp, int nbits) -> uint64_t {
-    uint64_t maxval = (1 << nbits);
-    OrkAssert(inp < maxval);
-    return inp;
-  };
-
-  uint64_t rtg_pbits = check_plbits_range(rtg_impl->layoutBits(), 4);
-  uint64_t pc_pbits  = check_plbits_range(primclass->_pipeline_bits, 4);
-  uint64_t sh_pbits  = check_plbits_range(_pipelineBitsForShader(shprog), 24);
-  uint64_t rs_pbits  = check_plbits_range(vkrstate->_pipeline_bits, 8);
+  uint64_t rtg_pbits = check_plbits_range(rtg_impl->layoutBits(), kbits_plhash_rtg);
+  uint64_t pc_pbits  = check_plbits_range(primclass->_pipeline_bits, kbits_plhash_pc);
+  uint64_t sh_pbits  = check_plbits_range(_pipelineBitsForShader(shprog), kbits_pipeline_bits_composite);
+  uint64_t rs_pbits  = check_plbits_range(vkrstate->_pipeline_bits, kbits_plhash_rs);
 
   // Use 0xF for vertex format bits to indicate SSBO-only (no vertex buffer)
   uint64_t vb_pbits = 0xF;
 
-  uint64_t pipeline_hash = vb_pbits            // 4  (4)
-                           | (rtg_pbits << 4)  // 4  (8)
-                           | (pc_pbits << 8)   // 4  (12)
-                           | (sh_pbits << 12)  // 24 (36)
-                           | (rs_pbits << 36); // 8  (44)
+  uint64_t pipeline_hash = (vb_pbits << kshift_plhash_vb)     //
+                           | (rtg_pbits << kshift_plhash_rtg) //
+                           | (pc_pbits << kshift_plhash_pc)   //
+                           | (sh_pbits << kshift_plhash_sh)   //
+                           | (rs_pbits << kshift_plhash_rs);  //
 
   ////////////////////////////////////////////////////
   // find or create pipeline
@@ -382,25 +406,19 @@ vkpipelinestate_rawptr_t VkFxInterface::_fetchPipelineMesh() {
   // compute pipeline hash (no vertex format, no primclass)
   /////////////////////////////////////////////////////////////////////
 
-  auto check_plbits_range = [](uint64_t inp, int nbits) -> uint64_t {
-    uint64_t maxval = (1 << nbits);
-    OrkAssert(inp < maxval);
-    return inp;
-  };
-
-  uint64_t rtg_pbits = check_plbits_range(rtg_impl->layoutBits(), 4);
-  uint64_t sh_pbits  = check_plbits_range(_pipelineBitsForShader(shprog), 24);
-  uint64_t rs_pbits  = check_plbits_range(vkrstate->_pipeline_bits, 8);
+  uint64_t rtg_pbits = check_plbits_range(rtg_impl->layoutBits(), kbits_plhash_rtg);
+  uint64_t sh_pbits  = check_plbits_range(_pipelineBitsForShader(shprog), kbits_pipeline_bits_composite);
+  uint64_t rs_pbits  = check_plbits_range(vkrstate->_pipeline_bits, kbits_plhash_rs);
 
   // sentinel vertex-format bits: 0xF marks SSBO-only, 0xE marks mesh-stage-only
   uint64_t vb_pbits = 0xE;
   uint64_t pc_pbits = 0;
 
-  uint64_t pipeline_hash = vb_pbits            // 4  (4)
-                           | (rtg_pbits << 4)  // 4  (8)
-                           | (pc_pbits << 8)   // 4  (12)
-                           | (sh_pbits << 12)  // 24 (36)
-                           | (rs_pbits << 36); // 8  (44)
+  uint64_t pipeline_hash = (vb_pbits << kshift_plhash_vb)     //
+                           | (rtg_pbits << kshift_plhash_rtg) //
+                           | (pc_pbits << kshift_plhash_pc)   //
+                           | (sh_pbits << kshift_plhash_sh)   //
+                           | (rs_pbits << kshift_plhash_rs);  //
 
   ////////////////////////////////////////////////////
   // find or create pipeline

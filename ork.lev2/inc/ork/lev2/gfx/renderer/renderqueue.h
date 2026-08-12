@@ -30,6 +30,8 @@ public:
   /////////////////////////////////////////
   void exportRenderableNodes(ork::fixedvector<const RenderQueue::Node*, krqmaxsize>& nodes) const;
   /////////////////////////////////////////
+  size_t countAtOrAboveSortKey(int skey) const;
+  /////////////////////////////////////////
 protected:
   ork::fixedvector<Node, krqmaxsize> _nodes;
 };

@@ -8,6 +8,7 @@
 #include <ork/pch.h>
 
 #include <algorithm>
+#include <cctype>
 #include <ork/kernel/Array.hpp>
 #include <ork/kernel/opq.h>
 #include <ork/kernel/fixedlut.hpp>
@@ -65,7 +66,8 @@ void LightData::describeX(class_t* c) {
   c->directProperty("ShadowCaster", &LightData::mbShadowCaster);
   c->directProperty("Decal", &LightData::_decal);
 
-  c->floatProperty("ShadowBias", float_range{0.0, 0.01}, &LightData::mShadowBias)
+  // WORLD METRES (see GetShadowBias) — a scene-scale range, not the old ndc one.
+  c->floatProperty("ShadowBias", float_range{0.0, 1.0}, &LightData::mShadowBias)
       ->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("ShadowBlur", float_range{0.0, 1.0}, &LightData::mShadowBlur);
   c->directProperty("ShadowMapSize", &LightData::_shadowMapSize)
@@ -89,7 +91,7 @@ LightData::LightData()
     , mbShadowCaster(false)
     , _shadowsamples(1)
     , mShadowBlur(0.0f)
-    , mShadowBias(0.002f) {
+    , mShadowBias(0.05f) { // metres
 }
 
 lev2::texture_ptr_t LightData::cookie() const {
@@ -244,6 +246,10 @@ void DirectionalLightData::describeX(class_t* c) {
       ->annotate<ConstString>("editor.range.log", "true");
   c->floatProperty("PcfDither", float_range{0, 4}, &DirectionalLightData::_pcfDither);
   c->floatProperty("ShadowSnapshotInterval", float_range{0, 600}, &DirectionalLightData::_shadowSnapshotInterval);
+  // refresh gate (undeclared-cadence only — see the header)
+  c->floatProperty("ShadowRefreshAngleDeg", float_range{0, 45}, &DirectionalLightData::_shadowRefreshAngleDeg);
+  c->floatProperty("ShadowRefreshDistance", float_range{0, 1000}, &DirectionalLightData::_shadowRefreshDistance);
+  c->floatProperty("ShadowRefreshMaxSecs", float_range{0, 60}, &DirectionalLightData::_shadowRefreshMaxSecs);
   // world-anchored band geometry
   c->floatProperty("ShadowBandRadius", float_range{0.5, 500}, &DirectionalLightData::_shadowBandRadius)
       ->annotate<ConstString>("editor.range.log", "true");
@@ -268,11 +274,167 @@ void DirectionalLightData::describeX(class_t* c) {
   c->floatProperty("CloudShadowDepth", float_range{1000, 200000}, &DirectionalLightData::_cloudShadowDepth)
       ->annotate<ConstString>("editor.range.log", "true");
   c->intProperty("CloudShadowMapSize", int_range{64, 4096}, &DirectionalLightData::_cloudShadowMapSize);
+  c->intProperty("CloudShadowRefreshFrames", int_range{1, 240}, &DirectionalLightData::_cloudShadowRefreshFrames);
   // Beer-Lambert optical depth of the beam at full cookie alpha (default 7.5 =
   // a thin fair-weather cumulus; see the member comment for the derivation) and
   // the disc's own, sharper sample bias.
   c->floatProperty("CloudExtinction", float_range{0, 64}, &DirectionalLightData::_cloudExtinction);
   c->floatProperty("CloudDiscSoftness", float_range{0, 8}, &DirectionalLightData::_cloudDiscSoftness);
+  // how much of each shadow factor reaches the AMBIENT/IBL term (see the header:
+  // a cloud occludes sky, a tree occludes the disc)
+  c->floatProperty("CloudShadowIblWeight", float_range{0, 1}, &DirectionalLightData::_cloudShadowIblWeight);
+  c->floatProperty("CascadeShadowIblWeight", float_range{0, 1}, &DirectionalLightData::_cascadeShadowIblWeight);
+  c->floatProperty("CascadeShadowFloor", float_range{0, 1}, &DirectionalLightData::_cascadeShadowFloor);
+  // CULLSETS — the named caster-family sets and the per-band subscription. Two
+  // flat strings (see the header): the whole partition is DATA, so the next
+  // variant is a scene edit and nothing here needs a C++ line.
+  c->directProperty("ShadowCullSets", &DirectionalLightData::_shadowCullSets);
+  c->directProperty("ShadowBandCullSets", &DirectionalLightData::_shadowBandCullSets);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// SUN CASCADE CULLSETS — parse + validate. Every failure here is LOUD: a
+// cullset rig that half-parsed would silently drop a caster family out of a
+// band, which reads as a broken shadow rather than as the typo it is.
+///////////////////////////////////////////////////////////////////////////////
+
+namespace {
+std::vector<std::string> _cullset_split(const std::string& s, char sep) {
+  std::vector<std::string> out;
+  std::string cur;
+  for (char c : s) {
+    if (c == sep) {
+      out.push_back(cur);
+      cur.clear();
+    } else if (not std::isspace((unsigned char)c)) {
+      cur.push_back(c);
+    }
+  }
+  out.push_back(cur);
+  return out;
+}
+} // namespace
+
+SunCullSetPlan resolveSunCullSets(
+    const std::string& sets_spec,  //
+    const std::string& bands_spec, //
+    int cascade_count) {
+
+  SunCullSetPlan plan;
+  plan._numSets       = 1;
+  plan._authored      = false;
+  plan._names[0]      = "all";
+  plan._familyMask[0] = kShadowFamilyAll;
+  for (int i = 0; i < LightManager::kSunCascadeStorage; i++) {
+    plan._bandSet[i]   = 0;
+    plan._drawOrder[i] = i;
+  }
+
+  bool have_sets  = not sets_spec.empty();
+  bool have_bands = not bands_spec.empty();
+  if (not have_sets and not have_bands)
+    return plan; // the implicit all-families set — the shipped path exactly
+
+  // HALF A RIG IS AN ERROR. Sets without a subscription list would leave every
+  // band on a set nobody named; a subscription list without sets names sets
+  // that do not exist. Neither has a defensible fallback.
+  OrkAssertI(
+      have_sets and have_bands,
+      "sun cullsets: BOTH the set declarations and the per-band subscription list are "
+      "required (one without the other names nothing) — see DirectionalLightData::_shadowCullSets");
+
+  for (const auto& decl : _cullset_split(sets_spec, ';')) {
+    if (decl.empty())
+      continue;
+    auto eq = decl.find('=');
+    OrkAssertI(
+        eq != std::string::npos,
+        "sun cullsets: a set declaration must read <name>=<family>,<family>,... "
+        "(offending declaration is missing its '=')");
+    std::string name = decl.substr(0, eq);
+    OrkAssertI(not name.empty(), "sun cullsets: a set was declared with an empty name");
+    int slot = plan._authored ? plan._numSets : 0;
+    for (int i = 0; i < slot; i++)
+      OrkAssertI(
+          plan._names[i] != name, //
+          "sun cullsets: duplicate set name — each set is declared exactly once");
+    OrkAssertI(
+        slot < SunCullSetPlan::kMaxSets,
+        "sun cullsets: more sets declared than the cascade ladder has bands — a band "
+        "subscribes to exactly one set, so extra sets can never be drawn");
+    uint32_t mask = 0;
+    for (const auto& tok : _cullset_split(decl.substr(eq + 1), ',')) {
+      if (tok.empty())
+        continue;
+      if (tok == "all") { // the whole closed set, spelled once
+        mask |= kShadowFamilyAll;
+        continue;
+      }
+      ShadowFamily fam;
+      if (not shadowFamilyFromToken(tok, fam)) {
+        printf(
+            "[FWD:SUN] sun cullsets: unknown caster family token <%s> in set <%s> — the known "
+            "families are terrain / instanced / other (or 'all')\n",
+            tok.c_str(),
+            name.c_str());
+        fflush(stdout);
+        OrkAssertI(false, "sun cullsets: unknown caster family token (see the line above)");
+      }
+      mask |= shadowFamilyBit(fam);
+    }
+    OrkAssertI(
+        mask != 0,
+        "sun cullsets: a set was declared with no families — a band subscribed to it "
+        "would draw nothing, which is a disabled band, not a cullset");
+    plan._names[slot]      = name;
+    plan._familyMask[slot] = mask;
+    plan._numSets          = slot + 1;
+    plan._authored         = true;
+  }
+  OrkAssertI(plan._authored, "sun cullsets: the set declaration string parsed to no sets at all");
+
+  auto band_names = _cullset_split(bands_spec, ',');
+  if (int(band_names.size()) != cascade_count) {
+    printf(
+        "[FWD:SUN] sun cullsets: the per-band subscription list has %zu entries but the ladder "
+        "has %d bands — one set name PER BAND\n",
+        band_names.size(),
+        cascade_count);
+    fflush(stdout);
+    OrkAssertI(false, "sun cullsets: band subscription list length != cascade count");
+  }
+  for (int b = 0; b < cascade_count; b++) {
+    int found = -1;
+    for (int s = 0; s < plan._numSets; s++)
+      if (plan._names[s] == band_names[b])
+        found = s;
+    if (found < 0) {
+      printf(
+          "[FWD:SUN] sun cullsets: band %d subscribes to set <%s>, which was never declared\n",
+          b,
+          band_names[b].c_str());
+      fflush(stdout);
+      OrkAssertI(false, "sun cullsets: band subscribes to an undeclared set");
+    }
+    plan._bandSet[b] = found;
+  }
+  // bands past the runtime count are never drawn; park them on set 0 so nothing
+  // downstream reads an uninitialized index.
+  for (int b = cascade_count; b < LightManager::kSunCascadeStorage; b++)
+    plan._bandSet[b] = 0;
+
+  // DRAW ORDER, grouped by set. The band order within the snapshot is free (each
+  // band paints its own slice), and grouping is what makes the per-set cull run
+  // ONCE per set instead of once per band boundary.
+  int n = 0;
+  for (int s = 0; s < plan._numSets; s++)
+    for (int b = 0; b < cascade_count; b++)
+      if (plan._bandSet[b] == s)
+        plan._drawOrder[n++] = b;
+  for (int b = n; b < LightManager::kSunCascadeStorage; b++)
+    plan._drawOrder[b] = b;
+
+  return plan;
 }
 
 drawable_ptr_t DirectionalLightData::createDrawable() const {
@@ -866,13 +1028,15 @@ void LightManager::gpuInit(Context* ctx) {
 // is dead code and deliberately not used here.
 ///////////////////////////////////////////////////////////////////////////////
 
-void LightManager::ensureSunCascades(Context* ctx, int dim, int sets) {
-  sets           = std::max(sets, 1);
-  int num_slices = kSunCascadeStorage * sets;
-  if (_sun_cascade_dim == dim and _sun_cascade_sets == sets and int(_sun_cascade_rtgs.size()) == num_slices)
+void LightManager::ensureSunCascades(Context* ctx, int dim, int bands, int sets) {
+  sets  = std::max(sets, 1);
+  bands = std::clamp(bands, 1, kSunCascadeStorage);
+  int num_slices = bands * sets;
+  if (_sun_cascade_dim == dim and _sun_cascade_sets == sets and _sun_cascade_bands == bands)
     return;
-  _sun_cascade_dim  = dim;
-  _sun_cascade_sets = sets;
+  _sun_cascade_dim   = dim;
+  _sun_cascade_sets  = sets;
+  _sun_cascade_bands = bands;
   auto ary        = std::make_shared<TextureArray>();
   ary->_debugName = "lmgr.sun_cascades";
   ary->_tex->_debugName = "sun_shadow_cascades";

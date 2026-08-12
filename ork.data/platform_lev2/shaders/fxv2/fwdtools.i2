@@ -1,5 +1,13 @@
 import "pbrtools.i2";
 import "pbr_lobes.i2";
+// DIRECT, not via pbrtools: pbrtools imports THIS file (circular) before it
+// reaches skytools, so at the point fwdtools is sema'd lib_sky is not yet in
+// the translatable cache and the `: lib_sky` inherit below would be dropped
+// without a diagnostic.
+import "skytools.i2";
+// lib_sun_air — the march's per-step cascade taps, shared verbatim with the
+// quarter-res shaft pass. Same direct-import reasoning as skytools above.
+import "sunairtools.i2";
 ///////////////////////////////////////////////////////////////
 // PBR2 Phase 3 (P3.C) — Forward pass output / variant matrix.
 //
@@ -42,6 +50,8 @@ libblock lib_fwd_impl : lib_math //
     : sset_sun                   // SKYLIGHT lane A — cascade depth array
     : lib_def                    //
     : lib_ssao                   //
+    : lib_sky                    // SKYLIGHT lane B — aerial-perspective seam
+    : lib_sun_air                // the march's per-step cascade taps (shared with the shaft pass)
     : lib_pbr_lobes_all {        //
 
   vec3 _forward_lighting_int(vec3 modcolor, vec3 eyepos) {
@@ -153,7 +163,8 @@ libblock lib_fwd_impl : lib_math //
 
     vec3 diffusel = vec3(1) - fres;
     diffusel *= (1 - plc._metallic);
-    vec3 diffuse_term = (diffusel * pbd._albedo * INV_PI) * DiffuseLevel;
+    vec3 diffuse_term = diffuseBRDF(DiffuseBrdfModel, pbd._albedo, diffusel,
+                                    plc._roughness, plc._normal, plc._viewdir, lightdir) * DiffuseLevel;
 
     vec3 numerator     = min(ggx * geo * SpecularLevel, 16) * fres;
     float denominator  = 4 * satdot(plc._normal, plc._viewdir) * satdot(plc._normal, lightdir) + EPSILON;
@@ -238,6 +249,12 @@ libblock lib_fwd_impl : lib_math //
     // CPU-side by the same weight the maps fade on), so this reads the same
     // way whichever it is, and EnvSHValid==0 means the frame has no sky rather
     // than selecting some other source.
+    // AND IT STAYS LAMBERT. DiffuseBrdfModel selects the ANALYTIC diffuse lobe
+    // only (lib_brdf::diffuseBRDF, punctual + sun); the ambient term below is a
+    // cosine-convolved SH irradiance, which is a Lambert integral by
+    // construction. Matching it to Oren-Nayar or Burley means re-convolving the
+    // probe against that lobe, not scaling this read — a deliberate asymmetry,
+    // not an oversight.
     vec3 diffuse_irr   = env_shIrradiance(diffn) * EnvSHValid;
     vec3 diffuse_env   = diffuse_irr * DiffuseLevel * SkyboxLevel;
     vec3 diffuse_light = ambient + diffuse_env;
@@ -313,7 +330,7 @@ libblock lib_fwd_impl : lib_math //
   // ublk_sun (sun_cascade_basis — the viewer position the bands were fit
   // around): the cascades are nested world spheres, so the test that matches
   // the CPU fit is radial, not a view depth. No camera orientation enters it,
-  // which is what makes both DMVR eyes agree and a turn cost nothing. 3x3 PCF (extends the
+  // which is what makes both eyes agree and a turn cost nothing. 3x3 PCF (extends the
   // spot shadow_factor pattern) with a per-fragment dither rotation of the
   // kernel (soft foliage dappling); all knobs from sun_shadow_params (A8).
   /////////////////////////////////////////////////////////
@@ -363,15 +380,23 @@ libblock lib_fwd_impl : lib_math //
   // cookie's extent the sun is unoccluded (clamp-to-1, not clamp-to-edge), so a
   // finite map never paints a hard shadow rectangle across the world.
   /////////////////////////////////////////////////////////
-  float _sun_cookie_factor(vec3 wpos) {
+  // RETURNS BOTH THINGS ONE SAMPLE CARRIES: x = the beam's transmittance (the
+  // Beer-Lambert law below, what the DIRECT term is multiplied by), y = the
+  // COVERAGE that transmittance was derived from, scaled by the same strength
+  // dial. They are not interchangeable: at the shipped optical depth
+  // transmittance is near-binary (a=0.3 already kills 90% of the beam), which is
+  // right for a disc that is or is not blocked and wrong for a SKY that is
+  // partly covered — the sky term grades with how much of the dome the deck
+  // takes, so it reads the coverage. One sample, two consumers.
+  vec2 _sun_cookie_sample(vec3 wpos) {
     if (sun_cookie_params.x < 0.5)
-      return 1.0; // no cookie armed — never sampled, byte-identical to no-cookie
+      return vec2(1.0, 0.0); // no cookie armed — never sampled, byte-identical to no-cookie
     vec4 cpos = sun_cookie_matrix * vec4(wpos, 1.0);
     if (cpos.w <= 0.0)
-      return 1.0;
+      return vec2(1.0, 0.0);
     vec2 cuv = cpos.xy / cpos.w;
     if (cuv.x < 0.0 || cuv.x > 1.0 || cuv.y < 0.0 || cuv.y > 1.0)
-      return 1.0; // beyond the projected deck footprint
+      return vec2(1.0, 0.0); // beyond the projected deck footprint
     float a = textureLod(sun_cookie, cuv, sun_cookie_params.z).w;
     // STRENGTH RIDES IN THE EXPONENT, not as a blend toward 1. Beer-Lambert
     // composes multiplicatively, so the only physical place a "how much of this
@@ -381,28 +406,29 @@ libblock lib_fwd_impl : lib_math //
     // observed as a sun that would not go out). At strength 1 the two forms are
     // identical; below it this one is the one that extinguishes.
     // strength 0 still returns exactly exp(0) = 1: the path stays disarmed.
-    return exp(-sun_cookie_params.w * clamp(sun_cookie_params.y, 0.0, 1.0) * a);
-  }
-
-  // band pick: innermost world sphere (about the anchor the fit was made
-  // around) that contains the fragment. -1 = beyond the outermost band.
-  int _sun_select_band(vec3 wpos, vec3 anchor, vec4 splits, int count) {
-    float band_dist = length(wpos - anchor);
-    int cascade = -1;
-    for (int i = count - 1; i >= 0; i--) {
-      if (band_dist <= splits[i])
-        cascade = i;
-    }
-    return cascade;
+    float s = clamp(sun_cookie_params.y, 0.0, 1.0);
+    return vec2(exp(-sun_cookie_params.w * s * a), s * a);
   }
 
   // ONE snapshot's shadow factor. `slice` is the depth-array slice the band
   // lives on — band index plus the snapshot's SET BASE, which is what makes
   // the double buffer free at the sampler (S2a).
-  // `band_texel` is 1/dim for THIS band (sun_cascade_texel[cascade]). It equals
+  // `band_texel` is 1/dim for THIS band (the sun_cascade_texel pair). It equals
   // sun_shadow_params.w for a full-dim band, which makes uv_scale exactly 1.0
   // and every expression below identical to the uniform-dim path.
-  float _sun_shadow_set_factor(vec3 wpos, float ndotl, mat4 shmtx, float slice, float band_texel) {
+  //
+  // `fast` selects the REDUCED FILTER (>0.5): one bilinear compare instead of
+  // the blocker search plus the tent lattice — 4 texel fetches against up to 45.
+  // It is a per-MATERIAL opt-in (ptex3d surface(shadow_filter=...)), never a
+  // global quality dial, and it exists for surfaces whose own geometry is
+  // higher-frequency than any shadow kernel can be: a grass carpet covering the
+  // lower half of the frame carries blade-scale noise that hides the penumbra
+  // the full evaluator spends 40 fetches computing. Everything ABOVE the branch
+  // — the normal offset, the band uv, the slope-scaled bias — is shared, so a
+  // reduced surface sits in the same shadow, only less softly filtered. Every
+  // material that does not ask for it passes a literal 0.0 and the whole reduced
+  // path folds away at compile time.
+  float _sun_shadow_set_factor(vec3 wpos, float ndotl, mat4 shmtx, float slice, float band_texel, float fast) {
     // NORMAL-OFFSET (glancing-angle de-aliasing): push the receiver point
     // along the GEOMETRIC normal by ~the PCF kernel's reach in WORLD texels,
     // scaled by sin(theta), BEFORE projecting into light space. At grazing
@@ -454,9 +480,27 @@ libblock lib_fwd_impl : lib_math //
     // slice = the uniform-dim rig). The viewport origin is the slice origin, so
     // there is no offset term — see the corner note on the render side.
     vec2 base_uv = vec2(ndc.x * 0.5 + 0.5, 0.5 - ndc.y * 0.5) * uv_scale;
+    // THE BIAS IS AUTHORED IN WORLD METRES and converted HERE, per band. An ndc
+    // constant is not one slack distance but four: each band's ndc unit is its
+    // OWN fitted depth range (hundreds of metres apart across the ladder), so a
+    // value tight enough for band 0 erases every metre-scale caster in band 3 —
+    // trunks and crowns onto the ground stop casting while a big high object
+    // survives. depth_range_ws falls out of the ortho z row (length = 1/range),
+    // so the conversion costs no UBO traffic and is exact for THIS band.
+    vec3 sh_row2         = vec3(shmtx[0].z, shmtx[1].z, shmtx[2].z);
+    float depth_range_ws = 1.0 / max(length(sh_row2), 1e-6);
     // slope-scaled bias: base knob grows with tan(theta), clamped (numeric guard)
     float tan_theta = sqrt(max(1.0 - ndotl * ndotl, 0.0)) / max(ndotl, 0.05);
-    float bias  = sun_shadow_params.x * (1.0 + min(tan_theta, 4.0));
+    float bias  = (sun_shadow_params.x / depth_range_ws) * (1.0 + min(tan_theta, 4.0));
+
+    // REDUCED FILTER (see the `fast` note on the signature): ONE bilinear
+    // compare on the same uv, same bias, same normal offset. It keeps the
+    // hardware's 2x2 interpolation, so the edge is still sub-texel graded
+    // rather than binary — what it gives up is the contact-hardening penumbra
+    // and the derivative-widened kernel, both of which are sub-blade detail on
+    // the surfaces that ask for this.
+    if (fast > 0.5)
+      return _sun_tap_bilinear(base_uv, slice, ndc.z, bias, uv_hi);
 
     // PCSS CONTACT HARDENING: penumbra width grows with caster→receiver
     // separation (extended source). Sparse 3x3 blocker search; average the
@@ -466,8 +510,7 @@ libblock lib_fwd_impl : lib_math //
     // Sun angular radius is a PHYSICAL constant (~0.267 deg, tan ~0.00466);
     // an ARTISTIC softness scale belongs on DirectionalLightData when the
     // lane-B sun model lands (ublk_sun has no free param slot today).
-    vec3 sh_row2         = vec3(shmtx[0].z, shmtx[1].z, shmtx[2].z);
-    float depth_range_ws = 1.0 / max(length(sh_row2), 1e-6);
+    // depth_range_ws is the one the bias conversion above already derived.
     float search_tex     = clamp(6.0 + foot_tex, 6.0, 12.0);
     float search_step    = sun_shadow_params.w * search_tex * 0.5;
     float blocker_sum = 0.0;
@@ -522,24 +565,31 @@ libblock lib_fwd_impl : lib_math //
   // no fade armed (the default) sun_shadow_fade.x is 0 every frame and this
   // costs one scalar compare over the single-snapshot path.
   /////////////////////////////////////////////////////////
-  float _sun_shadow_factor(vec3 wpos, float ndotl) {
+  //
+  // `fast` is the per-material reduced-filter selector, threaded down from the
+  // material's own call (see _sun_shadow_set_factor). BOTH snapshots of a
+  // crossfade take the same value — one surface cannot be filtered two ways
+  // inside one blend without the blend itself becoming the artifact.
+  float _sun_shadow_factorQ(vec3 wpos, float ndotl, float fast) {
     int cascade_count = int(sun_shadow_params.z + 0.5);
     if (cascade_count <= 0)
       return 1.0; // unshadowed sun
-    int cascade = _sun_select_band(wpos, sun_cascade_basis.xyz, sun_split_distances, cascade_count);
+    int cascade = _sun_select_band(wpos, sun_cascade_basis.xyz, sun_split_distances,
+                                   sun_split_distances_hi, cascade_count);
     // beyond the outermost band — unshadowed by design
     float cur = (cascade < 0)
               ? 1.0
               : _sun_shadow_set_factor(wpos, ndotl, sun_shadow_matrix[cascade],
                                        float(cascade) + sun_shadow_fade.y,
-                                       sun_cascade_texel[cascade]);
+                                       _sun_band_value(sun_cascade_texel, sun_cascade_texel_hi, cascade), fast);
     float fade_w = sun_shadow_fade.x;
     if (fade_w <= 0.0)
       return cur;
     // the outgoing snapshot was fit around its OWN anchor with its own radii,
     // so it re-selects its own band — a fragment can sit in different bands of
     // the two snapshots and both answers are right for their own maps.
-    int pcascade = _sun_select_band(wpos, sun_cascade_basis_prev.xyz, sun_split_distances_prev, cascade_count);
+    int pcascade = _sun_select_band(wpos, sun_cascade_basis_prev.xyz, sun_split_distances_prev,
+                                    sun_split_distances_prev_hi, cascade_count);
     // the per-band texel table is shared with the current snapshot: a per-band
     // DIM change hard-swaps (no fade), so inside a window both were drawn at
     // the same viewports.
@@ -547,10 +597,19 @@ libblock lib_fwd_impl : lib_math //
                ? 1.0
                : _sun_shadow_set_factor(wpos, ndotl, sun_shadow_matrix_prev[pcascade],
                                         float(pcascade) + sun_shadow_fade.z,
-                                        sun_cascade_texel[pcascade]);
+                                        _sun_band_value(sun_cascade_texel, sun_cascade_texel_hi, pcascade), fast);
     return mix(cur, prev, fade_w);
   }
+  float _sun_shadow_factor(vec3 wpos, float ndotl) {
+    return _sun_shadow_factorQ(wpos, ndotl, 0.0); // the full evaluator, unchanged
+  }
 
+  /////////////////////////////////////////////////////////
+  // SKY-HAZE SUN SHADOW — the per-step air occlusion the aerial-perspective
+  // march integrates against (armed by SkyHazeInscatterTint.w) now lives in
+  // lib_sun_air (sunairtools.i2), because the quarter-res shaft pass runs the
+  // same taps and the two looks must not be able to drift apart.
+  /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
 
   // P3.B — return ShadingResult so the fragment-out stage can route
@@ -561,7 +620,24 @@ libblock lib_fwd_impl : lib_math //
   //   light_maps → diffuse  (baked irradiance — SSSS blurs it)
   //   lobes      → see PbrLobeState._accumulator (lobes self-route)
   // modcolor applies to both channels uniformly.
-  ShadingResult _forward_lightingX(PbrData pbd, vec3 eyepos, vec3 emission, vec3 modcolor, float matAO) {
+  //
+  // `shadow_fast` is the material's REDUCED SUN-FILTER opt-in, threaded through
+  // untouched to _sun_shadow_factorQ. It is an ARGUMENT rather than a uniform
+  // read so that the value is a compile-time literal for every material that
+  // does not declare one: the reduced path then dead-codes out and their
+  // generated fragment text is not touched at all.
+  //
+  // `envspec` is the material's ENVIRONMENT-SPECULAR gain. It scales the IBL
+  // specular lobe ONLY — sun/point/spot speculars and every diffuse channel are
+  // untouched, so it is not a gloss change, it is a "how much sky does this
+  // surface mirror" control. It exists because the environment term has a floor
+  // and no ceiling by design (see pbrEnvironmentLightingWithF0): a surface whose
+  // shading normal is a poor stand-in for its real microgeometry — a flat
+  // foliage card standing in for a leaf cluster — hits grazing Fresnel over
+  // whole canopies and reflects the sky uniformly. The honest scope for that
+  // correction is the MATERIAL, not the scene's SpecularIntensity and not a
+  // global clamp.
+  ShadingResult _forward_lightingQE(PbrData pbd, vec3 eyepos, vec3 emission, vec3 modcolor, float matAO, float shadow_fast, float shadow_amb, float envspec) {
     /////////////////////////
     // PBR2 Phase 3 (P3.A) — build the per-fragment surface descriptor.
     // Future node-graph codegen will override selected fields between
@@ -615,6 +691,7 @@ libblock lib_fwd_impl : lib_math //
     // diffuse and specular env terms separated for downstream MRT.
     /////////////////////////
     ShadingResult env_lighting = pbrEnvironmentLightingWithF0(pbd, eyepos, st._F0, matAO);
+    env_lighting.specular      = env_lighting.specular * envspec;
     /////////////////////////
     // dynamic lighting
     /////////////////////////
@@ -792,15 +869,16 @@ libblock lib_fwd_impl : lib_math //
       vec3  F      = fresnelSchlickRoughness(NdotV, F0, roughness);
 
       // ---- Diffuse: cookie at the SURFACE's UV is the spotlight's spatial
-      // ---- intensity pattern. Standard Lambert with kS/kD energy split,
-      // ---- modulated by lightcol (HDR intensity) and 1/dist² falloff.
+      // ---- intensity pattern. The selected diffuse BRDF with kS/kD energy
+      // ---- split, modulated by lightcol (HDR intensity) and 1/dist² falloff.
       vec3  lightdir       = normalize(lightpos - pbd._wpos);
       float NdotL          = saturateF(dot(pbd._wnrm, lightdir));
       vec3  cookie_at_surf = _sample_color_cookie(light_tex_slice, 0, light_uv).xyz;
       vec3  kD             = (vec3(1.0) - F) * (1.0 - metallic);
       float Ldist          = length(lightpos - pbd._wpos);
       float atten          = 1.0 / (Ldist * Ldist);
-      vec3  diffuse_contrib = (kD * pbd._albedo * INV_PI)
+      vec3  diffuse_contrib = diffuseBRDF(DiffuseBrdfModel, pbd._albedo, kD,
+                                          roughness, pbd._wnrm, V_unit, lightdir)
                             * cookie_at_surf * lightcol * NdotL * atten;
 
       // ---- Specular: F-weighted cookie reflection, modulated by the
@@ -829,6 +907,15 @@ libblock lib_fwd_impl : lib_math //
     ShadingResult sun_lighting;
     sun_lighting.specular = vec3(0);
     sun_lighting.diffuse  = vec3(0);
+    // SKY OCCLUSION — what the sun's two shadow factors are allowed to take out
+    // of the IMAGE-BASED term (see sun_shadow_ibl_weights in stdtools.i2). 1 =
+    // env untouched, which is what a sunless frame and a weight of 0 both give,
+    // so the shipped rig is byte-identical here.
+    float sky_atten = 1.0;
+    // The direct-sun factor (cascade x cookie), exported from the sun block for the
+    // reduced-filter emission gate below. 1 with no sun: the DSL's has_sun gate
+    // already zeroes sun-driven emission on sunless frames.
+    float sun_visibility = 1.0;
     if (sun_dir.w > 0.5) {
       vec3 sun_L        = normalize(-sun_dir.xyz);
       vec3 sun_half     = normalize(plc._viewdir + sun_L);
@@ -836,20 +923,52 @@ libblock lib_fwd_impl : lib_math //
       float sun_geo     = geometrySmith(plc._normal, plc._viewdir, sun_L, plc._roughness);
       vec3 sun_fres     = fresnelSchlickRoughness(satdot(sun_half, plc._viewdir), plc._F0, plc._roughness);
       vec3 sun_kd       = (vec3(1) - sun_fres) * (1.0 - plc._metallic);
-      vec3 sun_diff     = (sun_kd * pbd._albedo * INV_PI) * DiffuseLevel;
+      vec3 sun_diff     = diffuseBRDF(DiffuseBrdfModel, pbd._albedo, sun_kd,
+                                      plc._roughness, plc._normal, plc._viewdir, sun_L) * DiffuseLevel;
       vec3 sun_numer    = min(sun_ggx * sun_geo * SpecularLevel, 16) * sun_fres;
       float sun_denom   = 4 * satdot(plc._normal, plc._viewdir) * satdot(plc._normal, sun_L) + EPSILON;
       vec3 sun_spec     = sun_numer / max(0.0625, sun_denom);
       float sun_ndotl   = satdot(plc._normal, sun_L);
-      // cascade occlusion (geometry) x cookie occlusion (cloud deck) — one
-      // factor on the DIRECT term only, so ambient/IBL stay untouched and a
-      // shadowed fragment still reads the sky.
-      float sun_shadow  = _sun_shadow_factor(pbd._wpos, sun_ndotl)
-                        * _sun_cookie_factor(pbd._wpos);
+      // cascade occlusion (geometry) x cookie occlusion (cloud deck) — their
+      // product is the DIRECT term's factor, always and in full.
+      float sun_cascade = _sun_shadow_factorQ(pbd._wpos, sun_ndotl, shadow_fast);
+      // CASCADE SHADOW FLOOR (sun_shadow_ibl_weights.z, a look number): shadowed
+      // direct light keeps this fraction instead of going to zero — the one lever
+      // that BRIGHTENS shadows past the stock look (the IBL weights only darken).
+      // Applied to the cascade before the cookie product and before the ambient
+      // slice below, so every consumer sees one consistent floored factor.
+      sun_cascade = mix(clamp(sun_shadow_ibl_weights.z, 0.0, 1.0), 1.0, sun_cascade);
+      vec2  cookie      = _sun_cookie_sample(pbd._wpos);
+      float sun_cookie  = cookie.x;
+      float sun_shadow  = sun_cascade * sun_cookie;
+      // The IBL term takes a DECLARED FRACTION of each, and the two factors are
+      // kept separate for exactly that: the cloud's weight is nonzero by default
+      // (it occludes sky), the cascade's is zero (it occludes the disc).
+      // The CLOUD leg rides COVERAGE (1 - a), not the beam transmittance: the
+      // beam's exp(-tau*a) saturates near-binary past a~0.3, so a sky driven by
+      // it snaps to 1-weight under any cloud worth seeing instead of grading
+      // with the deck. The DISC keeps the transmittance above — a sun is
+      // blocked or it is not; a sky is partly covered.
+      // Reduced-filter materials (the grass carpet) carry their OWN cascade->IBL
+      // weight (shadow_ambient, a live material param): ambient dominates a blade's
+      // color, so the carpet needs a far bigger ambient bite than the scene-wide
+      // sun dial — which stays terrain-tuned (owner look calls 2026-08-07: any
+      // shared value was wrong for one of the two).
+      float w_casc = (shadow_fast > 0.5) ? clamp(shadow_amb, 0.0, 1.0)
+                                         : clamp(sun_shadow_ibl_weights.y, 0.0, 1.0);
+      sky_atten = mix(1.0, 1.0 - cookie.y, clamp(sun_shadow_ibl_weights.x, 0.0, 1.0))
+                * mix(1.0, sun_cascade,    w_casc);
       vec3 sun_LC       = sun_color.xyz * sun_color.w;
       sun_lighting.diffuse  = sun_diff * sun_ndotl * sun_LC * sun_shadow;
       sun_lighting.specular = sun_spec * sun_ndotl * sun_LC * sun_shadow;
+      sun_visibility = sun_shadow;
     }
+    // Reduced-filter materials (grass) declare their emission as TRANSMITTED
+    // sunlight (the backlit glow), so it rides the same direct-sun factor as the
+    // disc: a blade the sun does not reach — tree shadow or cloud deck — cannot
+    // glow with light passing through it.
+    if (shadow_fast > 0.5)
+      emission *= sun_visibility;
     //
     /////////////////////////
     // Additive lobes (sheen / clearcoat / diff_trans / transmission /
@@ -869,15 +988,59 @@ libblock lib_fwd_impl : lib_math //
     // into diffuse (they're baked diffuse irradiance).
     /////////////////////////
     ShadingResult result;
-    result.specular = ((env_lighting.specular + point_lighting.specular + spot_lighting.specular + sun_lighting.specular) * base_weight
+    // sky_atten rides the ENV channels only (the direct terms already carry
+    // their own full shadow factor); baked light_maps are authored irradiance
+    // and are not the live sky, so they stay out of it.
+    result.specular = ((env_lighting.specular * sky_atten + point_lighting.specular + spot_lighting.specular + sun_lighting.specular) * base_weight
                       + emission
                       + st._accumulator.specular) * modcolor;
-    result.diffuse  = ((env_lighting.diffuse  + point_lighting.diffuse  + spot_lighting.diffuse  + sun_lighting.diffuse)  * base_weight
+    result.diffuse  = ((env_lighting.diffuse  * sky_atten + point_lighting.diffuse  + spot_lighting.diffuse  + sun_lighting.diffuse)  * base_weight
                       + light_maps
                       + st._accumulator.diffuse) * modcolor;
+    /////////////////////////
+    // AERIAL PERSPECTIVE — armed rides in the uniform (zero-buffer fail-safe:
+    // a pipeline with no binder takes the untaken branch; the frame is
+    // BYTE-identical). In-scatter lands in SPECULAR by the emission precedent
+    // (airlight is not surface irradiance; SSSS must not blur it);
+    // extinction multiplies BOTH channels.
+    // Transparent pass: straight-alpha blending of two hazed layers is a convex
+    // blend of the near and far ray's haze — monotone, no double count. Accepted
+    // v1 approximation.
+    /////////////////////////
+    if (SkyHazeDensity.w > 0.5) {
+      // SHADOWED-MARCH MODE, out of SkyHazeInscatterTint.w:
+      //   0 = off       — no cascade taps; the plain unshadowed march.
+      //   1 = inline    — the taps run HERE, per fragment, at full resolution:
+      //                   8 march steps x 4 jittered sub-taps = 32 cascade
+      //                   fetches, which is what the third mode exists to price.
+      //   2 = quarter   — the shadow arm has ALREADY been marched, at quarter
+      //                   resolution, into its own target, and a screen-space
+      //                   pass subtracts it from this pass's output once the
+      //                   opaque image is complete (fwdnode_impl_hazeshaft.cpp).
+      //                   So this fragment marches UNSHADOWED and the taps are
+      //                   skipped entirely — the whole point of the mode. The
+      //                   subtraction is exact by construction; see
+      //                   skyAerialPerspectiveShadowLoss.
+      // Ranges, not equality: the value is a float that has been through a UBO.
+      SunAirSteps hsh;
+      hsh._s03 = vec4(1.0);
+      hsh._s47 = vec4(1.0);
+      if (SkyHazeInscatterTint.w > 0.5 && SkyHazeInscatterTint.w < 1.5) {
+        hsh = _sun_air_shadow_steps(eyepos, pbd._wpos);
+      }
+      HazeResult hz = skyAerialPerspectiveShadowed(eyepos, pbd._wpos, normalize(SkySunDirection.xyz), hsh._s03, hsh._s47);
+      result.specular = result.specular * hz._transmittance + hz._inscatter;
+      result.diffuse  = result.diffuse  * hz._transmittance;
+    }
     return result;
   }
-  ShadingResult _forward_lightingZ(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive) {
+  ShadingResult _forward_lightingQ(PbrData pbd, vec3 eyepos, vec3 emission, vec3 modcolor, float matAO, float shadow_fast, float shadow_amb) {
+    return _forward_lightingQE(pbd, eyepos, emission, modcolor, matAO, shadow_fast, shadow_amb, 1.0); // full env specular
+  }
+  ShadingResult _forward_lightingX(PbrData pbd, vec3 eyepos, vec3 emission, vec3 modcolor, float matAO) {
+    return _forward_lightingQ(pbd, eyepos, emission, modcolor, matAO, 0.0, 0.0); // full sun filter
+  }
+  ShadingResult _forward_lightingZQE(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive, float shadow_fast, float shadow_amb, float envspec) {
     PbrData pbr;
     pbr._emissive  = emissive;
     pbr._albedo    = albedo;
@@ -888,7 +1051,13 @@ libblock lib_fwd_impl : lib_math //
     pbr._fogZ      = 0.0;
     pbr._atmos     = 0.0;
     pbr._alpha     = 1.0;
-    return _forward_lightingX(pbr, eyepos, emission, modcolor, ambrufmtl.x);  // ambrufmtl.x = material AO (ptex3d surface.ao)
+    return _forward_lightingQE(pbr, eyepos, emission, modcolor, ambrufmtl.x, shadow_fast, shadow_amb, envspec);  // ambrufmtl.x = material AO (ptex3d surface.ao)
+  }
+  ShadingResult _forward_lightingZQ(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive, float shadow_fast, float shadow_amb) {
+    return _forward_lightingZQE(modcolor, albedo, ambrufmtl, emission, eyepos, normal, emissive, shadow_fast, shadow_amb, 1.0);
+  }
+  ShadingResult _forward_lightingZ(vec3 modcolor, vec3 albedo, vec3 ambrufmtl, vec3 emission, vec3 eyepos, vec3 normal, bool emissive) {
+    return _forward_lightingZQ(modcolor, albedo, ambrufmtl, emission, eyepos, normal, emissive, 0.0, 0.0);
   }
 }
 

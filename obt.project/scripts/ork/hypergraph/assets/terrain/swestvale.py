@@ -28,13 +28,16 @@
 # footprint BEFORE the height/normal captures, so placement can never drift
 # from its own pads. Clustering stays TIGHT — the worley band is an ANNULUS,
 # so each cluster keeps an EMPTY central plaza and the room-blocks ring it.
-# V2 AGGREGATION (adoption round 07-22): candidates snap to a heading-aligned
-# 14.4 m lattice (the row massing length) with a 3 m lane every 4th line —
-# room-blocks ABUT into party-wall chains; cluster_pads levels each chain onto
-# ONE grade plane (cross-level seams rejected). Yaw is a COMPOSED radians field
+# V2 AGGREGATION (adoption round 07-22; walk-lane rescope 2026-08): candidates
+# snap to a heading-aligned lattice (pitch = longest inflated footprint +
+# slack, BLD_LATTICE_M) with a 3 m extra lane every 4th line — blocks hold
+# formation in rows but every pair keeps >= WALK_GAP_M of walkable clear
+# ground (party-wall abutment retired); cluster_pads is now the strict
+# no-touch admission gate. Yaw is a COMPOSED radians field
 # (yaw_mode="direct"): per-village frame + k*90deg door-to-plaza selection on
-# flats, 22.5deg-quantized contour-following on hillsides. Scale is LOCKED 1.0
-# (architecture law: doors are the human anchor).
+# flats, 22.5deg-quantized contour-following on hillsides. Scale rides
+# BLD_SCALE (owner-adjudicated 1.5x, 2026-08 — supersedes the LOCKED-1.0 law;
+# the WALK-LANE block below states the no-touch/min-gap layout law).
 #
 #   ork.terrain.viewer2.py -d 1024 swestvale
 ###############################################################################
@@ -45,6 +48,73 @@ from ork.hypergraph.colors import hsv
 from orkengine.core import vec3, vec2
 ###############################################################################
 HSCALE = 300.0     # TOTAL RELIEF in meters (the field is pinned to [0, HSCALE])
+###############################################################################
+# STRUCTURE SCALE + WALK-LANE LAW (owner look target 2026-08): every structure
+# (pueblo blocks AND kivas) instances at BLD_SCALE — the scatter xform carries
+# the scale, so render mesh, physics proxy (btUniformScalingShape reads the
+# xform) and grading pads all derive from the SAME generating data. Layout law:
+# no two structure footprints may touch, and every pair keeps >= WALK_GAP_M of
+# clear ground — the walking lane. WALK_GAP_M = 2.0 (top of the owner's 1.5-2.0
+# band) because the collider near-plane standoff (COLLIDER_STANDOFF_M per wall,
+# deliberately UNSCALED — it is a camera invariant, not architecture) eats
+# 1.2 m of every lane: at 2.0 m footprint gap the physical corridor between
+# colliders is 0.8 m (the 0.7 m walker capsule passes); at 1.5 m it would be
+# 0.3 m — blocked. Wall-to-wall (massing faces above the talus flare) a
+# minimum lane reads ~3.5 m at eye level.
+#
+# ENFORCEMENT is in-graph, per sink:
+#   aggregation sink — lattice pitch = longest inflated footprint + slack, so
+#       same-line neighbors clear by construction;
+#   hill + all sinks — footprints are declared INFLATED by WALK_GAP_M/2 and
+#       cluster-pad admission runs with max_seam_m = -1.0: |seam| > -1 is
+#       always true, so ANY overlap of inflated footprints rejects the later
+#       candidate — a deterministic no-touch Poisson rejection (the organic
+#       hill accretion overlaps retire with it, owner-adjudicated);
+#   kivas — own lattice (heading_flat is per-village CONSTANT, so the v2
+#       dedup law holds) pitched at collar-outer diameter + gap. The kiva
+#       SHAFT footprint is NOT inflated (it is the terrain hole, not a pad).
+###############################################################################
+BLD_SCALE           = 2.8125  # owner-adjudicated structure scale: round-3
+                            # "another 1.25x" on round-2's 2.25x = cumulative
+                            # 2.8125x vs the original massing (uniform, height
+                            # included; door/rung/collar human-anchor flags
+                            # NOTED, not pinned; density uncompensated)
+WALK_GAP_M          = 2.0   # min clear ground between any two structure footprints
+COLLIDER_STANDOFF_M = 0.6   # near-plane invariant (owner 07-22) — NOT scaled
+
+# scale-1 flare-base footprint half-extents (quotes the recipes' collider_half_
+# extents grammar; OBJ-measured 2026-08: row 15.10 x 5.90 m, stepped 15.90 x
+# 6.70 m, so the declared 15.4 x 6.2 / 16.3 x 6.7 boxes cover them).
+_FP_ROW        = (7.7, 3.1)
+_FP_STP        = (8.15, 3.35)
+_FP_KIVA_OUT   = 3.70    # kiva collar OUTER radius: ring 3.35 + 0.35 batter
+_FP_KIVA_SHAFT = 2.2     # shaft-mouth footprint (owner depth-calibration law:
+                         # apparent = data + feather*k(depth) + grid smear —
+                         # all terms scale ~with depth, so data scales by
+                         # BLD_SCALE exactly as the depth does)
+
+
+def _SFP(fp):
+  # scaled + WALK_GAP_M/2-inflated footprint: the pads grade the lane floor,
+  # and inflated-overlap rejection (max_seam_m=-1) IS the min-gap law.
+  return (fp[0] * BLD_SCALE + WALK_GAP_M * 0.5,
+          fp[1] * BLD_SCALE + WALK_GAP_M * 0.5)
+
+
+def _COLL(fp, full_h):
+  # collider half-extents at scale 1 — the instance xform multiplies them by
+  # BLD_SCALE, so declare footprint + standoff/BLD_SCALE: the POST-scale
+  # standoff stays exactly COLLIDER_STANDOFF_M (max walkable lane width).
+  return ("box",
+          fp[0] + COLLIDER_STANDOFF_M / BLD_SCALE,
+          full_h,
+          fp[1] + COLLIDER_STANDOFF_M / BLD_SCALE)
+
+
+# lattice pitches: longest inflated footprint + 0.05 m slack (float-exact
+# boundary contact would trip the SAT overlap test and reject valid neighbors)
+BLD_LATTICE_M  = 2 * (_FP_STP[0] * BLD_SCALE + WALK_GAP_M * 0.5) + 0.05  # 47.90 @ 2.8125
+KIVA_LATTICE_M = 2 * _FP_KIVA_OUT * BLD_SCALE + WALK_GAP_M + 0.05        # 22.86 @ 2.8125
 ###############################################################################
 class Material(Ptex3d):
     # the erodeflow strata + flow-tint material (owner-ratified; cracked mud
@@ -472,9 +542,14 @@ class SwestVale(HeightField):
         # cut — a building pad overlapping a kiva pit re-grades the bowl away
         # (cross-sink union, the audited failure). Hard-keep the innermost court
         # (w1 < ~0.075 ~= kiva-admissible 0.040 + the ~16 m worst-case pit+pad+
-        # apron clearance) for the kivas.
+        # apron clearance) for the kivas. THE ONE NON-DERIVING SCALE COUPLING
+        # (worley units, not meters — re-derive on every BLD_SCALE change):
+        # worst case = inflated stepped half-length (8.15*S + 1.0) + collar
+        # outer (3.70*S) + WALK_GAP_M ~= 36 m center-to-center at S=2.8125
+        # (~0.079 w1 at the audited ~460 m/w1 local rate) -> bound 0.040 +
+        # 0.079 ~= 0.12 — verified numerically by the placement gap audit.
         m      = (site * plaza * near_w * solar * 1.75
-                  * (1.0 - T.band(w1, 0.0, 0.075, soft=0.01)))
+                  * (1.0 - T.band(w1, 0.0, 0.12, soft=0.01)))
         #############################
         # B4 TRAMPLED GROUND: bake a "disturbance" channel — the village footprint
         # (cells incl. the plaza core) dilated ~20 m — that the terrain Material
@@ -508,20 +583,22 @@ class SwestVale(HeightField):
         # collider_half_extents grammar (massing + flare; y = FULL height —
         # centered btBoxShape covers 0..H above grade; ladders excluded).
         # B3 07-22: the basal flare widened into a talus batter (flare_m 0.35),
-        # so x/z grew +0.2 vs the pre-B3 numbers:
+        # so x/z grew +0.2 vs the pre-B3 numbers — the scale-1 grammar numbers
+        # now live in _FP_ROW/_FP_STP/_FP_KIVA_OUT at the top of this file:
         #   PuebloRow     W 14.4+0.7 -> 7.7   H 2.9   D 5.2+0.7 -> 3.1
         #   PuebloStepped W 15.2+0.7 -> 8.15  H 5.4   D 5.6+0.7 -> 3.35
-        #   Kiva          r 2.6+0.35 -> 2.95  H 0.9
         # ...PLUS the NEAR-PLANE STANDOFF (owner, 2026-07-22): x/z half-extents padded
-        # +0.6m (> cam_near 0.5) so the eye can never get closer to a visible wall than
-        # the near plane — pressing against a facade must never clip it open. Eye-to-wall
-        # floor = pad + capsule radius (0.35) ~= 0.95m. Height (y) unpadded (no clip path
-        # from above). If cam_near ever grows past 0.6, grow COLLIDER_STANDOFF_M with it.
+        # so the POST-scale pad is +0.6m (> cam_near 0.5) — the eye can never get closer
+        # to a visible wall than the near plane; pressing against a facade must never
+        # clip it open. Eye-to-wall floor = pad + capsule radius (0.35) ~= 0.95m.
+        # Height (y) unpadded (no clip path from above). If cam_near ever grows past
+        # 0.6, grow COLLIDER_STANDOFF_M with it. _COLL() builds these.
         #
-        # PAD footprints = the talus-flare base half-extents (the massing+flare
-        # numbers above, WITHOUT the collider's +0.6 standoff — the pad grades
-        # ground the walls actually stand on); apron_m 2.5 feathers the made
-        # ground into the natural grade (grade-to-plane, the owner's term).
+        # PAD footprints = the talus-flare base half-extents x BLD_SCALE
+        # + WALK_GAP_M/2 lane inflation (_SFP(); WITHOUT the collider standoff —
+        # the pad grades the ground the walls stand on PLUS the lane floor);
+        # apron_m feathers the made ground into the natural grade
+        # (grade-to-plane, the owner's term).
         #
         #############################
         # V2 DIRECT HEADINGS + TWO-SINK SPLIT (adoption round 07-22).
@@ -574,54 +651,60 @@ class SwestVale(HeightField):
         # (weak-signal ridges/benches read atan2 noise — they stay sink-A land)
         hillC = T.expr("P.step(0.07, ctx.input(0)) * P.step(0.005, ctx.input(1))",
                        inputs=[s20b, sig])
-        hillD = T.lpf(hillC, cutoff=30.0, units='meters')
-        aA    = 1.0 - T.smoothstep(hillD, 0.06, 0.18)    # flats sink: no hill within ~15 m
-        aB    = T.smoothstep(hillD, 0.82, 0.94)          # hill sink: >=~15 m inside hill land
+        # buffer ribbon scales with the blocks (1.5x massing needs a ~1.5x
+        # hill/flats separation ribbon — cross-sink pairs have no cluster gate)
+        hillD = T.lpf(hillC, cutoff=30.0 * BLD_SCALE, units='meters')
+        # thresholds tightened with the walk-lane rescope (audit found one
+        # cross-sink pair at 1.55 m with the 0.18/0.82 bands): both sinks now
+        # stand further off the hill/flat boundary — cross-sink pairs are the
+        # ONE class no cluster gate can reject, so the ribbon must carry the
+        # whole WALK_GAP_M guarantee.
+        aA    = 1.0 - T.smoothstep(hillD, 0.03, 0.12)    # flats sink: further from hill land
+        aB    = T.smoothstep(hillD, 0.90, 0.97)          # hill sink: deeper inside hill land
         mb    = m * aA                                   # aggregation-sink weights
         place = T.scatter_place(z,
                      export_name = "buildings",
                      count   = 20000,                 # CANDIDATE density, not a target
                                                       # (the kept set is mask-killed):
-                                                      # ~7.2 m candidate grid => >=3
+                                                      # ~7.2 m candidate grid => >=13
                                                       # candidates per lattice cell, so
-                                                      # party-wall chains have no holes
+                                                      # block rows have no holes
                      seed    = 13,
                      align   = "up",                  # blocks stand PLUMB
-                     scale   = (1.0, 1.0),            # NEVER scale architecture (door anchor law)
+                     scale   = (BLD_SCALE, BLD_SCALE),  # owner-adjudicated 1.5x (the
+                                                      # xform carries it: mesh + collider
+                                                      # + pads scale from ONE datum)
                      cutoff  = 0.30,
                      jitter  = 0.35,                  # pre-snap probe jitter (v2 snaps after)
                      lift    = 0.0,                   # bedding is the massing's below-grade skirt
-                     apron_m = 2.5,
+                     apron_m = 2.5 * BLD_SCALE,       # made-ground skirt scales with the massing
                      yaw_from_field = heading_flat,
                      yaw_mode       = "direct",       # the field sample IS the heading (radians)
-                     # V2 AGGREGATION (adoption round 07-22): lattice pitch = the
-                     # row MASSING length (4 room modules x 3.6 m = 14.4) so end
-                     # walls TILE FLUSH along the long axis — party-wall chains
-                     # with the 3.6 m room rhythm in phase across the seam; the
-                     # 15.2 m stepped overlaps 0.4 m per end (walls merge). Every
-                     # 4th lattice line opens a 3 m lane (lane law 3-3.5 m) —
-                     # room-block runs cap at ~58 m (Taos scale). Cross-row
-                     # spacing rides the same pitch: 14.4 - 6.2 depth = 9.2 m
-                     # streets, +3 m at every 4th row.
-                     lattice_m      = 14.4,
+                     # V2 LATTICE, WALK-LANE PITCH (owner look target 2026-08):
+                     # pitch = longest inflated footprint + slack (BLD_LATTICE_M
+                     # above), so same-line neighbors clear by >= WALK_GAP_M —
+                     # the party-wall abutment law retires; every block is
+                     # walk-aroundable. Every 4th lattice line still widens its
+                     # gap by lane_m (the plaza-scale circulation break).
+                     lattice_m      = BLD_LATTICE_M,
                      lane_every     = 4,
                      lane_m         = 3.0,
-                     # CLUSTER PADS: union intersecting footprints -> ONE grade
-                     # plane per abutment chain (party walls LEVEL by
-                     # construction); a late candidate stepping >1 m against an
-                     # admitted overlapping chain is REJECTED (the cross-level
-                     # party-wall interpenetration class retires).
+                     # CLUSTER PADS as the NO-TOUCH gate: footprints below are
+                     # inflated by WALK_GAP_M/2 and max_seam_m = -1.0 makes ANY
+                     # inflated overlap reject the later candidate (|seam| > -1
+                     # is always true) — residual cross-village / off-lattice
+                     # contacts are dropped deterministically.
                      cluster_pads   = True,
-                     max_seam_m     = 1.0,
+                     max_seam_m     = -1.0,
                      types   = {"row":     mb,
                                 # SIZE HIERARCHY: multi-storey blocks RING the
                                 # plaza (worley INNER band, 4x weight); outliers
                                 # stay mostly 1-storey rows
                                 "stepped": mb * gentle * (0.25 + 0.75 * ring_in)},
-                     footprints = {"row":     (7.7, 3.1),
-                                   "stepped": (8.15, 3.35)},
-                     colliders = {"row":     ("box", 8.3, 2.9, 3.7),
-                                  "stepped": ("box", 8.75, 5.4, 3.95)})
+                     footprints = {"row":     _SFP(_FP_ROW),
+                                   "stepped": _SFP(_FP_STP)},
+                     colliders = {"row":     _COLL(_FP_ROW, 2.9),
+                                  "stepped": _COLL(_FP_STP, 5.4)})
         #############################
         # HILLSIDE CONTOUR SINK "buildings_hill" (the split's second half):
         # the un-benched sloped fringe, CONTINUOUS contour heading (safe — no
@@ -635,21 +718,25 @@ class SwestVale(HeightField):
                      count   = 6000,                  # v1 candidate grid (~13 m)
                      seed    = 17,                    # decorrelated
                      align   = "up",
-                     scale   = (1.0, 1.0),
+                     scale   = (BLD_SCALE, BLD_SCALE),
                      cutoff  = 0.30,
                      jitter  = 0.35,
                      lift    = 0.0,
-                     apron_m = 2.5,
+                     apron_m = 2.5 * BLD_SCALE,
                      yaw_from_field = heading_hill,
                      yaw_mode       = "direct",
+                     # inflated footprints + max_seam_m=-1.0 = strict no-touch
+                     # admission (see the WALK-LANE LAW block): the organic
+                     # hillside overlap-accretion retires — contour terraces
+                     # keep >= WALK_GAP_M between blocks.
                      cluster_pads   = True,
-                     max_seam_m     = 1.0,
+                     max_seam_m     = -1.0,
                      types   = {"row":     m * aB,
                                 "stepped": m * aB * gentle * (0.25 + 0.75 * ring_in)},
-                     footprints = {"row":     (7.7, 3.1),
-                                   "stepped": (8.15, 3.35)},
-                     colliders = {"row":     ("box", 8.3, 2.9, 3.7),
-                                  "stepped": ("box", 8.75, 5.4, 3.95)})
+                     footprints = {"row":     _SFP(_FP_ROW),
+                                   "stepped": _SFP(_FP_STP)},
+                     colliders = {"row":     _COLL(_FP_ROW, 2.9),
+                                  "stepped": _COLL(_FP_STP, 5.4)})
         #############################
         # SUNKEN KIVAS (owner 07-22: "cut a hole in the terrain") — a SECOND
         # scatter_place, kivas only, export "kivas" (scn_swest rebinds the kiva
@@ -672,20 +759,28 @@ class SwestVale(HeightField):
         # undermine it. You step over the collar and FALL IN (the ring
         # collider kind leaves the interior open; the terrain collider
         # carries the 30 m walls + floor). Ladder is rim dressing.
-        KIVA_SINK_M = 3.0
+        # depth scales with the structure (BLD_SCALE): the kiva mesh's ladder
+        # (bld_kiva ladder_drop=3.0, mesh-local) rides the SAME instance scale,
+        # so ladder base and shaft floor stay in sync by construction.
+        KIVA_SINK_M = 3.0 * BLD_SCALE
         place_k = T.scatter_place(z,
                      export_name = "kivas",
                      count   = 6000,
                      seed    = 29,                    # decorrelated from the buildings grid
                      align   = "up",
-                     scale   = (1.0, 1.0),
+                     scale   = (BLD_SCALE, BLD_SCALE),
                      cutoff  = 0.30,
                      jitter  = 0.35,
-                     lift    = -0.3,                  # ring sunk ~1ft into the dirt (owner 07-22);
-                                                      # shaft drops inside; skirt+first course bed in
-                     apron_m = 0.25,
+                     lift    = -0.3 * BLD_SCALE,      # ring bedding (owner 07-22 "~1ft") scales
+                                                      # with the courses; shaft drops inside
+                     apron_m = 0.25 * BLD_SCALE,
                      yaw_from_field = heading_flat,   # ladder shares the village heading
                      yaw_mode       = "direct",
+                     # KIVA LATTICE (walk-lane law): heading_flat is per-village
+                     # CONSTANT, so the v2 dedup law holds — pitch = collar
+                     # outer diameter + WALK_GAP_M guarantees ring-to-ring
+                     # clearance inside a shared court.
+                     lattice_m      = KIVA_LATTICE_M,
                      # cluster pads on the KIVA sink too (kiva QA 07-22):
                      # overlapping kiva pits union to ONE court plane (adjacent
                      # kivas share a dug court instead of seaming through each
@@ -695,7 +790,9 @@ class SwestVale(HeightField):
                      cluster_pads   = True,
                      max_seam_m     = 0.4,
                      mask    = site * core * 1.4,     # INSIDE the plaza ring (was type 2)
-                     footprints = {"_": (2.2, 2.2)},   # SHAFT: owner-calibrated CONSTANT (07-22 —
+                     footprints = {"_": (_FP_KIVA_SHAFT * BLD_SCALE,
+                                         _FP_KIVA_SHAFT * BLD_SCALE)},
+                                                      # SHAFT: owner-calibrated CONSTANT (07-22 —
                                                       # the ring was ENLARGED to r3.1/wall .95
                                                       # specifically to OVERLAP this mouth and
                                                       # plug the rim leaks — do NOT re-derive the

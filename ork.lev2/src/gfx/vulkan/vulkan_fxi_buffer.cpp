@@ -305,7 +305,7 @@ void VkFxInterface::bindStorageBuffer(const FxShaderStorageBlock* block,
   // Store binding per-context so concurrent VkContexts don't collide
   auto* block_state = storageStateForBlock(vk_block);
   if (!block_state) {
-    logchan_vkbuf->log("bindStorageBuffer: no storage state for block<%s>", block->_name.c_str());
+    //logchan_vkbuf->log("bindStorageBuffer: no storage state for block<%s>", block->_name.c_str());
     return;
   }
 

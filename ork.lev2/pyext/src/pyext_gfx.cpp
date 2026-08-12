@@ -988,6 +988,20 @@ void pyinit_gfx(py::module& module_lev2) {
               })
           .def_property_readonly("width", [](texture_ptr_t self) -> int { return int(self->_width); })
           .def_property_readonly("height", [](texture_ptr_t self) -> int { return int(self->_height); })
+          .def_property_readonly("num_mips", [](texture_ptr_t self) -> int { return int(self->_num_mips); })
+          // the minify filter the texture will actually SAMPLE with — a mip chain paired with a
+          // non-mip minify filter reads mip 0 only, which no other property would reveal.
+          .def_property_readonly("min_filter", [](texture_ptr_t self) -> std::string {
+            switch (self->TexSamplingMode()._texFiltModeMin) {
+              case ETextureMinifyFilterMode::NEAREST:                return "NEAREST";
+              case ETextureMinifyFilterMode::LINEAR:                 return "LINEAR";
+              case ETextureMinifyFilterMode::NEAREST_MIPMAP_NEAREST: return "NEAREST_MIPMAP_NEAREST";
+              case ETextureMinifyFilterMode::LINEAR_MIPMAP_NEAREST:  return "LINEAR_MIPMAP_NEAREST";
+              case ETextureMinifyFilterMode::NEAREST_MIPMAP_LINEAR:  return "NEAREST_MIPMAP_LINEAR";
+              case ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR:   return "LINEAR_MIPMAP_LINEAR";
+              default:                                               return "UNKNOWN";
+            }
+          })
           .def_property_readonly("update_provider", [](texture_ptr_t self) -> texture_provider_ptr_t { return self->_update_provider; })
           .def_property(
               "streaming",

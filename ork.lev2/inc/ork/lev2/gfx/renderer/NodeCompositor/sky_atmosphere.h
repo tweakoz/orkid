@@ -32,6 +32,15 @@ struct SkyAtmosphereData : public ork::Object {
   // multi-scatter only depend on the medium, so they re-bake only when this moves.
   uint64_t mediumHash() const;
 
+  // Change stamp for the PRESENTATION tier the IBL snapshot bakes in — the
+  // artist haze layer, which the snapshot now overlays on the sky it captures.
+  // Deliberately a SECOND hash: haze must never re-bake the transmittance /
+  // multi-scatter LUTs (it is not in the medium), but a live haze edit does have
+  // to reach reflections and SH ambient, and the only route there is a new
+  // refilter cycle. So the IBL feed's trigger reads this one alongside
+  // mediumHash(); the LUT bake reads only mediumHash().
+  uint64_t hazePresentationHash() const;
+
   float topRadius() const {
     return _groundRadius + _atmosphereThickness;
   }
@@ -177,6 +186,69 @@ struct SkyAtmosphereData : public ork::Object {
   float _starlightIntensity   = 5.0e-7f;  // 1/10th of the airglow
   float _moonRayleighStrength = 0.004f;   // 0.032/8; lands moonlit under the twilight anchor
   float _airglowAltitudeKm    = 90.0f;
+
+  // AERIAL PERSPECTIVE / GROUND HAZE. Presentation tier, ALL of it: nothing
+  // here is read by skySampleMedium or any LUT bake — the haze is a SECOND
+  // medium component added under the one Beer-Lambert law at the forward
+  // lighting composite, never inside the LUT integrals. So none of it joins
+  // mediumHash(), and editing haze live must never trigger a re-bake.
+  //
+  // The geophysical part of aerial perspective (Rayleigh/Mie/ozone) already
+  // comes from the medium above; these knobs are the artist layer stacked on
+  // top of it. At _hazeDensity 0 the result is pure-physical — that zero is the
+  // default so a scene opts INTO a graded look rather than out of one.
+  //
+  // The scale height is a real length (km), an e-folding of a ground-hugging
+  // layer, which is why 0.3 (300 m) reads as valley haze rather than as a
+  // uniform fog: it thins out well below the Mie scale height.
+  //
+  // _aerialPerspectiveEnable false makes forward frames byte-identical to the
+  // pre-haze engine (the shader gate goes untaken), so it is a true bypass, not
+  // a zeroed multiply.
+  bool  _aerialPerspectiveEnable = true;
+  float _hazeDensity       = 0.0f;           // 1/km extinction at layer base; 0 = pure-physical
+  float _hazeScaleHeight   = 0.3f;           // km, vertical e-folding of the haze layer
+  float _hazePhaseG        = 0.55f;          // HG asymmetry of the haze lobe
+  fvec3 _hazeScatterTint   = fvec3(1, 1, 1); // single-scatter albedo per channel
+  fvec3 _hazeInscatterTint = fvec3(1, 1, 1); // artist grade on the haze's own in-scatter
+  float _hazeMaxDistanceKm = 160.0f;         // march clamp; the froxel far plane later
+  // TERRAIN-SHADOWED MARCH — a three-valued MODE, not a switch. The forward
+  // aerial-perspective march samples the sun cascade at its 8 step centers so
+  // air standing in a caster's shadow stops in-scattering the DIRECT sun (the
+  // orange-veil-in-front-of-shadowed-terrain defect); this chooses WHERE those
+  // taps happen, never whether the shafts exist.
+  //
+  //   0 = OFF     no cascade taps at all; byte-identical to the pre-shaft march.
+  //   1 = INLINE  per forward fragment, full resolution: 8 steps x 4 jittered
+  //               sub-taps = 32 cascade fetches on every hazed pixel. The
+  //               reference look.
+  //   2 = QUARTER the shadow arm is marched once at half width x half height
+  //               into its own target and subtracted back off the opaque image
+  //               by a screen-space pass. Exact in radiometry (the arm is
+  //               linear in the occlusion — see skyAerialPerspectiveShadowLoss),
+  //               softer at shaft edges, and it does not reach transparent or
+  //               unlit surfaces. See fwdnode_impl_hazeshaft.cpp.
+  //
+  // Rides SkyHazeInscatterTint.w — no uniform layout change. Scenes that
+  // authored 1.0 keep the frame they had.
+  float _hazeSunShadow     = 0.0f;
+  // the three modes, named where the enum would be if a float were not already
+  // the shipped storage and the shader's own encoding.
+  static constexpr float kHazeSunShadowOff     = 0.0f;
+  static constexpr float kHazeSunShadowInline  = 1.0f;
+  static constexpr float kHazeSunShadowQuarter = 2.0f;
+  // SHAFT GAIN — how hard the shafts are cut, artistically. 1.0 is the physical
+  // answer and is byte-identical to having no knob at all; above it the shafts
+  // deepen, below it they wash out, and 0 removes them while leaving the mode
+  // armed. It scales the OCCLUSION, never the ambient: the per-step lit fraction
+  // is remapped 1 - gain*(1 - s), clamped at zero so a gain over 1 deepens the
+  // shadow to fully dark and stops there rather than driving the direct term
+  // negative. Because the remap happens ONCE, in the shared per-step tap
+  // (lib_sun_air), inline and quarter-res modes cannot disagree about it — which
+  // is the whole point of a knob whose job is to be A/B'd across those modes.
+  // Rides SkyHazeGeom.w, which was reserved padding; no block grew.
+  // Not clamped here beyond non-negative: over-driving is a legitimate look.
+  float _hazeSunShadowGain = 1.0f;
 
   // IBL FEED (slice B3, the LAGGED tier of §2). Also outside mediumHash() — a
   // medium edit is a REFILTER TRIGGER, not one of these knobs.
@@ -346,6 +418,9 @@ struct SkyAtmosphereData : public ork::Object {
 struct SkyFrameState {
   texture_ptr_t _skyViewLUT;
   texture_ptr_t _transmittanceLUT;
+  // the multi-scatter LUT the two above were baked against — the aerial
+  // perspective march folds it in so haze in shadow does not go black.
+  texture_ptr_t _multiScatterLUT;
   fvec3 _dirToSun       = fvec3(0, 1, 0);
   // TOWARD the moon, same convention as _dirToSun. ZERO means the scene declared
   // no moon (LightData SkyBody==2) — the visible disc is gated on it, and there
@@ -460,6 +535,12 @@ struct HillaireSky {
   fxparam_constptr_t _parTransmittanceLut = nullptr;
   fxparam_constptr_t _parMultiScatterLut  = nullptr;
   fxparam_constptr_t _parSkyViewLut       = nullptr;
+  // the artist haze layer; read by the equirect snapshot pass ALONE (the LUT
+  // bakes are the medium, and the haze is not in it)
+  fxparam_constptr_t _parHazeDensity       = nullptr;
+  fxparam_constptr_t _parHazeScatterTint   = nullptr;
+  fxparam_constptr_t _parHazeInscatterTint = nullptr;
+  fxparam_constptr_t _parHazeGeom          = nullptr;
 
   uint64_t _bakedMediumHash = 0;
   bool _staticLutsValid     = false;

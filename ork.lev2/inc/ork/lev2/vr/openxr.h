@@ -96,7 +96,9 @@ private:
   //  head angular velocity from consecutive orientations. Both emit rate-limited anomaly
   //  one-liners and a ~5s summary. Engine-generic; silent when the device is inactive.
   //  Args are plain scalars (no XR types) so the header stays SDK-free.
-  void _instrumentPacing(double waitMs, int64_t displayTimeNs) const;
+  //  _instrumentPacing also publishes the always-on VrPacingStats sink the perf HUD
+  //  reads (wait block, display period, missed periods in the last second, headroom).
+  void _instrumentPacing(double waitMs, int64_t displayTimeNs, int64_t displayPeriodNs) const;
   void _instrumentHeadPose(float qx, float qy, float qz, float qw) const;
 };
 

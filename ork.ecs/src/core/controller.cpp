@@ -481,6 +481,25 @@ response_ref_t Controller::systemRequest(sys_ref_t sys, token_t reqID, svar64_t 
 
 ///////////////////////////////////////////////////////////////////////////////
 
+datatable_ptr_t Controller::systemResponseTable(response_ref_t rref) {
+  datatable_ptr_t rval;
+  uint64_t respid = rref._responseID;
+  _mutateObject([respid, &rval](id2obj_map_t& unlocked) {
+    auto it = unlocked.find(respid);
+    if (it == unlocked.end()) // the request has not drained yet — not an error, just early
+      return;
+    auto as_response = it->second.tryAs<impl::sys_response_ptr_t>();
+    if (not as_response)
+      return;
+    auto as_table = as_response.value()->_responseData.tryAs<datatable_ptr_t>();
+    if (as_table)
+      rval = as_table.value();
+  });
+  return rval;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void Controller::componentNotify(comp_ref_t comp, token_t evID, svar64_t data) {
 
   auto simevent      = std::make_shared<Event>();

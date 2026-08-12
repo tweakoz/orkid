@@ -67,7 +67,6 @@ _GENERIC = {
     "SlopeModule":            ("slope",              ("In",)),
     "BasinFillModule":        ("basin_fill",         ("In",)),
     "ThermalErodeModule":     ("erode_thermal",      ("In",)),
-    "EroxModule":             ("erox",               ("In",)),
     "PhaModule":              ("pha",                ("In",)),
     "FlowErodeModule":        ("flow_erode",         ("In", "Discharge")),
     "Flow3DModule":           ("flow3d",             ("In",)),
@@ -491,6 +490,8 @@ class _Writer:
             return self._render_curvature(node, conn)
         if clazz == "LpfModule":
             return self._render_lpf(node, conn)
+        if clazz == "EroxModule":
+            return self._render_erox(node, conn)
         spec = _GENERIC.get(clazz)
         if spec is None:
             raise TerrainDocParamError(
@@ -524,6 +525,18 @@ class _Writer:
             pos.append(self._render_ref(conn[p]))
         args = pos + self._value_kwargs(node, skip=skip)
         return "T.%s(%s)" % (fn, ", ".join(args))
+
+    def _render_erox(self, node, conn):
+        # the OPTIONAL per-cell erodibility field rides as a kwarg (the fbm warp= idiom):
+        # positional height, then params, then erodibility= only when it is wired.
+        if "In" not in conn:
+            raise TerrainDocParamError(
+                f"cannot regenerate .py: node {node.local_name!r} [EroxModule] "
+                f"missing input connection 'In'")
+        args = [self._render_ref(conn["In"])] + self._value_kwargs(node)
+        if "Erodibility" in conn:
+            args.append("erodibility=%s" % self._render_ref(conn["Erodibility"]))
+        return "T.erox(%s)" % ", ".join(args)
 
     def _render_fbm(self, node, conn):
         # generator (no positional input); offset/offset_vel are vec2 kwargs the wrapper

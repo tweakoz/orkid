@@ -23,6 +23,7 @@
 #include <ork/util/triple_buffer.h>
 
 #include <ork/lev2/gfx/camera/cameradata.h>
+#include <ork/lev2/gfx/gfxenv_enum.h>
 #include <ork/lev2/gfx/renderer/renderable.h>
 #include <ork/lev2/lev2_asset.h>
 #include <ork/lev2/gfx/dbgfontman.h>
@@ -408,6 +409,12 @@ struct Drawable {
   // glass surface that's also seen by a probe inside the glass).
   // Default false; ParticlesDrawableData::createDrawable sets true.
   bool _excludeFromProbe = false;
+  // SUN-CASCADE CULLSET family (see ShadowFamily above). Stamped by the
+  // producer that knows what it built — terrain, the instanced cull paths —
+  // and overridable per drawable from python. Read at ONE place (the
+  // depth-pass enqueue gate in DrawQueue::enqueueLayerToRenderQueue), so a
+  // scene that authors no cullsets never consults it.
+  ShadowFamily _shadowFamily = ShadowFamily::OTHER;
 };
 
 // Resolve `envpath` (file path, supports <token>/$ENV expansion) into a

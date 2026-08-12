@@ -989,7 +989,9 @@ class PbrMaterial:
         continue
       img = _lev2.Image.createFromFile(tpath)
       tex = _lev2.Texture(sampler)
-      ctx.TXI.updateTexture(tex, img, False)
+      # (tex, img, async=False, mipmapped=True) — positional because `async` is a
+      # Python keyword. MIPPED: these are appearance textures minified at distance.
+      ctx.TXI.updateTexture(tex, img, False, True)
       mat.bindParam(sampler, tex)
     return mat
 

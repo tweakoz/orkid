@@ -48,7 +48,9 @@ def main():
   parser = argparse.ArgumentParser(description="Terrain viewer (ECS-hosted; execs the C++ player)")
   parser.add_argument("dsl_file", nargs="?", help="terrain DSL bare name, a .py path, or a doc-JSON path")
   parser.add_argument("--class", dest="class_name", default=None, help="explicit HeightField subclass")
-  parser.add_argument("--dim", "-d", type=int, default=1024, help="render/bake grid resolution; default 1024")
+  parser.add_argument("--dim", "-d", type=int, default=None,
+                      help="render grid resolution; default = the terrain class's RENDER_DIM "
+                           "suggestion, else 1024 (BAKE_DIM/BAKE_RES ride the class too)")
   parser.add_argument("--chunk", "-c", type=int, default=128, help="GPU cull chunk size in cells/side; default 128")
   parser.add_argument("-x", "--extent", type=float, default=None,
                       help="world XZ extent in meters (default: EXTENT_M from the DSL class); "
@@ -56,7 +58,6 @@ def main():
   parser.add_argument("--param", "-p", action="append", dest="params", default=[],
                       metavar="KEY=VALUE", help="DSL constructor kwarg (repeatable)")
   parser.add_argument("--simple", action="store_true", help="force a plain Solid material")
-  parser.add_argument("--no-devkeys", action="store_true", help="disable the player's viewer keys (E envmap / G gamma / T exposure / C saturation / R reset)")
   parser.add_argument("--camdist", type=float, default=None, help="player orbit camera distance")
   parser.add_argument("--camheight", type=float, default=None, help="player orbit camera height")
   parser.add_argument("--offscreen", action="store_true", help="headless render (no window)")
@@ -82,11 +83,14 @@ def main():
   ctx = ezapp.bindGfxToCurrentThread()
   assert ctx, "bindGfxToCurrentThread() returned null"
 
-  rt = TerrainRuntime(preview_dim=args.dim, chunk=args.chunk)
+  rt = TerrainRuntime(preview_dim=(args.dim or 1024), chunk=args.chunk)
   rt.load(args.dsl_file, dsl_class=args.class_name,
           extent_m=args.extent, **dsl_kwargs)
   rt.set_context(ctx)
-  js = rt.export_scene_json(dim=args.dim, simple_material=args.simple)
+  # display quality: explicit -d wins; else the terrain class's own suggestion
+  # (HeightField.RENDER_DIM — BAKE_DIM engages inside build_scene_data the same way)
+  dim = args.dim or rt.render_dim_hint or 1024
+  js = rt.export_scene_json(dim=int(dim), simple_material=args.simple)
   ezapp.mainThreadEnd()
 
   if args.keep_json:
@@ -103,8 +107,6 @@ def main():
     print("ork.terrain.viewer2: ork.ecs.player.exe not found on PATH", file=sys.stderr)
     sys.exit(2)
   cmd = [runner, out_path]
-  if not args.no_devkeys:
-    cmd += ["--devkeys"]
   # camera defaults derived from the terrain EXTENT (heights are true meters with no
   # scale constant, and the bake is deferred to the player, so extent is the only
   # scale known here; the player's own 20m/8m orbit sits inside any real terrain).

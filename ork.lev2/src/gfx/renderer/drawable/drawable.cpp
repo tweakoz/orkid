@@ -106,6 +106,39 @@ Drawable::~Drawable() {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// SUN-CASCADE CULLSET families — the closed token set. One table, both
+// directions, so an authored cullset and a census line can never disagree
+// about what a family is called.
+///////////////////////////////////////////////////////////////////////////////
+
+const char* shadowFamilyToken(ShadowFamily f) {
+  switch (f) {
+    case ShadowFamily::TERRAIN:
+      return "terrain";
+    case ShadowFamily::INSTANCED:
+      return "instanced";
+    default:
+      return "other";
+  }
+}
+
+bool shadowFamilyFromToken(const std::string& tok, ShadowFamily& out) {
+  if (tok == "terrain") {
+    out = ShadowFamily::TERRAIN;
+    return true;
+  }
+  if (tok == "instanced") {
+    out = ShadowFamily::INSTANCED;
+    return true;
+  }
+  if (tok == "other") {
+    out = ShadowFamily::OTHER;
+    return true;
+  }
+  return false;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 void DrawableContainer::Describe() {
 }

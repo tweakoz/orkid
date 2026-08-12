@@ -302,6 +302,11 @@ StdFileSystemInitalizer::StdFileSystemInitalizer(const AppInitData& appinitdata)
   file::setPathExpander("hyperassets", base_dir / "obt.project" / "scripts" / "ork" / "hypergraph" / "assets");
   file::setPathExpander("ork_data",     data_dir);
   file::setPathExpander("ork_testdata", data_dir / "tests");
+  // The workspace root itself. Serialized paths that must survive a move between
+  // machines (mac /Users/x/projects/orkid vs linux /home/x/orkid) are written in this
+  // token form and expanded against the LIVE root at use time — an absolute path baked
+  // at composition time names a directory the reading machine does not have.
+  file::setPathExpander("ork_root",     base_dir);
 
   //////////////////////////////////////////
   // Dataflow cook-cache size-cap (once, at process launch).

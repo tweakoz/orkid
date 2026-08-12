@@ -122,12 +122,14 @@ private:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-// GpuSliceTimer — abstract per-context GPU timestamp source. MT0 measures ONE
-// whole-frame span (the microtask block doesn't exist yet — MT1 subdivides
-// this into per-slice brackets, §2.4). Backend-specific implementations live
-// alongside their backend (the Vulkan impl sits next to VkProfilerChannel,
-// whose query-pool idioms it copies — but unlike VkProfilerChannel this is
-// ALWAYS ON, never gated by ORK_PROFILER_ENABLE, T3).
+// GpuSliceTimer — abstract per-context GPU timestamp source for the ONE
+// whole-frame span. The PER-PASS subdivision is deliberately NOT on this
+// interface: its timestamps are written into command buffers the frame plumbing
+// never sees (the compute interface's own CB, the one-shot XR blit CBs), so the
+// slice API takes a backend command-buffer handle per call and lives on the
+// backend impl (VkGpuSliceTimer::sliceBegin/sliceEnd, publishing into
+// GpuPassStats — see gpupassstats.h). Both are ALWAYS ON, never gated by
+// ORK_PROFILER_ENABLE (T3).
 //
 // A null GpuSliceTimer (no instance) IS the "unsupported" path: the caps guard
 // (context init, T2) decides whether to construct one at all; when it doesn't,
@@ -139,16 +141,15 @@ struct GpuSliceTimer {
   virtual ~GpuSliceTimer() = default;
 
   // Record the BEGIN timestamp into the frame's primary command buffer. Must be
-  // called after the CB is begun (the query pool is reset here too — mirrors
-  // VkProfilerChannel::frameBegin's shape).
+  // called after the CB is begun (the frame's query pair is reset here too).
   virtual void beginFrame() = 0;
 
   // Record the END timestamp, still inside the (not-yet-submitted) primary CB.
   virtual void endFrame() = 0;
 
-  // Read back the whole-frame GPU ms. Call AFTER the frame's submit — on the
-  // current (blocking, T4) submit path the WAIT_BIT readback is then free of
-  // extra stalls. Returns -1.0f if no result is available (defensive only).
+  // Read back the whole-frame GPU ms. Call AFTER the frame's submit. NEVER waits
+  // on the device (a waiting read wedged RADV/amdgpu): the read is lag-2 with an
+  // availability bit, and -1.0f means "no result yet this frame".
   virtual float readbackFrameMs() = 0;
 };
 using gpuslicetimer_ptr_t = std::shared_ptr<GpuSliceTimer>;

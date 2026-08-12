@@ -61,6 +61,20 @@ void SkyAtmosphereData::describeX(class_t* c) {
   c->floatProperty("MoonRayleighStrength", float_range{0.0f, 1000.0f}, &SkyAtmosphereData::_moonRayleighStrength);
   c->floatProperty("AirglowAltitudeKm", float_range{1.0f, 1000.0f}, &SkyAtmosphereData::_airglowAltitudeKm);
 
+  // aerial perspective / ground haze — presentation tier, outside mediumHash()
+  c->directProperty("AerialPerspectiveEnable", &SkyAtmosphereData::_aerialPerspectiveEnable);
+  c->floatProperty("HazeDensity", float_range{0.0f, 10.0f}, &SkyAtmosphereData::_hazeDensity);
+  c->floatProperty("HazeScaleHeight", float_range{0.01f, 10.0f}, &SkyAtmosphereData::_hazeScaleHeight);
+  c->floatProperty("HazePhaseG", float_range{-0.99f, 0.99f}, &SkyAtmosphereData::_hazePhaseG);
+  c->directProperty("HazeScatterTint", &SkyAtmosphereData::_hazeScatterTint);
+  c->directProperty("HazeInscatterTint", &SkyAtmosphereData::_hazeInscatterTint);
+  c->floatProperty("HazeMaxDistanceKm", float_range{1.0f, 1000.0f}, &SkyAtmosphereData::_hazeMaxDistanceKm);
+  // 0/1/2 = off / inline / quarter-res (the header names the modes)
+  c->floatProperty("HazeSunShadow", float_range{0.0f, 2.0f}, &SkyAtmosphereData::_hazeSunShadow);
+  // artistic accentuation of the shafts; 1 = physical. The authoring range is
+  // advisory — the shader clamps only the sign-critical end.
+  c->floatProperty("HazeSunShadowGain", float_range{0.0f, 4.0f}, &SkyAtmosphereData::_hazeSunShadowGain);
+
   // IBL feed (slice B3) — likewise outside mediumHash(); see the header.
   c->intProperty("IblSnapshotWidth", int_range{16, 4096}, &SkyAtmosphereData::_iblSnapshotWidth);
   c->intProperty("IblSnapshotHeight", int_range{8, 2048}, &SkyAtmosphereData::_iblSnapshotHeight);
@@ -100,6 +114,28 @@ uint64_t SkyAtmosphereData::mediumHash() const {
   hasher.accumulateItem(_ozoneTentHalfWidth);
   hasher.accumulateItem(_groundAlbedo);
   hasher.accumulateItem(_sunIlluminance);
+  hasher.finish();
+  return hasher.result();
+}
+
+///////////////////////////////////////////////////////////
+
+uint64_t SkyAtmosphereData::hazePresentationHash() const {
+  // Everything the snapshot's haze overlay reads, and nothing else: the medium
+  // it also reads is already covered by mediumHash(), and the exposure pair
+  // (_skyExposure / _iblCaptureScale) scales the snapshot uniformly, so folding
+  // them in here would start a refilter cycle on a knob the decode divides back
+  // out anyway.
+  boost::Crc64 hasher;
+  hasher.init();
+  hasher.accumulateItem(_aerialPerspectiveEnable);
+  hasher.accumulateItem(_hazeDensity);
+  hasher.accumulateItem(_hazeScaleHeight);
+  hasher.accumulateItem(_hazePhaseG);
+  hasher.accumulateItem(_hazeScatterTint);
+  hasher.accumulateItem(_hazeInscatterTint);
+  hasher.accumulateItem(_hazeMaxDistanceKm);
+  hasher.accumulateItem(_hazeSunShadow);
   hasher.finish();
   return hasher.result();
 }
@@ -175,6 +211,10 @@ void HillaireSky::_init(Context* ctx) {
   _parTransmittanceLut = _material->param("SkyTransmittanceLUT");
   _parMultiScatterLut  = _material->param("SkyMultiScatterLUT");
   _parSkyViewLut       = _material->param("SkyViewLUT");
+  _parHazeDensity       = _material->param("SkyHazeDensity");
+  _parHazeScatterTint   = _material->param("SkyHazeScatterTint");
+  _parHazeInscatterTint = _material->param("SkyHazeInscatterTint");
+  _parHazeGeom          = _material->param("SkyHazeGeom");
   OrkAssertI(_parRadii and _parLutDims, "ublk_sky_atmo params missing from orkshader://sky");
 }
 
@@ -204,6 +244,12 @@ void HillaireSky::_bindAtmosphere(skyatmospheredata_ptr_t atmo, int lut_w, int l
   // which is the only pass with a moon to scatter.
   _material->bindParamVec4(_parMoonDirection, fvec4(0.0f, 1.0f, 0.0f, 0.0f));
   _material->bindParamVec4(_parMoonIlluminance, fvec4(0.0f, 0.0f, 0.0f, 0.0f));
+  // HAZE OFF by default, same shape as the moon above: .w is the ARMED gate and
+  // renderEquirectSnapshot is the only pass that may raise it. The three LUT
+  // bakes describe the MEDIUM, and the artist haze layer is not in it — a bake
+  // that read these lanes would be baking a look into a physical table.
+  if (_parHazeDensity)
+    _material->bindParamVec4(_parHazeDensity, fvec4(0.0f, 1.0f, 0.0f, 0.0f));
 }
 
 ///////////////////////////////////////////////////////////
@@ -369,6 +415,9 @@ void HillaireSky::renderEquirectSnapshot(
   // has to be sampleable here too.
   bakeStaticLuts(ctx, RCFD, atmo);
   ctx->FBI()->rtGroupTransitionToTexture(_rtgTransmittance.get());
+  // the haze overlay folds multi-scatter into its source term (so a thick layer
+  // does not go black in shadow), so this pass now samples the MS LUT too.
+  ctx->FBI()->rtGroupTransitionToTexture(_rtgMultiScatter.get());
   ctx->FBI()->rtGroupTransitionToTexture(_rtgSkyView.get());
 
   float alt = std::max(view_altitude_km, atmo->_minViewAltitude);
@@ -403,11 +452,51 @@ void HillaireSky::renderEquirectSnapshot(
         _parMoonDirection, //
         fvec4(has_moon ? dir_to_moon.normalized() : fvec3(0, 1, 0), has_moon ? 1.0f : 0.0f));
     _material->bindParamVec4(_parMoonIlluminance, fvec4(moon_illuminance, 0.0f));
+    // THE ARTIST HAZE LAYER, on the IBL tier. This pass IS the sky producer:
+    // the LUTs it samples are its own instance's and the sun it was handed is
+    // the SKY_FRAME one, so none of the forward binder's conditions (SKY_FRAME
+    // presence, probe capture) have anything to say here — armed is exactly
+    // "there is an atmosphere and aerial perspective is enabled". The shader's
+    // own .x gate keeps a purely geophysical scene on the untaken branch.
+    //
+    // bindSkyHazeState is NOT reusable here: it binds through a PBRMaterial's
+    // resolved param handles and an RCID, and this is a FreestyleMaterial pass
+    // with neither.
+    bool haze_armed = atmo->_aerialPerspectiveEnable;
+    if (_parHazeDensity)
+      _material->bindParamVec4(
+          _parHazeDensity, //
+          haze_armed ? fvec4(atmo->_hazeDensity, atmo->_hazeScaleHeight, atmo->_hazePhaseG, 1.0f)
+                     : fvec4(0.0f, 1.0f, 0.0f, 0.0f));
+    if (haze_armed) {
+      if (_parHazeScatterTint)
+        _material->bindParamVec4(_parHazeScatterTint, fvec4(atmo->_hazeScatterTint, 0.0f));
+      if (_parHazeInscatterTint)
+        _material->bindParamVec4(_parHazeInscatterTint, fvec4(atmo->_hazeInscatterTint, 0.0f));
+      // .y IS the pass's output scale — the same SkySunDisc.w bound above,
+      // capture gain included. The block's standing convention (SkyHazeGeom.y
+      // == SkySunDisc.w) is what makes the hazed snapshot equal the visible
+      // hazed sky times _iblCaptureScale, term for term. .x (km per world unit)
+      // is inert in the overlay, which marches in km from SkyRadii alone. .w is
+      // the SHAFT GAIN in the forward binder and stays zero here on purpose:
+      // this overlay is skyHazeSkyOverlay, which has no cascade taps to gain.
+      if (_parHazeGeom)
+        _material->bindParamVec4(
+            _parHazeGeom, //
+            fvec4(
+                atmo->_kilometersPerWorldUnit,                 //
+                atmo->_skyExposure * atmo->_iblCaptureScale,   //
+                atmo->_hazeMaxDistanceKm,                      //
+                0.0f));
+    }
     _material->bindParamTexture(_parSkyViewLut, _rtgSkyView->texture(0).get());
     // the night emission's own extinction sampler. An UNBOUND sampler reads
     // zero here rather than failing, which is exactly how a silently black
     // night sky gets shipped — so this bind is load-bearing, not defensive.
     _material->bindParamTexture(_parTransmittanceLut, _rtgTransmittance->texture(0).get());
+    // the haze overlay's multi-scatter source. ALWAYS bound (descriptor
+    // completeness), armed or not: the fragment declares the sampler either way.
+    _material->bindParamTexture(_parMultiScatterLut, _rtgMultiScatter->texture(0).get());
   });
   ctx->debugPopGroup();
 

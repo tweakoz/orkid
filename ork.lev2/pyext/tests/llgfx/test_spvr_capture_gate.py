@@ -1,30 +1,26 @@
 #!/usr/bin/env ork.python
 ################################################################################
-# DMVR capture gate: headless per-eye pixel capture of the DualMonoVr (FWDPBRVRDM)
-# compositor. Closes SKYLIGHT known-issue 6 (DMVR observables were owner-in-HMD
-# only) by making the two per-eye downsampled buffers machine-gateable.
+# SPVR capture gate: headless per-eye pixel capture of the single-pass stereo
+# compositor (SinglePassStereoVrOutputNode — the VR output node; both preset
+# strings FWDPBRSPVR and FWDPBRVRDM route to it). Makes the two per-eye
+# downsampled buffers machine-gateable instead of owner-in-HMD only.
 #
-# SPVR PROGRAM EXTENSION (deliverable 1, the GATE HARNESS): the gate now drives
-# TWO output-node slots (A and B), captures per-eye from BOTH, and diffs
-# EYE-FOR-EYE. Today both slots are DMVR — a SELF-PARITY BOOTSTRAP whose purpose
-# is to prove the harness (capture wiring, parity metric, noise reference, teeth)
-# BEFORE the SPVR output node exists. When the SPVR node lands, slot B swaps to
-# it by env (ORKID_SPVR_GATE_NODE_B=SPVR) and nothing else in this file changes.
+# The gate drives TWO output-node slots (A and B), captures per-eye from BOTH, and
+# diffs EYE-FOR-EYE. Both slots are the SPVR node today — an EYE-FOR-EYE SELF-PARITY
+# run whose purpose is to hold the harness (capture wiring, parity metric, noise
+# reference, teeth) honest. The slot machinery stays because a future second VR
+# output node plugs into slot B by env (ORKID_SPVR_GATE_NODE_B=<kind>) with nothing
+# else in this file changing.
 #
-# Why the slot swap needs no capture-code change:
+# Why a slot swap needs no capture-code change:
 #   - onBeginAssemble/onEndAssemble are pybound on the OutputCompositingNode BASE
-#     class (pyext_gfx_compositor.cpp:418-436), not on DualMonoVrOutputNode.
-#   - downsampledEyeRtGroup(bool) is bound per derived node (DMVR:
-#     pyext_gfx_compositor.cpp:780-783); the SPVR node owes the SAME accessor name
-#     and the same per-eye buffer shape (SPVR.md R6 — slice-extract preserves the
-#     accessor so the OpenXR handoff and desktop mirror are untouched). This file
-#     calls it duck-typed, so an equally-named binding on the SPVR node suffices.
-# The gate does NOT use ORKID_FORCE_DMVR: that env is read only by the C++ player
-# (ork.ecs/examples/c++/player/main.cpp:426), never by pyext. The in-process gate
-# selects nodes by building a scene per slot with that slot's rendermodel preset.
+#     class (pyext_gfx_compositor.cpp), not on any derived node.
+#   - downsampledEyeRtGroup(bool) is bound per derived node; any node in a slot owes
+#     the SAME accessor name and the same per-eye buffer shape. This file calls it
+#     duck-typed.
 #
-# Seam: DualMonoVrOutputNode renders both eyes into private per-eye downsample
-# RtGroups (_ssaadownsamplebufferL/R). A read accessor
+# Seam: the node extracts each eye's layer into private per-eye downsample
+# RtGroups. A read accessor
 # (outputnode.downsampledEyeRtGroup(left)) exposes each eye's FINAL downsampled
 # RtGroup — the exact buffers the desktop mirror blit and the XR runtime handoff
 # read.
@@ -40,7 +36,7 @@
 #  1. A SceneGraphViewport swaps the scene's output node for its own
 #     RtGroupOutputCompositingNode during render (viewport_scenegraph.cpp
 #     DoRePaintSurface: comptek->_outputNode = _outputnode), so the SGVP path
-#     structurally BYPASSES the DMVR node. Hence NO StandardSceneGraphComponent
+#     structurally BYPASSES the VR output node. Hence NO StandardSceneGraphComponent
 #     here — the scene is driven via ezapp.createScene / renderOnContext.
 #  2. In the createScene/renderOnContext path, onGpuPostFrame is NEVER invoked
 #     (that hook fires only from the topwidget UI-draw path), but the compositor
@@ -146,12 +142,12 @@
 # (SPVR.md L347): bar = max(measured_noise * NOISE_SLACK, EPS_<metric>). The noise
 # term makes the bar reference THIS bench; the EPS term keeps the bar meaningful
 # when the rig is bit-deterministic (noise 0 -> bar EPS, i.e. near-identity). A
-# DMVR-vs-DMVR parity failure outside the noise floor is a REAL FINDING (an
-# unmodelled per-frame dependency in the node), never a threshold to retune.
+# self-parity failure outside the noise floor is a REAL FINDING (an unmodelled
+# per-frame dependency in the node), never a threshold to retune.
 #
 # TEETH, evaluated on every run from already-captured frames (no extra render):
 #   - SAMEEYE: feeding the LEFT capture as both eyes must FAIL the eyes-differ
-#     check. (The whole-run form still exists: ORKID_DMVR_GATE_SAMEEYE=1 captures
+#     check. (The whole-run form still exists: ORKID_SPVR_GATE_SAMEEYE=1 captures
 #     LEFT into both outputs and the gate must FAIL end-to-end.)
 #   - L/R SWAP: parity of A.L-vs-B.R and A.R-vs-B.L must FAIL the parity bar. If a
 #     swapped pair passed, the parity leg would be blind to a swapped-eye node.
@@ -193,20 +189,19 @@ from lev2utils.scenegraph import createSceneGraph
 tokens = CrcStringProxy()
 
 OUTDIR = sys.argv[1] if len(sys.argv) > 1 else os.path.join(
-    os.environ.get("TMPDIR", "/tmp"), "dmvr_capture_gate")
+    os.environ.get("TMPDIR", "/tmp"), "spvr_capture_gate")
 
 # capture the SAME (left) eye into both outputs -> negative/detection run.
-SAME_EYE = os.environ.get("ORKID_DMVR_GATE_SAMEEYE", "0") == "1"
+SAME_EYE = os.environ.get("ORKID_SPVR_GATE_SAMEEYE", "0") == "1"
 
 # ---------------------------------------------------------------- node slots --
-# Slot B is the pluggable one. "DMVR" (default) = self-parity bootstrap; "SPVR" =
-# the phase-1 node once the engine lane lands presetForwardPBRSPVR (SPVR.md A6).
-# An unknown preset fails LOUDLY inside createScene — never silently falls back.
-NODE_A_KIND = os.environ.get("ORKID_SPVR_GATE_NODE_A", "DMVR").upper()
-NODE_B_KIND = os.environ.get("ORKID_SPVR_GATE_NODE_B", "DMVR").upper()
+# Slot B is the pluggable one; both slots default to the one VR output node there is
+# (eye-for-eye self-parity). A kind naming a node the engine does not have fails
+# LOUDLY inside createScene — never silently falls back.
+NODE_A_KIND = os.environ.get("ORKID_SPVR_GATE_NODE_A", "SPVR").upper()
+NODE_B_KIND = os.environ.get("ORKID_SPVR_GATE_NODE_B", "SPVR").upper()
 KIND_PRESET = {
-  "DMVR": "FWDPBRVRDM",     # DualMonoVrOutputNode — today's per-eye node
-  "SPVR": "FWDPBRSPVR",     # single-pass layered node (SPVR.md L327-331, A6)
+  "SPVR": "FWDPBRSPVR",     # SinglePassStereoVrOutputNode — THE VR output node
 }
 SELF_PARITY = (NODE_A_KIND == NODE_B_KIND)
 
@@ -257,8 +252,8 @@ EPS_PARITY_SSIM  = 0.005  # 1 - min(block SSIM); identical frames -> exactly 0
 FRAMETIME_DIVERGENCE_WARN = 0.10   # >10% p50 spread between nodes -> WARN line
 
 # ------------------------------------------------------------- SUBMIT COUNT --
-# A10 requires submit count logged beside timing so the DMVR-vs-SPVR fairness is
-# VISIBLE, not assumed. The engine lane landed the counter: Context::submitCount()
+# Submit count is logged beside timing so between-node fairness is VISIBLE, not
+# assumed. The engine lane landed the counter: Context::submitCount()
 # tallies every vkQueueSubmit (graphics, compute, capture, external composite — they
 # all funnel through VkThreadedQueue::queueSubmit) and RESETS at _doBeginFrame, so the
 # value read at a frame boundary is that frame's DELTA, not a running total. It is
@@ -269,7 +264,7 @@ FRAMETIME_DIVERGENCE_WARN = 0.10   # >10% p50 spread between nodes -> WARN line
 # produces the frame-time numbers, and reports p50 + total per node. The comparison
 # BETWEEN slots stays non-gating INFO for the same reason the frame-time divergence
 # line is: two nodes submitting differently is a fact to see, not a bar to pass, until
-# the real DMVR-vs-SPVR ruling lands.
+# a real between-node ruling asks for one.
 #
 # Fail-loud fallback: an install predating the binding has no such property. Reading it
 # with a default and calling that "0 submits" would be exactly the silent zero A10
@@ -710,8 +705,8 @@ def _regionalDelta(L, R, rect, exclude=None):
 #   measured   = (reveal_R - reveal_L) / h_eff                  [px of edge shift]
 #   predicted  = IPD*(1/d_box - 1/d_flip) / rad_per_px          [px of edge shift]
 #
-# DMVR renders LEFT first, so the RIGHT eye is the one that culls against foreign
-# depth: the wrong cull SUPPRESSES the reveal the right eye should have had and the
+# The two-pass per-eye node rendered LEFT first, so the RIGHT eye was the one culling
+# against foreign depth: the wrong cull SUPPRESSES the reveal the right eye should have had and the
 # ratio measured/predicted COLLAPSES toward (or below) zero. The opposite excursion —
 # a whole object missing from one eye — blows the ratio up. Both are "beyond what
 # geometry parallax explains", so the band is two-sided.
@@ -1416,12 +1411,12 @@ class GateApp(ComponentizedApplication):
   ##############################################################
 
   def _capPath(self, slot, take, eye):
-    # slot A / take t1 keeps the ORIGINAL artifact names — downstream consumers of
-    #  this gate's images (and the pre-SPVR checks) see no rename.
+    # slot A / take t1 writes the plain per-eye names — the artifacts a human
+    #  eyeballs after a run.
     if RIG:
       return os.path.join(self._outdir, "rig_node%s_%s_%s.png" % (slot.name, take, eye))
     if slot.name == "A" and take == "t1":
-      return os.path.join(self._outdir, "dmvr_eye_%s.png" % eye)
+      return os.path.join(self._outdir, "eye_%s.png" % eye)
     return os.path.join(self._outdir, "node%s_%s_%s.png" % (slot.name, take, eye))
 
   def _capture(self, slot, take):
@@ -2021,14 +2016,12 @@ class GateApp(ComponentizedApplication):
       div = abs(pa - pb) / max(min(pa, pb), 1e-9)
       # self-parity: the two numbers SHOULD be statistically indistinguishable, so a
       #  large spread is worth a warning line — but frame time on a shared bench is
-      #  not a failure signal by itself. The DMVR-vs-SPVR comparison bar (SPVR.md
-      #  ruling 1: SPVR p50 AND min-sustained >= DMVR) lands with the SPVR node.
-      # ASYMMETRY TO CLOSE BEFORE THAT BAR IS APPLIED: slot A is timed while slot B
-      #  does not exist yet, slot B is timed with slot A's scene still resident (not
-      #  rendered, but allocated). Self-parity measures the size of that bias — 0.4%
-      #  to 0.8% on this bench — and it is well under the WARN band, but a real
-      #  DMVR-vs-SPVR verdict should either time each node in its own process or
-      #  tear the finished slot down first.
+      #  not a failure signal by itself. A BETWEEN-NODE bar would first have to close
+      #  this asymmetry: slot A is timed while slot B does not exist yet, slot B is
+      #  timed with slot A's scene still resident (not rendered, but allocated).
+      #  Self-parity measures the size of that bias — 0.4% to 0.8% on this bench,
+      #  well under the WARN band — but a real between-node verdict should time each
+      #  node in its own process or tear the finished slot down first.
       warn = div > FRAMETIME_DIVERGENCE_WARN
       self._leg("frametime_divergence", "WARN" if warn else "INFO",
                 "p50 A=%.3fms B=%.3fms spread=%.1f%% (warn>%.0f%%, non-gating%s)"
@@ -2044,7 +2037,7 @@ class GateApp(ComponentizedApplication):
       counts.append((s.name, None if not s.submits else s.submits))
     if any(c is None for _, c in counts):
       # gating rule: unavailable is tolerable ONLY while both slots are the same
-      #  node kind (fairness is trivial); a real DMVR-vs-SPVR run cannot claim
+      #  node kind (fairness is trivial); a real between-node run cannot claim
       #  fairness without it.
       missing = ",".join(n for n, c in counts if c is None)
       why = ("ctx.submitCount is not bound on this install"
@@ -2082,7 +2075,7 @@ class GateApp(ComponentizedApplication):
 def main():
   from ork.testing import Watchdog
   os.makedirs(OUTDIR, exist_ok=True)
-  wd = Watchdog(300.0, label="dmvr_capture_gate").arm()
+  wd = Watchdog(300.0, label="spvr_capture_gate").arm()
   app = GateApp(os.path.abspath(OUTDIR))
   app.ezapp.mainThreadLoop()
   wd.disarm()

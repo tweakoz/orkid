@@ -38,6 +38,10 @@ struct MaterialBase : public ork::Object {
   DeclareAbstractX(MaterialBase, ork::Object);
 public:
   virtual void gpuInit(const RenderContextInstData& RCID) = 0;
+  // PRE-PASS (render thread, no active render pass) one-shot gpuInit — the ONLY legal home
+  // for the shader load. Renderers call it from their drawable onGpuUpdate hook; _render
+  // asserts rather than initializing mid-pass.
+  void gpuInitIfNeeded(ork::lev2::Context* ctx);
   virtual void update(const RenderContextInstData& RCID){}
   // PRE-RENDER hook (render thread) — GradientMaterial overrides it to re-sample its gradient
   // into _gradientSamples (CPU only, dirty-gated) so the renderer can write the LUT into the
@@ -241,6 +245,12 @@ public:
   float _emission_smoothing = 0.0f;
   float _emission_lum_power = 1.0f;
   fvec3 _emission_tint      = fvec3(1, 1, 1);
+  // SOFT-PARTICLE DEPTH FADE distance, in eye-space units: how far in FRONT of
+  // the scene surface a sprite has to sit before it reaches full opacity. 0 =
+  // off. Only bites when the shader opted in (ctx.soft_fade() in the fragment
+  // DSL declares SoftFadeDistance; the stock shader has no fade), and only
+  // when the DEPTH PREPASS ran — see update().
+  float _soft_fade_distance = 0.0f;
 
   // runtime
   texture_ptr_t _texture;                      // resolved from _texture_asset when null
@@ -250,6 +260,15 @@ public:
   // drives the light and smoke contributes nothing — no per-system hook.
   fxparam_constptr_t _param_cookie   = nullptr;
   fxparam_constptr_t _param_gridDim  = nullptr;
+  bool _soft_fade_refused = false;             // set per-update when the prepass precondition fails
+  bool _soft_fade_warned  = false;
+  // the scene depth the fade / the heat pair's manual depth test sample, chosen
+  // PER UPDATE: the RCFD DEPTH_MAP when the prepass filled it, else _farDepth.
+  // Binding the real one with no prepass is a hard Vulkan layout fault (the
+  // color pass still owns the attachment for WRITING), so the substitution is
+  // not cosmetic — it is what keeps the refusal from taking the frame down.
+  texture_ptr_t _depth_source;
+  texture_ptr_t _farDepth;                     // 4x4 white = depth 1.0 = infinitely far
   freestyle_mtl_ptr_t _grad_render_mtl;        // gradient->256x1 RT bake (GradientMaterial recipe)
   fxpipeline_ptr_t _grad_render_pipeline;
   texture_ptr_t _gradient_texture;

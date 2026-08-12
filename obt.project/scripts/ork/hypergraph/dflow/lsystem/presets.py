@@ -161,8 +161,12 @@ def conifer(depth=7, children=2, internodes=1, seed=1, budget=4000, tropism=0.0,
         for i in range(IN):                                    # droop applied per internode (legacy tropism-droop)
           t = float(i + 1) / IN
           ops.append(L.pitch(droop_deg))
+          # gen=1.0 stamps the LATERAL (bough) — distinguishes it from the gen-0 leader so a
+          # leaf scatter with min_gen 1 clothes the boughs but leaves the trunk clean (needle
+          # placement fix, aug09; before this, leader and laterals were both gen 0 and needles
+          # either covered the trunk too or existed only on tips).
           ops.append(L.segment(len=S.blen * (1.0 / IN),
-                               rad=S.brad * (1.0 - (1.0 - S.rad_decay) * t), gen=0.0))
+                               rad=S.brad * (1.0 - (1.0 - S.rad_decay) * t), gen=1.0))
         # NO roll before the tip fork: legacy's tip-level roll term is div*gen with gen==0,
         # so tips fan from the lateral's outward vertical plane (radial reach depends on it).
         ops.append(L.fork(C2, lean=S.branch_angle,
@@ -180,7 +184,7 @@ def conifer(depth=7, children=2, internodes=1, seed=1, budget=4000, tropism=0.0,
         for i in range(IN):
           t = float(i + 1) / IN
           ops.append(L.segment(len=S.tlen * (1.0 / IN),
-                               rad=S.trad * (1.0 - (1.0 - S.rad_decay) * t), gen=1.0))
+                               rad=S.trad * (1.0 - (1.0 - S.rad_decay) * t), gen=2.0))
         return ops
 
       self.axiom(Whorl(w=0.0, wlen=Whorl.seg_len))

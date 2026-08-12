@@ -92,7 +92,6 @@ FOREST_CLOUD_GAIN     = 1.3
 FOREST_BASE_COLORS = {
     "lit_color":      (0.60, 0.575, 0.55),
     "shadow_color":   (0.155, 0.170, 0.20),
-    "haze_color":     (0.30, 0.38, 0.47),
     "overcast_color": (0.295, 0.305, 0.325),
 }
 _fe, _fa = math.radians(FOREST_SUN_ELEV_DEG), math.radians(FOREST_SUN_AZIM_DEG)
@@ -275,13 +274,6 @@ def test_append_path():
 # decision that made it, so the leg keeps comparing mechanism and the decision
 # stays visible):
 #
-#   day_ref_intensity — the sky-side day normalizer of the W10-S1 CONTINUOUS
-#                       cloud-lighting model (merged a47fed930, jul30). ONE
-#                       illumination-driven model at all hours needs to know
-#                       what THIS scene calls full day; cloud_decks() reads it
-#                       off the scene's declared sun and falls back to the
-#                       library reference where there is none, which is the case
-#                       in both harnesses.
 #   night_ambient     — W15-S1 DECK NIGHT RADIANCE (merged 43909cc30, the
 #                       owner-ratified night trio, jul31): the trio's measured
 #                       sourceless irradiance (airglow + starlight) replaces the
@@ -293,11 +285,18 @@ def test_append_path():
 #   the cookie node   — W11-S1 cloud ground-shadows (7529b91d3): a SECOND node
 #                       per deck on the sun-cookie layer. The retired loops'
 #                       decks cast nothing; that slice is what made them cast.
+#
+# RULED SUBTRACTION (haze S9, the cloud-deck unification): three kwargs the
+# reconstructions used to carry are GONE from the library, so they are gone from
+# both sides here — haze_dist_m (the per-layer e-folding distance), haze_color
+# (the frozen horizon color) and day_ref_intensity (with e_pol / CgDayInv, the
+# sky-side day normalizer whose only consumer was the haze mix). The deck now
+# calls the engine's own aerial-perspective seam, skyAerialPerspective: distance
+# falls out of the medium's scale-height physics and the fade target is the
+# atmosphere's real in-scatter, so there is no deck-local distance, no deck-local
+# horizon color and nothing to normalize a sky radiance against. Section 4b's
+# tooth 1 is ruled with it (the deck's one exp(-) haze site became one seam call).
 ###############################################################################
-
-# the library reference day intensity (_cloud_deck.SUN_BASE_INTENSITY) — what
-# cloud_decks() normalizes by when the scene declares no sun, as here.
-DECK_DAY_REF = 4.0
 
 # W15-S1's night floor at the ENGINE-DEFAULT atmosphere: 2.75e-4 of the daytime
 # sky per channel, read back through the engine's float32 atmosphere properties
@@ -352,8 +351,6 @@ class _DeckHarness(Scene):
                                      look["evo_uv"][1] * EVO_MULT),
                      cov_scale    = look["cov_scale"],
                      veil_max     = look.get("veil_max", 0.0),
-                     haze_dist_m  = look["haze_dist_m"],
-                     day_ref_intensity = DECK_DAY_REF,       # W10-S1, a47fed930
                      night_ambient     = DECK_NIGHT_AMBIENT, # W15-S1, 43909cc30
                      sampler_textures = {"CloudTex": CLOUD_TEX[texkey]})
       plane = A.CloudShellMesh(ent_name + "_mesh",
@@ -419,7 +416,6 @@ class _DeckHarness(Scene):
                      silver_gain  = look["silver_gain"],
                      lit_color    = _fgain(FOREST_BASE_COLORS["lit_color"]),
                      shadow_color = _fgain(FOREST_BASE_COLORS["shadow_color"]),
-                     haze_color   = _fgain(FOREST_BASE_COLORS["haze_color"]),
                      overcast_color = _fgain(FOREST_BASE_COLORS["overcast_color"]),
                      sun_dir      = FOREST_SUN_DIR,
                      wind_mps     = (spec["wind_dir"][0] * spec["wind_mps"] * CGI.WIND_MULT,
@@ -428,8 +424,6 @@ class _DeckHarness(Scene):
                                      look["evo_uv"][1] * EVO_MULT),
                      cov_scale    = look["cov_scale"],
                      veil_max     = look.get("veil_max", 0.0),
-                     haze_dist_m  = look["haze_dist_m"],
-                     day_ref_intensity = DECK_DAY_REF,       # W10-S1, a47fed930
                      night_ambient     = DECK_NIGHT_AMBIENT, # W15-S1, 43909cc30
                      sampler_textures = {"CloudTex": CLOUD_TEX[texkey]})
       plane = A.CloudShellMesh(ent_name + "_mesh",
@@ -482,6 +476,114 @@ def test_cover_knob():
   return ok
 
 
+def test_empty_sky_is_empty():
+  """EVERY procedural sky carries the decks, and they start EMPTY (owner aug08).
+
+  The whole feature rests on one conversion: a cover of 0 must land on the
+  FULLY-CLEAR stop, not on threshold 1.0 where the deck still sits inside its
+  sweep band and the material's soft/erode tail leaves a visible veil. And an
+  empty sky must PARK its planes rather than draw four transparent shells.
+
+  Also pinned: a nonzero cover keeps the exact mapping it always had, so no
+  scene that authored a cover moves; and the launch state reaches the
+  scenegraph params, which is where a host reads the rows' baseline from."""
+  ok = True
+  # 1 the conversion's two ends
+  ok &= abs(CGI.cover_to_thresh(0.0) - CGI.THRESH_MAX) < 1e-9
+  ok &= CGI.decks_clear(CGI.cover_to_thresh(0.0))
+  # 2 an authored cover is untouched by the clear-end special case
+  for cover in (0.10, 0.45, 0.62, 1.0):
+    ok &= abs(CGI.cover_to_thresh(cover) - (1.0 - cover)) < 1e-9
+    ok &= not CGI.decks_clear(CGI.cover_to_thresh(cover))
+  # 3 cover 0 parks every plane, and the launch state is published
+  h = _DeckHarness.__new__(_DeckHarness)
+  Scene.__init__(h, default_sg=False)
+  h.log   = []
+  h.asset = _Recorder(h.log)
+  h.scenegraph()          # the params the launch state is published onto
+  h.cloud_decks(cover=0.0)
+  parked = all(abs(h._spawners[n].transform.translation.y - CGI.HIDE_Y) < 1e-3
+               for n in CGI.PLANE_ENTITIES)
+  ok &= parked
+  published = {}
+  for call, args, _kw in h._systems["SceneGraphSystem"].sub_calls:
+    if call == "declareParams" and args and isinstance(args[0], dict):
+      published.update(args[0])
+  ok &= abs(published.get("CloudCover", -1.0)) < 1e-9
+  ok &= "CloudTile" in published and "CloudAltOffset" in published
+  print("[empty sky] %s (cover 0 -> thresh %.3f, planes parked %s, CloudCover %s)" % (
+      "OK" if ok else "BAD", CGI.cover_to_thresh(0.0), parked,
+      published.get("CloudCover")))
+  return bool(ok)
+
+
+def test_authored_decks_win():
+  """A SCENE THAT DECLARES DECKS IS THE DECK AUTHOR (owner defect, aug08).
+
+  Every procedural sky carries the implied deck set, and scn_forest/scn_swest
+  also call cloud_decks() themselves — two sets on the same asset names, which
+  is what the duplicate-asset guard fired on at scene construction. The implied
+  set is now STAGED and only lands at Scene.build() if nobody claimed the decks,
+  so an authoring scene gets EXACTLY its own decks, no matter which side of its
+  sky() call they are declared on. The guard itself must keep firing for a scene
+  that declares decks twice — only the implied set yields."""
+
+  def compose(author):
+    h = _DeckHarness.__new__(_DeckHarness)
+    Scene.__init__(h, default_sg=False)
+    h.log   = []
+    h.asset = _Recorder(h.log)
+    h.scenegraph()
+    author(h)
+    h.declare_staged_cloud_decks()   # what Scene.build() runs at the Pass-2 head
+    return h
+
+  def cover_of(h):
+    published = {}
+    for call, args, _kw in h._systems["SceneGraphSystem"].sub_calls:
+      if call == "declareParams" and args and isinstance(args[0], dict):
+        published.update(args[0])
+    return published.get("CloudCover")
+
+  ONE = [("cloud_cumulus_2k", "cumulus", "cumulus2k")]
+  ok  = True
+
+  # 1 no cloud_decks() call anywhere: the implied set, empty
+  implied = compose(lambda h: h.sky(celestial=False))
+  ok &= sorted(implied._spawners) == sorted(CGI.PLANE_ENTITIES)
+  ok &= abs(cover_of(implied)) < 1e-9
+
+  # 2 authored decks win, declared AFTER the sky and BEFORE it
+  for label, author in (
+      ("after",  lambda h: (h.sky(celestial=False),
+                            h.cloud_decks(specs=ONE, cover=0.35))),
+      ("before", lambda h: (h.cloud_decks(specs=ONE, cover=0.35),
+                            h.sky(celestial=False)))):
+    h = compose(author)
+    authored = (list(h._spawners) == ["cloud_cumulus_2k"]
+                and abs(cover_of(h) - 0.35) < 1e-6)
+    ok &= authored
+    if not authored:
+      print("  [authored decks] BAD (%s: decks %s, cover %s)" % (
+          label, list(h._spawners), cover_of(h)))
+
+  # 3 the sky's own cloud knobs are authoring too: saying it twice still raises
+  for author in (lambda h: (h.cloud_decks(cover=0.3), h.cloud_decks(cover=0.6)),
+                 lambda h: (h.sky(celestial=False, cloud_cover=0.3),
+                            h.cloud_decks(cover=0.6))):
+    try:
+      compose(author)
+      ok = False
+      print("  [authored decks] BAD (two authored deck sets did not raise)")
+    except ValueError as err:
+      ok &= "already declared" in str(err)
+
+  print("[authored decks] %s (implied %d decks at cover %s; authored set wins "
+        "either side of sky(); double declaration raises)" % (
+        "OK" if ok else "BAD", len(implied._spawners), cover_of(implied)))
+  return bool(ok)
+
+
 ###############################################################################
 # 4 — the EPHEMERIS at a polar site (the property, not the scene)
 #
@@ -501,9 +603,13 @@ def test_cover_knob():
 # dedup). Three teeth:
 #
 #   routing   — swapping the shared function changes the generated surface body
-#               at exactly FOUR places (3 look + the occlusion alpha); the
-#               atmospheric-haze exp(-) site, which is NOT cloud transmittance,
-#               is untouched.
+#               at exactly FOUR places (3 look + the occlusion alpha), and NO
+#               exp(-) survives outside them. RULED (haze S9): the deck's own
+#               atmospheric-haze exp(-) is GONE — the fade is the engine's
+#               aerial-perspective seam now, so the leg counts ONE
+#               skyAerialPerspective() call instead of one stray exp(-). Both
+#               forms say the same thing: exactly one distance-haze site, and it
+#               is not a cloud-transmittance term.
 #   inertness — the shipped body is BYTE IDENTICAL to the body the pre-extraction
 #               inline spelling produced. This is the extraction's digest proof
 #               kept live: the refactor was textually inert and must stay so. A
@@ -589,8 +695,9 @@ def test_one_transmittance_term():
     CD.beer_transmittance = orig
     FN.beer_transmittance = orig_fn
   n_mark = marked.count("/*MARK*/")
-  n_haze = marked.count("exp(-") - n_mark      # the aerial-perspective term
-  routing_ok = (n_mark == _N_SITES) and (n_haze == 1)
+  n_haze = marked.count("exp(-") - n_mark      # no non-Beer exp(-) may remain
+  n_seam = marked.count("skyAerialPerspective(")   # the aerial-perspective seam
+  routing_ok = (n_mark == _N_SITES) and (n_haze == 0) and (n_seam == 1)
 
   # tooth 2 — inertness: shared form vs the pre-extraction inline spelling
   def _inline(core, sigma):
@@ -609,8 +716,10 @@ def test_one_transmittance_term():
             + src.count("fractional_occlusion(presence,") == _N_SITES)
 
   ok = routing_ok and inert_ok and src_ok and (beer_transmittance is orig)
-  print("[one transmittance] %s (sites %d/%d, haze %d/1, inert %s, source %s)" % (
-      "OK" if ok else "BAD", n_mark, _N_SITES, n_haze, inert_ok, src_ok), flush=True)
+  print("[one transmittance] %s (sites %d/%d, stray exp(- %d/0, haze seam %d/1, "
+        "inert %s, source %s)" % (
+      "OK" if ok else "BAD", n_mark, _N_SITES, n_haze, n_seam, inert_ok, src_ok),
+      flush=True)
   return ok
 
 
@@ -946,7 +1055,7 @@ def _sun_default(name):
 
 def _mtl_colors():
   return {k: _mtl_default(k) for k in ("lit_color", "shadow_color",
-                                       "haze_color", "overcast_color")}
+                                       "overcast_color")}
 
 
 def _resolve(entry, name, raw):
@@ -1126,6 +1235,19 @@ _CADENCE_OLD = {
                                        "snapshots every frame, as before"),
 }
 
+# The DISTANCE-HAZE knob (aerial perspective, S6). One kwarg carrying a whole
+# authoring surface (preset name or knob dict), and its default is INERT the same
+# way the cadence knobs are: undeclared resolves to no artist layer, no
+# SkyAtmosphere object published, and the engine's own zero artist density —
+# which is the pre-haze renderer exactly. So every scene silent about haze still
+# renders what it rendered, and a future default that starts hazing every silent
+# scene fails here.
+_HAZE_OLD = {
+    "haze": (None, "haze slice: undeclared declares NOTHING — no haze knobs "
+                   "written, no atmosphere published, and the engine's zero "
+                   "artist density IS the pre-haze renderer"),
+}
+
 # The COOKIE NODE knob (W11-S1 cloud ground-shadows, 7529b91d3). Default-armed:
 # every deck declares its second node, and the whole path stays inert until a
 # sun declares cloud_shadow_strength > 0 — so the arming is free, and recording
@@ -1150,7 +1272,7 @@ _SURFACE = {
     "entries": ("sky", "sky_dome"),
     "old": dict(_EXPOSURE_OLD, **_CELESTIAL_OLD_DEFAULTS, **_NO_DECKS,
                 **_DISPLAY_STAGE_OLD, **_ENSEMBLE_RADIANCE_OLD, **_CADENCE_OLD,
-                **_MOON_PLACEMENT_OLD, **{
+                **_HAZE_OLD, **_MOON_PLACEMENT_OLD, **{
         "ambient_light": _AMBIENT_PROCSKY,
         "sky_source":  ("procedural", "old scenegraph SkySource"),
         "time_of_day": (4.0,  "old celestial_sky() default (never expressed)"),
@@ -1166,7 +1288,7 @@ _SURFACE = {
     # values — they are the library defaults it silently ships on, recorded so
     # they cannot move without a decision.
     "entries": ("sky", "sky_dome", "cloud_decks"),
-    "old": dict(_NO_DECKS, **_DISPLAY_STAGE_OLD, **_CADENCE_OLD,
+    "old": dict(_NO_DECKS, **_DISPLAY_STAGE_OLD, **_CADENCE_OLD, **_HAZE_OLD,
                 **_DECK_COOKIE_OLD, **_MOON_PLACEMENT_OLD, **{
         # RULED (owner ask, jul28): "a sky with sunset and moon visible" — a
         # baked envmap has neither, so the dome went procedural and the static
@@ -1199,7 +1321,7 @@ _SURFACE = {
     # S2b routed the dome through sky() (which brought the ensemble with it); the
     # decks keep their own call, so sky()'s cloud knobs stay unused here.
     "entries": ("sky", "sky_dome", "cloud_decks"),
-    "old": dict(_DECKS_OLD, **_DISPLAY_STAGE_OLD, **_CADENCE_OLD,
+    "old": dict(_DECKS_OLD, **_DISPLAY_STAGE_OLD, **_CADENCE_OLD, **_HAZE_OLD,
                 **_DECK_COOKIE_OLD, **_MOON_PLACEMENT_OLD, **{
         "sky_source":  ("procedural", "old amend set SkySource procedural"),
         "celestial":   (WAIVE, "ruled conversion S2b: old scene hand-posed its "
@@ -1603,7 +1725,8 @@ def test_family_invariant():
 
 def main():
   tests = [test_dome_params, test_append_path, test_cloud_decks,
-           test_cover_knob, test_one_transmittance_term, test_fadeout_transparent,
+           test_cover_knob, test_empty_sky_is_empty, test_authored_decks_win,
+           test_one_transmittance_term, test_fadeout_transparent,
            test_polar_sun_geometry,
            test_forest_procsky, test_tonemap_wiring,
            test_default_surface,

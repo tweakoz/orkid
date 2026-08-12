@@ -19,7 +19,7 @@
 #                 A/B on this scene (shader stashed vs applied, same binary —
 #                 fxv2 is JIT): undithered flat7x7=0.8435 run_p95=102.0 rows
 #                 (rc=1) vs dithered 0.0000 / 6.0 (rc=0).
-#   leg "eye"     the SAME sky with NO postfx chain, rendered by a DualMonoVr
+#   leg "eye"     the SAME sky with NO postfx chain, rendered by a VR (stereo)
 #                 scene and captured off a per-eye SSAA buffer — RGBA8, and the
 #                 exact texture handed to the OpenXR runtime. Covers blit.fxv2
 #                 (ps_blit / ps_blituv / ps_downsample*, gated per call site by
@@ -181,13 +181,13 @@ class OutputDitherApp(ComponentizedApplication):
             "AmbientLevel":     vec3(0.1),
           })
     else:
-      # eye leg: a DualMonoVr scene with NO postfx chain. Its per-eye SSAA
-      # buffers are RGBA8 (DualMonoVrOutputNode::_format) and are the textures
+      # eye leg: a VR (single-pass stereo) scene with NO postfx chain. Its per-eye
+      # SSAA buffers are RGBA8 (the VR output node's _format) and are the textures
       # handed to the XR runtime, so the blit that fills them (blit.fxv2, gated
       # by DitherAmt) is the last shader before those 8 bits — the same shader
       # and the same call-site switch the desktop ScreenOutput blit into
       # main_rtg (BGRA8) uses. Capturing an eye buffer is how that shader is
-      # reachable from a headless gate (test_dmvr_capture_gate's mechanism).
+      # reachable from a headless gate (test_spvr_capture_gate's mechanism).
       self.cameralut = lev2.CameraDataLut()
 
     self.createEzApp(width=WIDTH, height=HEIGHT, offscreen=True,
@@ -266,15 +266,15 @@ class OutputDitherApp(ComponentizedApplication):
 
     # WITHOUT a UI widget tree the app's onGpuPostFrame never fires (ezapp.cpp
     # leaves ctx->_onGpuPostFrame commented out — it reaches an app only through
-    # the UI draw path; the same onDraw footgun test_dmvr_capture_gate
+    # the UI draw path; the same onDraw footgun test_spvr_capture_gate
     # documents), and the compositor's onBeginAssemble/onEndAssemble hooks are
-    # wired by the DualMonoVr output node ONLY. onGpuUpdate is hooked
+    # wired by the VR output node ONLY. onGpuUpdate is hooked
     # unconditionally and runs on the GPU thread before the frame, where the
     # PRIOR frame's main_rtg is complete and no render pass is open.
-    # the DualMonoVr output node is the one node that invokes the compositor
-    # assemble hooks; onBeginAssemble runs on the GPU thread with the PRIOR
-    # frame's eye buffers complete and no render pass open (the readback rule
-    # test_dmvr_capture_gate established).
+    # the VR output node is the one node that invokes the compositor assemble
+    # hooks; onBeginAssemble runs on the GPU thread with the PRIOR frame's eye
+    # buffers complete and no render pass open (the readback rule
+    # test_spvr_capture_gate established).
     self.outputnode.onBeginAssemble(lambda cdd: self._pump(self.ctx))
 
   def _onUpdate(self, updinfo):

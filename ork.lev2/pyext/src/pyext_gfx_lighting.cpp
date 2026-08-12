@@ -177,6 +177,30 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             lightdata->_shadowSnapshotInterval = v;
           })
       .def_property(
+          "shadowRefreshAngleDeg",                            //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowRefreshAngleDeg;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowRefreshAngleDeg = v;
+          })
+      .def_property(
+          "shadowRefreshDistance",                            //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowRefreshDistance;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowRefreshDistance = v;
+          })
+      .def_property(
+          "shadowRefreshMaxSecs",                             //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_shadowRefreshMaxSecs;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_shadowRefreshMaxSecs = v;
+          })
+      .def_property(
           "shadowBandRadius",                                 //
           [](directionallightdata_ptr_t lightdata) -> float { //
             return lightdata->_shadowBandRadius;
@@ -273,6 +297,14 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
             lightdata->_cloudShadowMapSize = v;
           })
       .def_property(
+          "cloudShadowRefreshFrames",                       //
+          [](directionallightdata_ptr_t lightdata) -> int { //
+            return lightdata->_cloudShadowRefreshFrames;
+          },
+          [](directionallightdata_ptr_t lightdata, int v) { //
+            lightdata->_cloudShadowRefreshFrames = v;
+          })
+      .def_property(
           "cloudExtinction",                                  //
           [](directionallightdata_ptr_t lightdata) -> float { //
             return lightdata->_cloudExtinction;
@@ -287,6 +319,49 @@ void pyinit_gfx_lighting(py::module& module_lev2) {
           },
           [](directionallightdata_ptr_t lightdata, float v) { //
             lightdata->_cloudDiscSoftness = v;
+          })
+      .def_property(
+          "cloudShadowIblWeight",                             //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cloudShadowIblWeight;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cloudShadowIblWeight = v;
+          })
+      .def_property(
+          "cascadeShadowIblWeight",                           //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cascadeShadowIblWeight;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cascadeShadowIblWeight = v;
+          })
+      .def_property(
+          "cascadeShadowFloor",                               //
+          [](directionallightdata_ptr_t lightdata) -> float { //
+            return lightdata->_cascadeShadowFloor;
+          },
+          [](directionallightdata_ptr_t lightdata, float v) { //
+            lightdata->_cascadeShadowFloor = v;
+          })
+      // CULLSETS — the named caster-family sets and the per-band subscription,
+      // as authored text (see DirectionalLightData). Both empty = the one
+      // implicit all-families set.
+      .def_property(
+          "shadowCullSets",                                         //
+          [](directionallightdata_ptr_t lightdata) -> std::string { //
+            return lightdata->_shadowCullSets;
+          },
+          [](directionallightdata_ptr_t lightdata, std::string v) { //
+            lightdata->_shadowCullSets = v;
+          })
+      .def_property(
+          "shadowBandCullSets",                                     //
+          [](directionallightdata_ptr_t lightdata) -> std::string { //
+            return lightdata->_shadowBandCullSets;
+          },
+          [](directionallightdata_ptr_t lightdata, std::string v) { //
+            lightdata->_shadowBandCullSets = v;
           })
       .def(
           "createNode",                           //

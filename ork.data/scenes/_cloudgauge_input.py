@@ -1,29 +1,27 @@
 ###############################################################################
-# _cloudgauge_input.py — GAMEPAD control layer for scn_cloudgauge (B4 cloud-
-# texture VR gauge). Appended system script: composes with walk_input_system
-# (which keeps locomotion: left stick / L-dpad walk, face buttons snap camera,
-# R1 jump). This script owns the CLOUD knobs on inputs the walker leaves free:
+# _cloudgauge_input.py — the CLOUD DECKS' runtime state applier. Attached with
+# the decks themselves (_cloud_deck.py appends it), so every scene that raises
+# decks gets the one thing that can move them.
 #
-#   OPTIONS (menu/start)    cycle layer   ALL -> cirrus -> alto -> cumulus
-#   SHARE   (select/back)   cumulus resolution toggle 1024 <-> 2048
-#   R3      (R-stick click) wind pause / resume
-#   RIGHT STICK up/down     coverage threshold (up = clearer sky)
-#   RIGHT STICK left/right  tile world-size    (right = larger tiles)
-#
-# (L1 is avoided: the player consumes it host-side as the VR perf-HUD toggle.)
+# IT READS NO INPUT. It was born as a hand-held gauge for one dedicated scene
+# and grabbed the right stick, OPTIONS and SHARE directly; attached to every
+# deck-bearing scene those grabs became a second claimant on pad controls the
+# game already owns (the right stick moved cloud cover while it was trimming
+# walk speed). The HUD editor's CLOUDS rows are THE control surface now, and
+# they arrive here as ONE message: CloudSet {cover?, tile?, alt_offset?}.
 #
 # CONTROL BUS (no engine change): every runtime knob rides the cloud-plane
-# ENTITY TRANSFORMS, which the sim script may freely write:
+# ENTITY TRANSFORMS, which a sim script may freely write:
 #   translation.y  -> coverage threshold   (shader: t=(wpos.y-AltLo)*InvSweep)
 #   uniform scale  -> tile world-size      (shader UVs are OBJECT-space)
-#   translation.xz -> wind scroll          (plane translates; pattern rides it;
-#                                           wrapped modulo one tile period)
-#   hide           -> scale ~0 + park far underground
+#   hide           -> scale ~0 + park far underground (an EMPTY sky, and every
+#                     layer the current mode does not show)
 #
-# Initial state ALSO comes from env vars (shared with the scene author phase,
-# used by offscreen verification): ORK_CLOUDGAUGE_MODE / _T / _TILE / _RES /
-# _WIND. Every state change prints to stdout so the owner (in the HMD, over
-# ssh) can read their preferred values back afterwards.
+# The state here starts from env vars shared with the scene author phase
+# (ORK_CLOUDGAUGE_MODE / _T / _TILE / _RES / _WIND) — a STARTING POINT, never
+# applied unasked: the author-time transforms are the scene's truth until a
+# host says otherwise. Every change prints one line so the state is readable
+# back out of a log.
 ###############################################################################
 
 import math
@@ -85,9 +83,6 @@ HIDE_Y      = -9000.0    # parked far underground (plus shrunk) when hidden
 HIDE_SCALE  = 1.0e-3
 TILE_MIN, TILE_MAX     = 0.35, 2.8
 THRESH_MIN, THRESH_MAX = 0.0, 1.05    # 1.05 -> fully clear sky
-RATE_THRESH = 0.30       # threshold units/sec at full stick deflection
-RATE_TILE   = 0.80       # log-space/sec at full deflection (~2.2x per second)
-STICK_DEADZONE = 0.18
 
 
 def env_state():
@@ -114,6 +109,28 @@ def layer_y(spec, thresh):
   """Altitude encoding of the coverage threshold. Shader-side:
   t = (wpos.y - (alt - sweep/2)) / sweep  ->  y = alt + (t - 0.5)*sweep."""
   return spec["alt_m"] + (thresh - 0.5) * spec["sweep_m"]
+
+
+def cover_to_thresh(cover):
+  """Sky-cover fraction (what a scene author and the HUD speak in) -> the gauge's
+  inverse THRESHOLD. ONE conversion for both the author-time transforms and the
+  runtime applier, so the two can never drift.
+
+  ZERO COVER IS THE CLEAR END, not 1.0. At thresh 1.0 the deck sits exactly at the
+  top of its sweep band and the material's softness/erode tail still leaves a faint
+  veil — visible, and no way to ask for none through this API. THRESH_MAX is the
+  documented fully-clear stop, so that is where a cover of 0 lands."""
+  c = min(1.0, max(0.0, float(cover)))
+  if c <= 0.0:
+    return THRESH_MAX
+  return min(THRESH_MAX, max(THRESH_MIN, 1.0 - c))
+
+
+def decks_clear(thresh):
+  """Is the sky asked to be EMPTY? Then the planes are parked rather than drawn
+  fully transparent — same pixels, none of the fill, and it is what makes the
+  procedural-sky default (cover 0) cost nothing to look at."""
+  return thresh >= 1.0
 
 
 def layer_visible(name, res, mode):
@@ -144,31 +161,25 @@ def plane_key(ent_name):
   return PLANE_ENTITIES[ent_name]
 
 
-CHEAT_SHEET = """
-[cloudgauge] ============ GAMEPAD CONTROLS (cloud gauge) ============
-[cloudgauge]  OPTIONS (menu/start)   : cycle layer  ALL -> cirrus -> altocumulus -> cumulus
-[cloudgauge]  SHARE   (select/back)  : cumulus texture res 1024 <-> 2048
-[cloudgauge]  R3 (right-stick CLICK) : (retired — wind rides the GPU clock;
-[cloudgauge]                            launch with ORK_CLOUDGAUGE_WINDX=0 for still air)
-[cloudgauge]  RIGHT STICK up/down    : coverage threshold  (up = clearer sky)
-[cloudgauge]  RIGHT STICK left/right : tile world-size     (right = larger)
-[cloudgauge]  walker keeps: left stick/dpad walk, face buttons snap camera, R1 jump
-[cloudgauge]  (L1 = VR perf HUD, host-owned)
-[cloudgauge] ========================================================
-"""
+# The deck state, as one human line. Printed when something actually changes it —
+# which is now only a CloudSet from a host (the HUD editor's CLOUDS rows).
 
 
-def fmt_state(st):
+def fmt_state(st, base=None):
+  """`base` is the deck LIFT in metres (G.alt_offset) — a live control now (the HUD's
+  cloud-base row), so it belongs on the line that reads the state back out of a log.
+  None where there is nothing to report yet (the pre-CloudSet init print)."""
   cover = max(0.0, min(1.0, 1.0 - st["thresh"]))
   return ("[cloudgauge] layer=%s  thresh=%.2f (sky cover ~%d%%)  tile=x%.2f "
-          "(cirrus %.1fkm / alto %.1fkm / cumulus %.1fkm)  cumulus_res=%d  wind=%s"
+          "(cirrus %.1fkm / alto %.1fkm / cumulus %.1fkm)  cumulus_res=%d  wind=%s%s"
           % (st["mode"].upper(), st["thresh"], int(round(cover * 100.0)),
              st["tile"],
              LAYERS["cirrus"]["tile_base_m"]  * st["tile"] * 1e-3,
              LAYERS["alto"]["tile_base_m"]    * st["tile"] * 1e-3,
              LAYERS["cumulus"]["tile_base_m"] * st["tile"] * 1e-3,
              st["res"],
-             ("ON(x%g)" % WIND_MULT) if st["wind_on"] else "PAUSED"))
+             ("ON(x%g)" % WIND_MULT) if st["wind_on"] else "PAUSED",
+             "" if base is None else ("  base=%+.0fm" % base)))
 
 
 ###############################################################################
@@ -185,40 +196,65 @@ if _ECSSIM:
 
   tokens = CrcStringProxy()
 
-  GP_OPTIONS = tokens.OPTIONS.hashed
-  GP_SHARE   = tokens.SHARE.hashed
-  GP_R3      = tokens.R3.hashed
-
   class CloudGauge:
     def __init__(self):
       self.state    = env_state()
       self.wind_pos = {k: [0.0, 0.0] for k in LAYERS}   # accumulated wind offset (m)
-      self.rx       = 0.0     # right stick, live
-      self.ry       = 0.0
       self.ents     = {}
-      self.dirty    = True
-      self.print_t  = 0.0     # throttle for stick-driven prints
+      # NOT DIRTY AT BIRTH. These numbers are the ENV launch knobs — the starting point
+      # for the sticks, not a description of the scene. Applying them unasked is what
+      # overwrote every scene-authored cover on the first tick (and would have raised the
+      # decks on a sky the scene declared empty). The author-time transforms stand until
+      # an actual op moves them; a host syncs this state to the scene's with its own
+      # CloudSet at startup.
+      self.dirty    = False
+      # The decks' ASL lift, which the SCENE declared and this script cannot read
+      # from scene data: a host that knows it (it rides the scenegraph params) sends
+      # it with CloudSet, and it is remembered from then on. 0 until told — which is
+      # correct for every scene that declares no offset.
+      self.alt_offset = 0.0
 
   _FREEZE = os.environ.get("ORK_CLOUDGAUGE_FREEZE", "0") == "1"
   _APPLYONCE = os.environ.get("ORK_CLOUDGAUGE_APPLYONCE", "0") == "1"
 
+  # RESOLVED, OR NOT PRESENT AT ALL. A scene declares whichever decks it wants —
+  # scn_swest's one cumulus shell is a whole deck set — so most of the four names
+  # below miss in most scenes. findEntityByName hands back a NULL handle for a
+  # miss, and that handle is TRUTHY in python (the Entity binding has no
+  # __bool__), so `if ent` waved the null through and the first transform write
+  # dereferenced it on the update thread. repr() is the one accessor that reads
+  # the handle without dereferencing it, so it is what decides here; a miss is
+  # then dropped at link and never enters the applier's map.
+  def _resolved(ent):
+    if ent is None:
+      return False
+    text = repr(ent)
+    head = text.find("0x")
+    if head < 0:
+      return False
+    digits = ""
+    for ch in text[head + 2:]:
+      if ch not in "0123456789abcdefABCDEF":
+        break
+      digits += ch
+    return bool(digits) and int(digits, 16) != 0
+
   def _apply(simulation):
-    """Write the whole gauge state onto the four plane-entity transforms."""
+    """Write the gauge state onto the deck entities THIS SCENE declared."""
     if _FREEZE:      # debug: leave the author-time spawner transforms untouched
       return
     G  = simulation.vars.cloudgauge
     if _APPLYONCE and getattr(G, "applies", 0) >= 1:
       return
     st = G.state
+    clear = decks_clear(st["thresh"])
     for ent_name, ent in G.ents.items():
-      if not ent:
-        continue
       spec = LAYERS[PLANE_ENTITIES[ent_name]]
-      if layer_visible(plane_key(ent_name), st["res"], st["mode"]):
+      if (not clear) and layer_visible(plane_key(ent_name), st["res"], st["mode"]):
         # SHELL STAYS PINNED at the origin (owner jul25: translating the dome
         # swept its curvature/veil structures across the sky = "swimming").
         # Wind is now a GPU-clock UV scroll inside the material.
-        ent.translation = vec3(0.0, layer_y(spec, st["thresh"]), 0.0)
+        ent.translation = vec3(0.0, layer_y(spec, st["thresh"]) + G.alt_offset, 0.0)
         ent.scale       = spec["base_scale"] * st["tile"]
       else:
         ent.translation = vec3(0.0, HIDE_Y, 0.0)
@@ -226,74 +262,82 @@ if _ECSSIM:
     G.applies = getattr(G, "applies", 0) + 1
 
   def _report(simulation):
-    print(fmt_state(simulation.vars.cloudgauge.state), flush=True)
+    G = simulation.vars.cloudgauge
+    print(fmt_state(G.state, G.alt_offset), flush=True)
 
   def onSystemInit(simulation):
     simulation.vars.cloudgauge = CloudGauge()
-    print(CHEAT_SHEET, flush=True)
     print(fmt_state(simulation.vars.cloudgauge.state), flush=True)
 
   def onSystemLink(simulation):
     G = simulation.vars.cloudgauge
+    absent = []
     for ent_name in PLANE_ENTITIES:
-      G.ents[ent_name] = simulation.findEntityByName(ent_name)
-    found = [n for n, e in G.ents.items() if e]
-    print("[cloudgauge] linked plane entities: %s" % ", ".join(found), flush=True)
-    G.dirty = True
+      ent = simulation.findEntityByName(ent_name)
+      if _resolved(ent):
+        G.ents[ent_name] = ent
+      else:
+        absent.append(ent_name)
+    print("[cloudgauge] linked %d/%d decks: %s%s" % (
+        len(G.ents), len(PLANE_ENTITIES),
+        ", ".join(G.ents) if G.ents else "none",
+        (" (%s absent)" % ", ".join(absent)) if absent else ""), flush=True)
+    # NO APPLY AT LINK. The author-time transforms already carry the state the SCENE
+    # declared, and this script's own state is seeded from the ENV launch knobs — which
+    # are not the same thing. Applying here overwrote every scene-authored cover with
+    # whatever ORK_CLOUDGAUGE_T happened to be (and would erase a saved cover the host
+    # is about to restore). The decks stand as authored until something actually asks
+    # them to move: a stick, or the CloudSet a host sends.
 
   def onSystemNotify(simulation, evID, table):
     G  = simulation.vars.cloudgauge
     st = G.state
-    if evID.hashed == tokens.GamepadButton.hashed:
-      if not table[tokens.down]:
-        return
-      h = table[tokens.button].hashed
-      if h == GP_OPTIONS:                       # cycle layer solo/all
-        st["mode"] = LAYER_MODES[(LAYER_MODES.index(st["mode"]) + 1) % len(LAYER_MODES)]
-      elif h == GP_SHARE:                       # cumulus 1024 <-> 2048
-        st["res"] = 1024 if st["res"] == 2048 else 2048
-      elif h == GP_R3:                          # wind rides the GPU clock now
-        print("[cloudgauge] wind pause unavailable (wind rides the GPU clock; "
-              "relaunch with ORK_CLOUDGAUGE_WINDX=0 for still air)", flush=True)
-        return
-      else:
-        return
-      G.dirty = True
-      _report(simulation)
-      return
-    if evID.hashed == tokens.GamepadAxes.hashed:
-      if table[tokens.connected]:
-        G.rx = table[tokens.rx]
-        G.ry = table[tokens.ry]
-      else:
-        G.rx = G.ry = 0.0
-
-  def onSystemUpdate(simulation):
-    G  = simulation.vars.cloudgauge
-    st = G.state
-    dt = simulation.deltaTime
-    if dt <= 0.0 or dt > 1.0:
-      dt = 1.0 / 60.0
-    changed = False
-    # right stick: threshold (y, up=clearer -> ry is negative when pushed up)
-    ry = G.ry if abs(G.ry) > STICK_DEADZONE else 0.0
-    rx = G.rx if abs(G.rx) > STICK_DEADZONE else 0.0
-    if ry != 0.0:
-      st["thresh"] = min(THRESH_MAX, max(THRESH_MIN,
-                         st["thresh"] + (-ry) * RATE_THRESH * dt))
-      changed = True
-      G.dirty = True
-    if rx != 0.0:
-      st["tile"] = min(TILE_MAX, max(TILE_MIN,
-                       st["tile"] * math.exp(rx * RATE_TILE * dt)))
-      changed = True
-      G.dirty = True
-    if changed or G.dirty:
-      _apply(simulation)
-    # stick-driven prints, throttled to ~3/s
-    if G.dirty:
-      t = simulation.gameTime
-      if t - G.print_t > 0.33:
-        G.print_t = t
+    # HOST-DRIVEN DECK STATE — the same gauge state the sticks move, reachable by any host
+    # that can send a controller message (the player's HUD CLOUDS page). Fields are
+    # OPTIONAL and independent: a message carrying only `cover` leaves tile alone. Cover is
+    # the sky-cover fraction the scene author speaks in (Scene.cloud_decks(cover=...)); the
+    # gauge's own currency is the inverse THRESHOLD, and the conversion lives here so the
+    # two can never drift apart.
+    if evID.hashed == tokens.CloudSet.hashed:
+      # A DataTable read of an ABSENT key yields an empty value rather than raising, so
+      # "was this field sent" is a conversion test, not a membership test.
+      def _opt(tok):
+        try:
+          return float(table[tok])
+        except Exception:
+          return None
+      touched = False
+      # The decks' lift, sent by a host that can read the scenegraph params — and a LIVE
+      # control (the HUD's cloud-base row), not just a launch constant. Remembered, not
+      # per-message: everything after it moves the same decks.
+      #
+      # ONLY HALF THE MOVE LANDS HERE. Deck altitude IS the coverage encoding
+      # (t=(wpos.y-CgAltLo)/sweep), so a lift that moves the shells without moving the
+      # material's baked CgAltLo band shifts t by (metres/sweep) and corrupts coverage.
+      # The material is out of reach from here (this runs in the sim sub-interpreter, whose
+      # API is entities/components/datatables — no lev2 at all), so the SENDER owns the band
+      # half: the player rebinds CgAltLo on each deck material from the same number it sends
+      # here. A host that sends alt_offset without doing that is asking for a coverage bug.
+      alt_off = _opt(tokens.alt_offset)
+      if alt_off is not None and alt_off != G.alt_offset:
+        G.alt_offset = alt_off
+        touched = True
+      cover = _opt(tokens.cover)
+      if cover is not None:
+        st["thresh"] = cover_to_thresh(cover)
+        touched = True
+      tile = _opt(tokens.tile)
+      if tile is not None:
+        st["tile"] = min(TILE_MAX, max(TILE_MIN, tile))
+        touched = True
+      if touched:
+        G.dirty = True
+        _apply(simulation)
         _report(simulation)
-      G.dirty = False
+      return
+  # NO INPUT HANDLING LIVES HERE (owner aug08). This script was born as a hand-held
+  # gauge for one dedicated scene, and it read the right stick, OPTIONS and SHARE
+  # directly. It is now attached to EVERY deck-bearing scene, so those grabs became
+  # a second claimant on pad controls the rest of the game owns — the right stick
+  # moved cloud cover while it was trimming walk speed. The HUD editor's CLOUDS rows
+  # are THE control surface for decks; this script is a pure CloudSet consumer.

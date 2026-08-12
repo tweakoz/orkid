@@ -32,74 +32,46 @@ namespace ork::lev2::scenegraph {
 static logchannel_ptr_t logchan_sg = logger()->configureChannel("scenegraph", fvec3(0.9, 0.2, 0.9));
 
 ///////////////////////////////////////////////////////////////////////////////
-// SPVR CAPABILITY PROBE — the single place a VR preset decides between the
-//  single-pass-stereo output node and the dual-mono one. The capability is the
-//  DEVICE's core-VK1.1 multiview feature (populated at device creation), reached
-//  through the Context accessor; there is no second flag and no VR-device bool
-//  (every VR device sets _supportsStereo unconditionally true, so it carries no
-//  information).
+// SPVR CAPABILITY PROBE — single-pass stereo is the ONLY VR output model, so this
+//  answers a go/no-go question rather than choosing between nodes. The capability
+//  is the DEVICE's core-VK1.1 multiview feature (populated at device creation),
+//  reached through the Context accessor; there is no second flag and no VR-device
+//  bool (every VR device sets _supportsStereo unconditionally true, so it carries
+//  no information).
 //
-// ORKID_SPVR_NO_MULTIVIEW=1 forces the answer to NO. That is the fallback ARM: a
-//  multiview-capable box has no other way to exercise the not-capable path, and a
-//  fallback nobody can arm is a fallback nobody has tested. Default off.
+// ORKID_SPVR_NO_MULTIVIEW=1 forces the answer to NO. That ARMS the fail-loud throw
+//  on a multiview-capable box: a hard error nobody can provoke is a hard error
+//  nobody has tested. Default off.
 //
-// This is NOT ORKID_FORCE_DMVR. That env is the C++ player's capability-IMMUNE
-//  force-literal-DMVR override and keeps its own meaning; this one answers a
-//  hardware question.
+// A NO writes the concrete reason through why_not so the thrower can name it.
 ///////////////////////////////////////////////////////////////////////////////
 
-static bool spvrMultiviewAvailable() {
+static bool spvrMultiviewAvailable(std::string* why_not = nullptr) {
+  auto deny = [why_not](const std::string& reason) -> bool {
+    if (why_not)
+      *why_not = reason;
+    return false;
+  };
   static const bool forced_off = []() -> bool {
     auto env = std::getenv("ORKID_SPVR_NO_MULTIVIEW");
     bool on  = env and (std::string(env) == "1");
     if (on) {
-      printf("[SPVR] ORKID_SPVR_NO_MULTIVIEW=1 — multiview capability FORCED to unavailable "
-             "(VR presets take the DualMonoVr fallback arm)\n");
+      printf("[SPVR] ORKID_SPVR_NO_MULTIVIEW=1 — multiview capability FORCED to unavailable\n");
       fflush(stdout);
     }
     return on;
   }();
   if (forced_off)
-    return false;
+    return deny("ORKID_SPVR_NO_MULTIVIEW=1 armed (multiview capability forced unavailable)");
   auto ctx = lev2::contextForCurrentThread();
-  if (nullptr == ctx) {
-    // a preset built with no context cannot answer the question; say so rather than
-    //  guess a capability, and take the node that works everywhere.
-    printf("[SPVR] WARN compositor preset built with NO current-thread context — multiview "
-           "capability unknown, falling back to DualMonoVr\n");
-    fflush(stdout);
-    return false;
-  }
-  return ctx->supportsMultiview() and (ctx->maxMultiviewViewCount() >= 2);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// ORKID_SPVR=0/1 — the development gate on AUTOSELECT (the "FWDPBRVRDM" preset
-//  string silently resolving to the single-pass node). Explicitly-named presets
-//  are never gated by it. Default OFF until GATE 1 closes; flipping this default
-//  is the phase-1 close-out edit, and nothing else has to change with it.
-///////////////////////////////////////////////////////////////////////////////
-
-static bool spvrAutoselectEnabled() {
-  static const bool _on = []() -> bool {
-    // ORKID_FORCE_DMVR keeps its EXACT existing meaning: force the literal dual-mono
-    //  node. It is capability-IMMUNE and autoselect-immune — the committed DMVR gate
-    //  depends on that env meaning "this node", not "the best node available".
-    if (std::getenv("ORKID_FORCE_DMVR")) {
-      printf("[SPVR] ORKID_FORCE_DMVR set — autoselect DISABLED, FWDPBRVRDM stays literal DualMonoVr\n");
-      fflush(stdout);
-      return false;
-    }
-    auto env = std::getenv("ORKID_SPVR");
-    bool on  = env and (std::string(env) == "1");
-    if (on) {
-      printf("[SPVR] ORKID_SPVR=1 — VR preset autoselect ARMED (FWDPBRVRDM resolves to the "
-             "single-pass node on multiview-capable devices)\n");
-      fflush(stdout);
-    }
-    return on;
-  }();
-  return _on;
+  if (nullptr == ctx)
+    return deny("no current-thread graphics context — multiview capability unknowable at preset-build time");
+  if (not ctx->supportsMultiview())
+    return deny("device reports supportsMultiview() false");
+  int maxviews = ctx->maxMultiviewViewCount();
+  if (maxviews < 2)
+    return deny("device reports maxMultiviewViewCount()=" + std::to_string(maxviews) + " (needs >= 2)");
+  return true;
 }
 
 void DrawableDataKvPair::describeX(object::ObjectClass* clazz) {
@@ -306,7 +278,7 @@ void Scene::preRender(Context* ctx, const CameraMatrices& cammtx) {
   // (ref-counted), so each cull's own begin/end nests harmlessly and only this outer end submits.
   auto _cull_ci = ctx->CI();
   if (_cull_ci)
-    _cull_ci->beginDispatchPhase();
+    _cull_ci->beginDispatchPhase("cull:perview");
   _layers.atomicOp([&](const layer_map_t& unlocked) {
     for (const auto& [name, layer] : unlocked) {
       layer->_drawable_nodes.atomicOp([&](const Layer::drawablenodevect_t& nodes) {
@@ -334,7 +306,7 @@ void Scene::preRender(Context* ctx, const CameraMatrices& cammtx) {
 // wantsShadowCull(), the dispatch phase is never opened -> non-culled scenes are unaffected.
 ///////////////////////////////////////////////////////////////////////////////
 
-void Scene::shadowCull(Context* ctx, const CameraMatrices& cammtx) {
+void Scene::shadowCull(Context* ctx, const CameraMatrices& cammtx, uint32_t family_mask) {
   RenderPhaseScope _spr("shadowCull");
   // Collect the unique GPU-culled drawables first, so we can skip the whole (submit+WAIT) phase when
   // there are none — a sunless or model-only scene must stay bit-for-bit identical.
@@ -345,8 +317,14 @@ void Scene::shadowCull(Context* ctx, const CameraMatrices& cammtx) {
       layer->_drawable_nodes.atomicOp([&](const Layer::drawablenodevect_t& nodes) {
         for (const auto& node : nodes) {
           if (node->_enabled && node->_drawable && seen.insert(node->_drawable.get()).second)
+            // CULLSETS: only the families of the set being culled. A drawable in
+            // two sets is culled once per set — against each set's own volume —
+            // which is what keeps the near sets' lists free of the far set's
+            // reach (a shared superset list would put the outer band's casters
+            // back into every near band's draw).
             if (node->_drawable->wantsShadowCull())
-              cullers.push_back(node->_drawable.get());
+              if (family_mask & shadowFamilyBit(node->_drawable->_shadowFamily))
+                cullers.push_back(node->_drawable.get());
         }
       });
     }
@@ -355,7 +333,7 @@ void Scene::shadowCull(Context* ctx, const CameraMatrices& cammtx) {
     return;
   auto _cull_ci = ctx->CI();
   if (_cull_ci)
-    _cull_ci->beginDispatchPhase(); // batch every drawable's sun cull into one submit (reentrant)
+    _cull_ci->beginDispatchPhase("cull:shadow"); // batch every drawable's sun cull into one submit (reentrant)
   for (auto* drw : cullers)
     drw->onShadowPreRender(ctx, cammtx);
   if (_cull_ci)
@@ -536,6 +514,35 @@ void Scene::applyRuntimeParams(varmap::varmap_ptr_t params) {
   if (auto try_diffuseLevel = params->tryKeyAsNumber("DiffuseIntensity")) {
     _pbr_common->_diffuseLevel = try_diffuseLevel.value();
   }
+  // WHICH DIFFUSE LOBE the analytic lights use. Two spellings of one identity:
+  // a token (tokens.OREN_NAYAR — a CrcString, what a live lev2 scene passes) or
+  // the same name as a string (what survives an .ecs round trip; svar JSON
+  // carries string/double/bool only). Absent leaves the engine default,
+  // OREN_NAYAR. An unrecognized value is REFUSED here, by name, with the valid
+  // set — shading with a silent fallback would hide the typo in the render.
+  {
+    auto refuse = [&](const std::string& given) {
+      logchan_sg->log(
+          "scenegraph: unknown diffuse_brdf<%s> - valid: %s", //
+          given.c_str(),
+          pbr::diffuseBrdfModelValidSet().c_str());
+      OrkAssert(false);
+    };
+    if (auto try_brdf_str = params->typedValueForKey<std::string>("diffuse_brdf")) {
+      pbr::DiffuseBrdfModel model;
+      if (pbr::diffuseBrdfModelFromName(try_brdf_str.value(), model))
+        _pbr_common->_diffuseBrdfModel = model;
+      else
+        refuse(try_brdf_str.value());
+    } else if (auto try_brdf_crc = params->typedValueForKey<crcstring_ptr_t>("diffuse_brdf")) {
+      pbr::DiffuseBrdfModel model;
+      auto crc = try_brdf_crc.value() ? try_brdf_crc.value()->hashed() : 0;
+      if (pbr::diffuseBrdfModelFromCrc(crc, model))
+        _pbr_common->_diffuseBrdfModel = model;
+      else
+        refuse(FormatString("crc:0x%zx", crc));
+    }
+  }
   // Frame-global cull-frustum scale (>1 widen/cull-less, 1.0 exact, <1 narrow/cull-more). Parsed
   // here in the shared apply block (reached by BOTH initWithParams and applyRuntimeParams) so every
   // program — ECS player, SGVP viewers, VR — picks it up the same way as DiffuseIntensity. Only set
@@ -648,34 +655,17 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
     _pbr_common     = outrnode->_pbrcommon;
     _cullFrustumScale = 1.3f; // VR default margin (1-frame-stale HMD pose + both eyes); a host
                               // CullFrustumScale scenegraph param overrides via applyRuntimeParams below
-  } else if (preset_upper == "FWDPBRVRDM") {
-    // AUTOSELECT (owner charter: same preset string in, zero scene-facing config). The
-    //  single-pass node when the device can do multiview and the gate is armed, the
-    //  dual-mono node otherwise — same content either way.
-    bool use_spvr = spvrAutoselectEnabled() and spvrMultiviewAvailable();
-    if (use_spvr)
-      _compositorPreset = _compositorData->presetForwardPBRSPVR(_renderPresetData);
-    else
-      _compositorPreset = _compositorData->presetForwardPBRVRDM(_renderPresetData);
-    auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
-    auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
-    _pbr_common     = outrnode->_pbrcommon;
-    _cullFrustumScale = 1.3f; // VR default margin (see FWDPBRVR); host param overrides below
-    OrkAssert(_pbr_common);
-  } else if (preset_upper == "FWDPBRSPVR") {
-    // EXPLICIT single-pass stereo. Still capability-gated: a device without multiview
-    //  cannot render this node at all, so the ask degrades to the dual-mono node and
-    //  says so, rather than failing at the first layered pass. That degrade is also the
-    //  gate's fallback arm (ORKID_SPVR_NO_MULTIVIEW=1).
-    bool capable = spvrMultiviewAvailable();
-    if (capable) {
-      _compositorPreset = _compositorData->presetForwardPBRSPVR(_renderPresetData);
-    } else {
-      printf("[SPVR] preset FWDPBRSPVR requested on a device without usable multiview — "
-             "installing DualMonoVr (fallback arm)\n");
-      fflush(stdout);
-      _compositorPreset = _compositorData->presetForwardPBRVRDM(_renderPresetData);
+  } else if (preset_upper == "FWDPBRSPVR" or preset_upper == "FWDPBRVRDM") {
+    // Both strings name the same thing: single-pass stereo is the only VR output model.
+    //  A device that cannot run it is a HARD error — degrading would hand back a
+    //  different renderer than the one asked for.
+    std::string why_not;
+    if (not spvrMultiviewAvailable(&why_not)) {
+      throw std::runtime_error(
+          "compositor preset <" + preset_upper +
+          ">: single-pass stereo is the only VR output model and this device cannot run it (" + why_not + ")");
     }
+    _compositorPreset = _compositorData->presetForwardPBRSPVR(_renderPresetData);
     auto nodetek      = _compositorData->tryNodeTechnique<NodeCompositingTechnique>("scene1", "item1");
     auto outrnode     = nodetek->tryRenderNodeAs<pbr::ForwardNode>();
     _pbr_common     = outrnode->_pbrcommon;
@@ -756,8 +746,6 @@ void Scene::initWithParams(varmap::varmap_ptr_t params) {
         as_scrnode->setSuperSample(as_ssaa.value());
       } else if (auto as_vrnode = dynamic_cast<VrOutputNode*>(_outputNode.get())) {
         as_vrnode->setSuperSample(as_ssaa.value());
-      } else if (auto as_dmvrnode = dynamic_cast<DualMonoVrOutputNode*>(_outputNode.get())) {
-        as_dmvrnode->setSuperSample(as_ssaa.value());
       }
     }
   }

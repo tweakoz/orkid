@@ -127,7 +127,20 @@ class SkyMixin:
           "the scene's own Scene.sun() instead.")
       sun_params["shadow_snapshot_interval"] = float(shadow_snapshot_interval)
 
-    want_clouds = clouds or (cloud_cover is not None)
+    # EVERY PROCEDURAL SKY CARRIES THE DECKS (owner call). Clouds are not a scene
+    # feature to opt into any more, they are part of the sky: the decks are declared
+    # for every procedural sky and start EMPTY (cover 0 parks every plane — nothing
+    # drawn, nothing to see), so an undeclaring scene looks exactly as it did while
+    # gaining a sky the HUD's CLOUDS page can actually raise weather in. A scene that
+    # authored a cover keeps it, as ever.
+    procedural = (dome_params.get("sky_source", "procedural") == "procedural")
+    # SAID vs IMPLIED: the three cloud kwargs are the scene AUTHORING its decks,
+    # and an authored set is declared here and now. Anything else is the implied
+    # set, which yields to a scene's own cloud_decks() call (see below).
+    authored_clouds = clouds or (cloud_cover is not None) or bool(cloud_params)
+    want_clouds = authored_clouds or procedural
+    if cloud_cover is None and not clouds:
+      cloud_cover = 0.0
     if cloud_params and not want_clouds:
       raise ValueError(
         "Scene.sky(cloud_params=...) with no decks — pass clouds=True or a "
@@ -172,6 +185,14 @@ class SkyMixin:
                          sun_intensity = sun_intensity,
                          sun_params    = sun_params)
     if want_clouds:
-      self.cloud_decks(cover=cloud_cover, **(cloud_params or {}))
+      deck_kw = dict(cover=cloud_cover, **(cloud_params or {}))
+      if authored_clouds:
+        self.cloud_decks(**deck_kw)
+      else:
+        # ONE DECK SET, ONE AUTHOR. The implied set is only STAGED — a scene that
+        # calls cloud_decks() itself (before OR after its sky) is the author and
+        # the implied set never lands. Declaring it here instead collides with
+        # that scene's own decks on the very asset names.
+        self.stage_default_cloud_decks(**deck_kw)
     return handle
 

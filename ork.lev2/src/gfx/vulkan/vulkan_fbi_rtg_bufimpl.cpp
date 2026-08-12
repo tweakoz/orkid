@@ -69,13 +69,21 @@ VklRtBufferImpl::~VklRtBufferImpl() {
   bool hasFaceViews = _hasCubeFaceViews;
   vkcontext_rawptr_t ctxVK = _contextVK;
 
+  // Per-layer attachment views ride the same frame-delayed destroy as the images they
+  // view: they are named by command buffers that may still be in flight.
+  std::vector<VkImageView> layerViews = _layerViews;
+  for (auto v : _msaaLayerViews)
+    layerViews.push_back(v);
+  _layerViews.clear();
+  _msaaLayerViews.clear();
+
   _imgobj = nullptr; // Clear the image object to avoid dangling pointers
   _msaa_imgobj = nullptr; // ditto for the MSAA render image (released on the delayed queue below)
   _teximpl.clear(); // Clear the texture implementation variant
   _hasCubeFaceViews = false;
   for (auto& v : _cubeFaceViews) v = VK_NULL_HANDLE;
 
-  if (imgobj or impl or hasFaceViews or msaa_imgobj) {
+  if (imgobj or impl or hasFaceViews or msaa_imgobj or (not layerViews.empty())) {
     // FRAME-DELAYED destroy, not the undelayed deferred queue: an RTG resize
     // reassigns rtgroup->_impl with no fence, so these images can still be
     // referenced by submitted-but-unfinished command buffers. The deferred
@@ -99,6 +107,10 @@ VklRtBufferImpl::~VklRtBufferImpl() {
             }
             ctxVK->destroyImageObject(view, VK_NULL_HANDLE, VK_NULL_HANDLE);
           }
+        }
+        for (auto view : layerViews) {
+          if (view != VK_NULL_HANDLE)
+            ctxVK->destroyImageObject(view, VK_NULL_HANDLE, VK_NULL_HANDLE);
         }
         imgobj = nullptr;
         impl = nullptr;
@@ -265,6 +277,41 @@ void _vkCreateImageForBuffer(
   }
   ///////////////////////////////////////////////////
   //logchan_rtbi->log("IMAGE: Created image %p, initial layout %d", (void*)vkimage, bufferimpl->_currentLayout);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// One array layer of this buffer, as an attachment view. Cut on demand and cached
+// against the VkImage it came from: _imgobj is REPLACED after creation wherever the
+// rtbuffer owns a texture, so a view built alongside the image would address the
+// superseded one — visible only as a resolve that runs and changes nothing.
+///////////////////////////////////////////////////////////////////////////////
+
+VkImageView VklRtBufferImpl::layerView(int layer, bool multisample) {
+  auto imgobj = multisample ? _msaa_imgobj : _imgobj;
+  if (not imgobj)
+    return VK_NULL_HANDLE;
+  auto& cache     = multisample ? _msaaLayerViews : _layerViews;
+  auto& cachedimg = multisample ? _msaaLayerViewsImage : _layerViewsImage;
+  if (cachedimg != imgobj->_vkimage) {
+    // stale (or first use): the old views belong to an image on its way out, and the
+    // frame-delayed destroy in ~VklRtBufferImpl is what frees them.
+    cache.clear();
+    cachedimg = imgobj->_vkimage;
+  }
+  if (layer >= int(cache.size()))
+    cache.resize(layer + 1, VK_NULL_HANDLE);
+  if (cache[layer] == VK_NULL_HANDLE) {
+    auto LVCI = createImageViewInfo2D(
+        imgobj->_vkimage, //
+        _vkfmt,           //
+        VkFormatConverter::_instance.aspectForUsage(_usage));
+    LVCI->viewType                        = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+    LVCI->subresourceRange.baseArrayLayer = layer;
+    LVCI->subresourceRange.layerCount     = 1;
+    VkResult ok = vkCreateImageView(_contextVK->_vkdevice, LVCI.get(), nullptr, &cache[layer]);
+    OrkAssert(ok == VK_SUCCESS);
+  }
+  return cache[layer];
 }
 
 ///////////////////////////////////////////////////////////////////////////////

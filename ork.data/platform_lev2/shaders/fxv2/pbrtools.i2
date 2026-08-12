@@ -1010,8 +1010,8 @@ fragment_shader ps_forward_skybox_stereo //
 //  procedural mode the visible sky is decoupled from IBL freshness — so the
 //  interfaces the baked path needs for that (std_forward_all / sset_std_pbr)
 //  are NOT inherited here.
-//  inv_vp arrives from the translation-stripped MONO provider, which makes this
-//  per-eye correct under DMVR with no stereo-specific code (L1/L4).
+//  inv_vp arrives from the translation-stripped MONO provider, which is correct for
+//  a mono pass with no stereo-specific code (L1/L4).
 ///////////////////////////////////////////////////////////////
 fragment_shader ps_forward_skybox_proc //
     : fif_PC                    //
@@ -1066,14 +1066,14 @@ fragment_shader ps_forward_skybox_proc //
   ///////////////////////
 
   // EXTINCTION IS BEER-LAMBERT, and it is the BEAM's, not the disc's: the same
-  // exp(-tau*a) the ground direct term applies (fwdtools _sun_cookie_factor)
+  // exp(-tau*a) the ground direct term applies (fwdtools _sun_cookie_sample)
   // with the same tau, because a disc that keeps its light while the dirt below
   // it goes dark would be two transmittances for one beam. What IS the disc's
   // own is the sample LOD (SkyCookieParams.z) — a transit edge is crisp.
   float cloud_trans = 1.0;
   if (SkyCookieParams.w > 0.0) {
     float a = textureLod(SkyCloudCookie, SkyCookieParams.xy, SkyCookieParams.z).w;
-    // strength in the EXPONENT, exactly as _sun_cookie_factor does it (a mix
+    // strength in the EXPONENT, exactly as _sun_cookie_sample does it (a mix
     // weight would floor the disc at 1-strength of its blinding radiance).
     cloud_trans = exp(-SkyCookieBody.z * clamp(SkyCookieParams.w, 0.0, 1.0) * a);
   }
@@ -1084,7 +1084,32 @@ fragment_shader ps_forward_skybox_proc //
   rgb += skyEvalMoonDisc(VN, SkyMoonDirection.xyz, sun_dir, up, view_r)
        * mix(1.0, cloud_trans, SkyCookieBody.y);
 
-  out_clr     = vec4(rgb * SkySunDisc.w, 1);
+  ///////////////////////
+  // ARTIST GROUND-HAZE OVERLAY — the sky's half of the skyline.
+  //
+  // AFTER the exposure multiply, and that placement is the whole point: the
+  // haze in-scatter already carries the sky exposure (SkyHazeGeom.y IS
+  // SkySunDisc.w), and the forward geometry composite adds it to already
+  // scene-referred color. Applied here, sky and geometry are hazed by the same
+  // number in the same space, so a ridge at the skyline converges to the sky
+  // behind it instead of stopping at a different asymptote. Transmittance is
+  // multiplicative and would commute; the in-scatter would not.
+  //
+  // The discs are INSIDE rgb and are attenuated with it: air that veils a
+  // mountain veils the sun too.
+  //
+  // The .x gate on top of ARMED keeps a purely geophysical scene (no artist
+  // layer declared) on the untaken branch — the overlay is identity there, and
+  // an untaken branch is byte-identity rather than an approximation of it.
+  ///////////////////////
+
+  vec3 sky_rgb = rgb * SkySunDisc.w;
+  if (SkyHazeDensity.w > 0.5 && SkyHazeDensity.x > 0.0) {
+    HazeResult hz = skyHazeSkyOverlay(VN, sun_dir);
+    sky_rgb = sky_rgb * hz._transmittance + hz._inscatter;
+  }
+
+  out_clr     = vec4(sky_rgb, 1);
   out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
 
   ///////////////////////
@@ -1092,8 +1117,8 @@ fragment_shader ps_forward_skybox_proc //
 ///////////////////////////////////////////////////////////////
 // Forward SkyBox PROCEDURAL — SINGLE-PASS STEREO peer of ps_forward_skybox_proc.
 //
-// The mono twin's inv_vp comes from the MONO per-draw provider, which is sound
-// under DMVR (one draw per eye, one matrix per draw) and collapses under SPVR:
+// The mono twin's inv_vp comes from the MONO per-draw provider, which is sound for
+// a mono pass (one draw, one matrix per draw) and collapses under SPVR:
 // one draw carries BOTH views and VR frusta are per-eye ASYMMETRIC, so no single
 // matrix can produce both eyes' rays. The per-view inverse lives in ublk_stereo
 // (written once per frame by the production writer), so the ONLY difference from
@@ -1163,14 +1188,14 @@ fragment_shader ps_forward_skybox_proc_stereo //
   ///////////////////////
 
   // EXTINCTION IS BEER-LAMBERT, and it is the BEAM's, not the disc's: the same
-  // exp(-tau*a) the ground direct term applies (fwdtools _sun_cookie_factor)
+  // exp(-tau*a) the ground direct term applies (fwdtools _sun_cookie_sample)
   // with the same tau, because a disc that keeps its light while the dirt below
   // it goes dark would be two transmittances for one beam. What IS the disc's
   // own is the sample LOD (SkyCookieParams.z) — a transit edge is crisp.
   float cloud_trans = 1.0;
   if (SkyCookieParams.w > 0.0) {
     float a = textureLod(SkyCloudCookie, SkyCookieParams.xy, SkyCookieParams.z).w;
-    // strength in the EXPONENT, exactly as _sun_cookie_factor does it (a mix
+    // strength in the EXPONENT, exactly as _sun_cookie_sample does it (a mix
     // weight would floor the disc at 1-strength of its blinding radiance).
     cloud_trans = exp(-SkyCookieBody.z * clamp(SkyCookieParams.w, 0.0, 1.0) * a);
   }
@@ -1181,7 +1206,19 @@ fragment_shader ps_forward_skybox_proc_stereo //
   rgb += skyEvalMoonDisc(VN, SkyMoonDirection.xyz, sun_dir, up, view_r)
        * mix(1.0, cloud_trans, SkyCookieBody.y);
 
-  out_clr     = vec4(rgb * SkySunDisc.w, 1);
+  ///////////////////////
+  // ARTIST GROUND-HAZE OVERLAY — the mono twin's, verbatim (see its comment for
+  // why it lands after the exposure multiply). Per-view correctness is free:
+  // the overlay's only per-view input is VN, which is already the stereo ray.
+  ///////////////////////
+
+  vec3 sky_rgb = rgb * SkySunDisc.w;
+  if (SkyHazeDensity.w > 0.5 && SkyHazeDensity.x > 0.0) {
+    HazeResult hz = skyHazeSkyOverlay(VN, sun_dir);
+    sky_rgb = sky_rgb * hz._transmittance + hz._inscatter;
+  }
+
+  out_clr     = vec4(sky_rgb, 1);
   out_diffuse = vec4(0, 0, 0, 0);   // P3.D — non-PBR pass; no diffuse contribution, no SSSS mask
 
   ///////////////////////

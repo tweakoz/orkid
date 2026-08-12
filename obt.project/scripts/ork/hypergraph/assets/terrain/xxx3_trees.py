@@ -18,9 +18,14 @@ class XXX3Trees(XXX3):
     elev   = T.normalize(self._height)                 # [0,1] elevation over the whole range
     slope  = T.slope(self._height, radius_m=1.0)      # 0 flat .. 1 steep
     gentle = slope #1.0 - T.band(slope, 0.05, 0.10, soft=0.10)   # 1 on gentle ground, 0 on cliffs
+    # TREELINE = the shared ecology line (xxx3's soil_line field, ~2000 m warped by a
+    # few hundred meters): trees STOP at the line itself, not at a flat elevation cap —
+    # the conifer band's fixed top is set ABOVE the line's highest meander so the
+    # irregular boundary is what actually stops the forest (owner, round 3).
+    soil_gate = 1.0 - T.smoothstep(self._height - self._soil_line, -100.0, 100.0)
     # elevation zones (overlapping at the transition so the two species mingle there):
-    broadleaf = gentle * T.band(elev, 0.0,  0.22, soft=0.0)   # valleys / lower slopes
-    conifer   = gentle * T.band(elev, 0.16, 0.38, soft=0.0)   # mid-high, up to the treeline
+    broadleaf = gentle * T.band(elev, 0.0,  0.22, soft=0.0) * soil_gate  # valleys / lower slopes
+    conifer   = gentle * T.band(elev, 0.16, 0.46, soft=0.0) * soil_gate  # mid-high, to the LINE
 
     types = {}
     for i in range(NUM_SEEDS):

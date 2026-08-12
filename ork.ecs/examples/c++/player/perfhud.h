@@ -2,10 +2,28 @@
 ////////////////////////////////////////////////////////////////
 // PlayerPerfHud — on-screen performance HUD for ork.ecs.player.exe.
 //
-// Phase 1: FPS (render thread), UPS (update thread), frame time (ms, avg + worst)
-// plus a 2-second history graph of it, and the render-callback record bracket.
-// Later phases add the per-ECS-system and per-render-phase breakdowns (engine
-// instrumentation feeding stats sinks this HUD reads).
+// FIVE FIXED PAGES of named slots (perfhud_pages.h owns the templates + the slot
+// registry; this file owns the sinks, the input plumbing and the draw):
+//   1 FRAME    rates, frame time + worst, the record bracket, gpuUpdate, present-idle,
+//              and the 2-second frame-time history graph (which lives on this page).
+//   2 GPU      per-pass DEVICE time from timestamp queries (render passes, compute
+//              phases, XR blits) under the whole-frame GPU span.
+//   3 PASSES   the engine render-phase breakdown, in pipeline order.
+//   4 CULL     the cull/dispatch phases + the GPU-cull result funnels.
+//   5 SYSTEMS  the per-ECS-system breakdown, the VR camera rows, hypermesh-gen.
+// Every slot of the active page always renders; a silent sink keeps its last value and
+// shows its age in frames, so page height is constant and the cadenced rows stay
+// legible (see perfhud_pages.h).
+//
+// PLUS any EDITOR PAGES the host registers (registerEditorPage), which extend the same
+// ring behind the fixed four. An editor page is a list of live property descriptors —
+// the host owns the get/set closures, the page owns the layout — so a new one costs no
+// layout code. Selection is DPAD up/down (pad) or '-' / '=' (desktop); L2/R2 or
+// '[' / ']' adjust the selected property, sliders repeating while held and enums
+// stepping once per press (see editAdjustHold). The desktop keys deliberately avoid the
+// cursor keys, which stay the scene's rotation. A COLOR row is a REUSABLE H/S/V
+// sub-editor on one line: CROSS (pad) or '\' (desktop) opens it, up/down then walk the
+// channels and the adjust inputs move the open one — no row ever appears or disappears.
 //
 // TWO DISTINCT TIME ROWS, never interchangeable:
 //   "frame"      — OrkEzAppBase::_frame_period_ms, the wall-clock period between
@@ -16,10 +34,11 @@
 //                  fraction of it; reporting it as "frame" hid 11-49ms of present
 //                  wait, which is why it carries its own name now.
 //
-// Three modes cycled by the '~' key: OFF -> TEXT -> TEXT+GRAPH. Anchored LOWER-LEFT,
-// bottom-aligned by the real font line height (so the block grows upward as lines are
-// added) and scaled for HIDPI/SSAA (MSAA needs no handling — the main rtg is MSAA_1X
-// resolved, so sample count never changes width/height).
+// Pages cycled by the '~' key (and by pad R1/R3 forward, SHIFT-'~' / pad L1 back):
+// OFF -> 1 .. N -> OFF, wrapping the same way in both directions. Anchored
+// LOWER-LEFT, bottom-aligned by the real font line height off the ACTIVE PAGE's fixed
+// line count, and scaled for HIDPI/SSAA (MSAA needs no handling — the main rtg is
+// MSAA_1X resolved, so sample count never changes width/height).
 //
 // Drawn IMMEDIATE-MODE in the player's onDraw (after controller->render), since the
 // player bypasses the EzTopWidget/uicontext widget paint path. Pattern lifted from
@@ -52,8 +71,11 @@
 #include <ork/lev2/gfx/gfxvtxbuf.inl>
 #include <ork/lev2/gfx/renderer/rendercontext.h>
 #include <ork/lev2/gfx/renderphasestats.h> // Phase 2: engine render-phase timings
-#include <ork/lev2/vr/vr_hud_overlay.h>    // VR: publish the panel texture for the DMVR node
+#include <ork/lev2/gfx/gpupassstats.h>     // the GPU page: per-pass device timestamps + XR pacing
+#include <ork/lev2/gfx/nvmlstats.h>        // the GPU page: NVIDIA driver telemetry (when present)
+#include <ork/lev2/vr/vr_hud_overlay.h>    // VR: publish the panel texture for the VR output node
 #include <ork/ecs/system_stats.h>          // Phase 3: per-ECS-system timings
+#include "perfhud_pages.h"                 // the slot registry + fixed page templates
 #include <array>
 
 namespace ork::ecs::player {
@@ -62,18 +84,26 @@ using namespace ork;
 using namespace ork::lev2;
 
 struct PerfHud {
-  enum Mode { OFF = 0, TEXT = 1, GRAPH = 2, NUM_MODES = 3 };
+  enum {
+    PAGE_OFF     = PerfHudPages::PAGE_OFF,
+    PAGE_FRAME   = PerfHudPages::PAGE_FRAME,
+    PAGE_GPU     = PerfHudPages::PAGE_GPU,
+    PAGE_PASSES  = PerfHudPages::PAGE_PASSES,
+    PAGE_CULL    = PerfHudPages::PAGE_CULL,
+    PAGE_SYSTEMS = PerfHudPages::PAGE_SYSTEMS,
+    NUM_PAGES    = PerfHudPages::NUM_PAGES,
+  };
 
-  // atomic: written by the '~' key (main thread) AND the gamepad L2 toggle (update
+  // atomic: written by the '~' key (main thread) AND the gamepad toggles (update
   //  thread), read by the draw (render thread). Same benign cross-thread pattern the
-  //  '~' toggle already had; the L2 add just makes it explicit.
-  std::atomic<int>  _mode{OFF};
-  int               _on_mode = GRAPH; // mode the pad toggle restores to (last shown)
-  std::atomic<bool> _vrmode{false};   // set by the host when DualMonoVr is active
+  //  '~' toggle always had; the pad add just makes it explicit.
+  std::atomic<int>  _page{PAGE_OFF};
+  std::atomic<bool> _vrmode{false}; // set by the host when a VR render model is active
   orkezapp_ptr_t    _ezapp;
+  PerfHudPages      _pages; // slot registry + page templates (render thread only)
 
   // VR: offscreen RT the HUD content renders into; its texture is published to
-  //  VrHudOverlay for the DMVR node to draw as a head-locked panel in both eyes.
+  //  VrHudOverlay for the VR output node to draw as a head-locked panel in both eyes.
   rtgroup_ptr_t _hudRTG;
 
   // windowed FPS / UPS (from the ezapp atomic counters)
@@ -95,47 +125,80 @@ struct PerfHud {
   bool   _cpu_record_started = false;
   float  _cpu_record_ms      = 0.0f;
 
-  // ORKID_PLAYER_HUD_STDOUT=<secs>: periodically print the stats text to stdout
-  // (headless/DRM/scripted runs where the on-screen HUD can't be read). Works with
-  // the on-screen mode OFF, so the cull readbacks stay disabled and don't perturb
-  // perf measurements.
+  // ORKID_PLAYER_HUD_STDOUT=<secs>: periodically print EVERY page to stdout (headless/
+  // DRM/scripted runs where the on-screen HUD can't be read and there is no key to cycle
+  // with). Works with the on-screen page OFF — but it does arm the cull readbacks, since
+  // a dump with empty cull funnels would be a dump of nothing.
   double _stdout_period = 0.0;
   Timer  _stdout_timer;
+
+  // ORKID_PERFHUD verbatim — re-resolved after each editor-page registration.
+  std::string _startup_page;
+
+  // editor held-adjust auto-repeat (update thread only)
+  int    _adj_dir  = 0;
+  double _adj_held = 0.0;
+  static constexpr double kAdjDelay  = 0.30; // seconds held before a slider repeats
+  static constexpr double kAdjPeriod = 0.04; // seconds between repeats
 
   // lazily-created graph draw resources
   std::shared_ptr<FreestyleMaterial>                  _mtl;
   std::shared_ptr<DynamicVertexBuffer<SVtxV16T16C16>> _vbuf;
 
-  static int _parseMode(const char* v) {
-    if (not v)
+  int _parsePage(const std::string& v) const {
+    if (v.empty())
       return -1;
     std::string s(v);
     for (auto& c : s)
       c = char(std::tolower((unsigned char)c));
-    if (s == "off" or s == "0")
-      return OFF;
-    if (s == "text" or s == "1")
-      return TEXT;
-    if (s == "graph" or s == "2")
-      return GRAPH;
-    int n = atoi(v);
-    return ((n % NUM_MODES) + NUM_MODES) % NUM_MODES;
+    if (s == "off")
+      return PAGE_OFF;
+    if (s == "frame")
+      return PAGE_FRAME;
+    if (s == "gpu")
+      return PAGE_GPU;
+    if (s == "passes")
+      return PAGE_PASSES;
+    if (s == "cull")
+      return PAGE_CULL;
+    if (s == "systems")
+      return PAGE_SYSTEMS;
+    // registered editor pages answer to their registered name, uppercased ("sky", "post")
+    for (int p = PerfHudPages::NUM_PAGES; p < _pages.numPages(); p++) {
+      std::string n = _pages.editorPage(p)->_name;
+      for (auto& c : n)
+        c = char(std::tolower((unsigned char)c));
+      if (n == s)
+        return p;
+    }
+    if (s.find_first_not_of("+-0123456789") != std::string::npos)
+      return -1; // a name we do not know yet — it may register later
+    int np = _pages.numPages();
+    int n  = atoi(v.c_str());
+    return ((n % np) + np) % np;
+  }
+
+  // (re)apply ORKID_PERFHUD. Called at init AND after every editor-page registration,
+  //  since a page selected BY NAME cannot resolve before that page exists.
+  void _applyStartupPage() {
+    if (_startup_page.empty())
+      return;
+    int p = _parsePage(_startup_page);
+    if (p < 0)
+      return;
+    _page = p;
   }
 
   void init(orkezapp_ptr_t ez) {
     _ezapp = ez;
     _rate_timer.Start();
     _cpu_record_timer.Start();
-    // ORKID_PERFHUD forces the startup mode (off|text|graph or 0|1|2). Lets a
-    //  keyboardless VR/headless rig get the [perfhud] cull-counter stdout (TEXT mode)
-    //  with no input device; the L2 pad toggle then flips it live in the headset.
+    // ORKID_PERFHUD forces the startup page (off|frame|gpu|passes|cull|systems|<editor page
+    //  name> or an index). Lets a keyboardless VR/headless rig raise the HUD with no
+    //  input device; the pad bumpers then page it live in the headset.
     if (const char* v = getenv("ORKID_PERFHUD")) {
-      int m = _parseMode(v);
-      if (m >= 0) {
-        _mode = m;
-        if (m != OFF)
-          _on_mode = m;
-      }
+      _startup_page = v;
+      _applyStartupPage();
     }
     // ORKID_VR_HUD_DIST: head-relative distance (meters) of the in-headset HUD panel.
     if (const char* v = getenv("ORKID_VR_HUD_DIST")) {
@@ -155,31 +218,82 @@ struct PerfHud {
       _stdout_timer.Start();
     }
   }
-  // '~' key (desktop): cycle OFF -> TEXT -> TEXT+GRAPH.
-  void cycleMode() {
-    int m = (_mode.load() + 1) % NUM_MODES;
-    _mode = m;
-    if (m != OFF)
-      _on_mode = m;
-  }
-  // gamepad L2 (VR): on/off toggle — restores the last shown mode, else hides.
-  void toggleShown() {
-    int m = _mode.load();
-    if (m == OFF)
-      _mode = _on_mode;
-    else {
-      _on_mode = m;
-      _mode    = OFF;
-    }
+  // '~' / pad R1 / pad R3 forward, SHIFT-'~' / pad L1 back: step the page ring
+  // OFF -> 1 .. N -> OFF (N includes the registered editor pages, which sit behind the
+  // fixed ones), wrapping through OFF whichever way it is walked.
+  void cyclePage(int dir = +1) {
+    _page = _pages.stepPage(_page.load(), dir);
   }
 
+  ///////////////////////////////////////////////////////////////
+  // EDITOR PAGES — registration + the input surface. See perfhud_pages.h for the
+  // property descriptors; the host owns the get/set closures and nothing else.
+  ///////////////////////////////////////////////////////////////
+
+  int registerEditorPage(const std::string& name, std::vector<HudEditProp> props) {
+    int page = _pages.registerEditorPage(name, std::move(props));
+    _applyStartupPage(); // ORKID_PERFHUD=<name> can only resolve now
+    return page;
+  }
+  bool editorActive() const {
+    return _pages.isEditorPage(_page.load());
+  }
+  // DPAD up/down (pad) and cursor up/down (desktop) — once per press. With a color row
+  //  open these walk its H/S/V channels instead (see PerfHudPages::editSelect).
+  void editSelect(int delta) {
+    _pages.editSelect(_page.load(), delta);
+  }
+  // CROSS / '\' — the ACTIVATE gesture: opens or closes a COLOR row's H/S/V sub-editor,
+  // or FIRES an ACTION row (see perfhud_pages.h). Consumed by the host only when
+  // editSelectedIsActivatable(), so off such a row it still reaches the scene.
+  void editActivate() {
+    _pages.editActivate(_page.load());
+  }
+  bool editSelectedIsActivatable() const {
+    return _pages.editSelectedIsActivatable(_page.load());
+  }
+  void editToggleColor() {
+    _pages.editToggleColor(_page.load());
+  }
+  bool editSelectedIsColor() const {
+    return _pages.editSelectedIsColor(_page.load());
+  }
+  // L2/R2 (pad) and cursor left/right (desktop). HELD-state driven, ticked from the
+  //  update thread: a slider repeats after kAdjDelay at kAdjPeriod (so a held trigger
+  //  sweeps its range), an enum steps exactly once per press. dir = -1 / 0 / +1.
+  void editAdjustHold(int dir, double dt) {
+    int page = _page.load();
+    if (not _pages.isEditorPage(page)) {
+      _adj_dir = 0;
+      return;
+    }
+    if (dir != _adj_dir) { // press / release / reversal edge
+      _adj_dir  = dir;
+      _adj_held = 0.0;
+      if (dir)
+        _pages.editAdjust(page, dir);
+      return;
+    }
+    if (dir == 0 or not _pages.editSelectedIsSlider(page))
+      return;
+    double prev = _adj_held;
+    _adj_held += dt;
+    if (_adj_held < kAdjDelay)
+      return;
+    int fired = int((_adj_held - kAdjDelay) / kAdjPeriod) - int(std::max(0.0, prev - kAdjDelay) / kAdjPeriod);
+    for (int i = 0; i < fired; i++)
+      _pages.editAdjust(page, dir);
+  }
   // top of onDraw, before controller->render
   void frameBegin() {
     _cpu_record_timer.Start();
     _cpu_record_started = true;
-    // Let the GPU-cull sites read back their result counts THIS frame only while the HUD is showing
-    // text (off/graph => zero readback cost, preserving the no-readback cull path).
-    CullStats::instance().setEnabled(_mode == TEXT);
+    // Let the GPU-cull sites read back their result counts THIS frame only while the HUD
+    // is up (or feeding the stdout dump) — hidden => zero readback cost, preserving the
+    // no-readback cull path. Any page, not just the cull page: the funnels are cheap to
+    // keep current, and a slot that only refreshed while ITS page was showing would carry
+    // a misleading age the moment the reader arrived.
+    CullStats::instance().setEnabled(_page.load() != PAGE_OFF or _stdout_period > 0.0);
   }
 
   // end of onDraw (after controller->render + movie pump); collects + draws
@@ -207,136 +321,79 @@ struct PerfHud {
       _frame_ms_max      = 0.0f;
       _rate_timer.Start();
     }
-    if (_stdout_period > 0.0 and _stdout_timer.SecsSinceStart() >= _stdout_period) {
+    // Refresh the slots ONCE per frame, and only when someone is reading them (hidden =>
+    // no sink snapshots, and no age accrues while the HUD is down — see perfhud_pages.h).
+    const bool want_stdout = _stdout_period > 0.0 and _stdout_timer.SecsSinceStart() >= _stdout_period;
+    if (_page.load() != PAGE_OFF or want_stdout)
+      _pages.publish(_gatherInputs());
+    if (want_stdout) {
       _stdout_timer.Start();
-      printf("[perfhud]\n%s\n", _statsText().c_str());
+      // headless/DRM/scripted runs have no key to cycle with, so dump EVERY page.
+      printf("[perfhud]\n");
+      for (int p = PAGE_FRAME; p < _pages.numPages(); p++)
+        printf("%s\n", _pages.pageText(p).c_str());
       fflush(stdout);
     }
     // VR: don't flat-draw onto the mirror surface. Render the content to an offscreen
-    //  RT and publish it; the DualMonoVr node draws it as a head-locked 3m panel into
+    //  RT and publish it; the VR output node draws it as a head-locked 3m panel into
     //  EACH eye's buffer (which the headset AND the desktop mirror then inherit).
     if (_vrmode.load()) {
       _renderPanelRT(ctx);
       return;
     }
-    if (_mode == OFF)
+    if (_page.load() == PAGE_OFF)
       return;
     _draw(ctx);
   }
 
   ///////////////////////////////////////////////////////////////
 
-  std::string _statsText() {
-    char hdr[96];
-    snprintf(hdr, sizeof(hdr), "FPS %6.1f\nUPS %6.1f", _fps, _ups);
-    std::string out(hdr);
+  // Snapshot every sink ONCE per frame. Nothing is formatted here — the pages own the
+  // layout (perfhud_pages.h), which is what makes them testable off-device.
+  HudInputs _gatherInputs() {
+    HudInputs in;
+    in._fps          = _fps;
+    in._ups          = _ups;
+    in._frame_ms     = _frame_ms;
+    in._frame_ms_max = _frame_ms_max_disp;
+    in._cpu_record_ms = _cpu_record_ms;
 
-    // VR camera diagnostics (terrain-invisibility hunt): the world-root translation and the
-    //  composed center-eye world position the VR node used this frame. root=(0,0,0) is the
-    //  vrroot-lookup-miss smoking gun. Non-VR/before-any-VR-frame these read zeros — labeled
-    //  honestly; the VR node is the only writer.
-    {
-      const auto& ov = ork::lev2::VrHudOverlay::instance();
-      char        cb[128];
-      snprintf(cb, sizeof(cb),
-               "\nroot %8.1f %8.1f %8.1f\neye  %8.1f %8.1f %8.1f",
-               ov._cam_root.x, ov._cam_root.y, ov._cam_root.z,
-               ov._cam_eye.x, ov._cam_eye.y, ov._cam_eye.z);
-      out += cb;
+    // engine render-phase breakdown — only the phases that actually ran this frame; the
+    // rest keep their slot and age (a cadenced phase reports its cadence that way).
+    for (const auto& kv : RenderPhaseStats::instance().snapshot())
+      in._phases[kv.first] = kv.second.ms;
+
+    in._cull = CullStats::instance().snapshot();
+
+    // per-pass DEVICE time, as of the timestamp readback's lag-2 frame (the sink carries
+    // the lag; see gpupassstats.h).
+    in._gpu = GpuPassStats::instance().snapshot();
+
+    // XR frame pacing (published only by a live XR frame path) and NVIDIA driver
+    // telemetry (polled at 1Hz off a background thread, started by this first read).
+    // Both answer "unavailable" off their platform, which is what makes their HUD rows
+    // absent rather than empty.
+    in._vr   = ork::lev2::VrPacingStats::instance().snapshot();
+    in._nvml = ork::lev2::NvmlStats::instance().snapshot();
+
+    // per-ECS-system breakdown (u=update thread, g=gpuUpdate, r=render; EMA ms), keyed
+    // "<phase>:<SystemType>" by the sink.
+    for (const auto& kv : ork::ecs::SystemStats::instance().snapshot()) {
+      if (kv.first.size() < 3)
+        continue;
+      char        p    = kv.first[0];
+      std::string name = kv.first.substr(2);
+      in._systems[name][(p == 'u') ? 0 : (p == 'g') ? 1 : 2] = kv.second;
     }
 
-    // Phase 3 — per-ECS-system breakdown (u=update thread, g=gpuUpdate, r=render; EMA ms).
-    // Sits right after UPS (it's the update-thread context).
-    auto sysmap = ork::ecs::SystemStats::instance().snapshot();
-    if (not sysmap.empty()) {
-      std::map<std::string, std::array<double, 3>> bysys; // SystemType -> {u,g,r}
-      for (auto& kv : sysmap) {
-        if (kv.first.size() < 3)
-          continue;
-        char        p    = kv.first[0];
-        std::string name = kv.first.substr(2);
-        const std::string suf = "System"; // strip the common suffix for width
-        if (name.size() > suf.size() and name.compare(name.size() - suf.size(), suf.size(), suf) == 0)
-          name.resize(name.size() - suf.size());
-        bysys[name][(p == 'u') ? 0 : (p == 'g') ? 1 : 2] = kv.second;
-      }
-      bool ecshdr = false;
-      for (auto& kv : bysys) {
-        auto& a = kv.second;
-        if (a[0] + a[1] + a[2] < 0.0005) // skip only truly-idle systems (sub-microsecond)
-          continue;
-        if (not ecshdr) {
-          char hb[64]; // same field widths as the rows so columns line up; u@~480/s so it's small
-          snprintf(hb, sizeof(hb), "\n%-12.12s %5s %5s %5s (ms)", "ECS", "u", "g", "r");
-          out += hb;
-          ecshdr = true;
-        }
-        char b[128];
-        // %-12.12s = left-justified, TRUNCATED to exactly 12 (so long names like
-        // CharacterController don't push the value columns out of alignment).
-        snprintf(b, sizeof(b), "\n%-12.12s %5.3f %5.3f %5.3f", kv.first.c_str(), a[0], a[1], a[2]);
-        out += b;
-      }
-    }
-
-    // wall-clock frame time, then the onDraw record bracket it must never be confused with
-    char fb[128];
-    snprintf(fb, sizeof(fb),
-             "\nframe %5.2f ms (max %5.2f)"
-             "\ncpu-record %5.2f ms",
-             _frame_ms, _frame_ms_max_disp, _cpu_record_ms);
-    out += fb;
-
-    // Phase 2 — engine render-phase breakdown (only rows that actually ran this frame).
-    auto snap = RenderPhaseStats::instance().snapshot();
-    if (not snap.empty()) {
-      // execution order: the shadow-maps..env-probes block is the forward node's frame
-      // prologue, which runs INSIDE assemble (its rows are a breakdown of that row).
-      static const char* kOrder[] = {"gpuUpdate",    "preRender",    "assemble",     "shadow-maps", "sun-cascades",
-                                      "sky-lut",      "sky-ibl",      "env-probes",   "composite",   "hypermesh-gen",
-                                      "hm-cull",      "terrain-cull", "compute-cull", "present-idle"};
-      auto row = [&](const std::string& nm, double ms) {
-        char b[96];
-        snprintf(b, sizeof(b), "\n%-13s %5.2f", nm.c_str(), ms);
-        out += b;
-      };
-      for (const char* nm : kOrder) {
-        auto it = snap.find(nm);
-        if (it != snap.end()) {
-          row(nm, it->second.ms);
-          snap.erase(it);
-        }
-      }
-      for (auto& kv : snap) // anything not in the preferred order
-        row(kv.first, kv.second.ms);
-    }
-
-    // GPU-cull result funnels (terrain + instanced hypermesh). Only present while a cull ran this
-    // frame; readback is enabled above (frameBegin) only in TEXT mode. total | frustum pass/fail |
-    // of the frustum-passers, occlusion pass(drawn)/fail(hidden).
-    // Split TERR/HYPM into two SHORT lines each — the lens blurs long lines at the panel
-    //  edges. total | frustum pass/fail, then occlusion fail(hidden)/pass(drawn).
-    auto cull = CullStats::instance().snapshot();
-    if (cull.terrain_valid) {
-      char b[192];
-      snprintf(b, sizeof(b),
-               "\nTERR n<%u> frus p<%u> f<%u>"
-               "\nTERR occl f<%u> vis<%u>",
-               cull.t_total, cull.t_frustum, cull.t_total - cull.t_frustum,
-               cull.t_frustum - cull.t_visible, cull.t_visible);
-      out += b;
-    }
-    if (cull.hyper_valid) {
-      char b[224];
-      snprintf(b, sizeof(b),
-               "\nHYPM v<%d> n<%llu> frus p<%llu> f<%llu>"
-               "\nHYPM occl f<%llu> vis<%llu>",
-               cull.h_variants, (unsigned long long)cull.h_total,
-               (unsigned long long)cull.h_frustum, (unsigned long long)(cull.h_total - cull.h_frustum),
-               (unsigned long long)cull.h_occluded, (unsigned long long)cull.h_visible);
-      out += b;
-    }
-    return out;
+    // VR camera diagnostics (terrain-invisibility hunt): the world-root translation and
+    //  the composed center-eye world position the VR node used this frame. root=(0,0,0)
+    //  is the vrroot-lookup-miss smoking gun. Non-VR/before-any-VR-frame these read zeros
+    //  — labeled honestly; the VR node is the only writer.
+    const auto& ov = ork::lev2::VrHudOverlay::instance();
+    in._root[0] = ov._cam_root.x; in._root[1] = ov._cam_root.y; in._root[2] = ov._cam_root.z;
+    in._eye[0]  = ov._cam_eye.x;  in._eye[1]  = ov._cam_eye.y;  in._eye[2]  = ov._cam_eye.z;
+    return in;
   }
 
   void _draw(Context* ctx) {
@@ -363,19 +420,48 @@ struct PerfHud {
     ctx->pushRenderContextFrameData(std::make_shared<RenderContextFrameData>(ctx));
 
     // pick a font for the effective scale; line height from its real metrics drives the
-    // bottom-anchor, so the block stays aligned however many lines it grows to.
+    // bottom-anchor off the ACTIVE PAGE's fixed line count, so the block's baseline never
+    // moves while a page is up.
     auto fontman = FontMan::instance();
     fontman->setCurrentFont(uiscale >= 2.75f ? "i48" : (uiscale >= 1.5f ? "i32" : "i16"));
     float lineH = float(FontMan::currentFont()->description().miCharHeight);
 
-    std::string text     = _statsText();
-    int         numLines = 1 + int(std::count(text.begin(), text.end(), '\n'));
+    int         page  = _page.load();
+    auto        lines = _pages.pageLines(page);
+    std::string text;
+    // WIDEST RENDERED LINE, not the page's nominal width. The nominal is a per-page
+    // constant used for CENTERING the VR panel inside its fixed 52-column allocation, and
+    // on the pages whose rows carry variable-width payloads (the cull page's in<>/out<>
+    // counts) the real line runs past it — which is exactly where a nominal-sized backdrop
+    // stopped short of the text. VR never showed it because the VR panel is sized to the
+    // fixed column allocation, wider than any page.
+    int cols = _pages.pageNominalCols(page);
+    for (const auto& l : lines) {
+      cols = std::max(cols, int(l.size()));
+      if (not text.empty())
+        text += "\n";
+      text += l;
+    }
+    int numLines = _pages.pageLineCount(page);
 
     float margin  = 12.0f * uiscale;
     float textTop = TH - margin - float(numLines) * lineH; // bottom-anchored
 
-    // graph sits just ABOVE the text block (also lower-left)
-    if (_mode == GRAPH) {
+    // THE PANEL SLATE, desktop edition — the same rgba the VR node draws behind the
+    // head-locked panel (VrHudOverlay::_slate_rgba, one source for both), mono and sized
+    // to THIS page's fixed text block rather than the frame: it has to read as the same
+    // panel, and a full-screen dim is a different thing. The block's extents come from
+    // the same nominal-cols x line-count metrics the layout is anchored on, so the
+    // backdrop cannot disagree with the text it sits behind.
+    if (page != PAGE_OFF) {
+      float padx = 6.0f * uiscale;
+      float pady = 4.0f * uiscale;
+      float bw   = float(FontMan::stringWidth(cols)) + 2.0f * padx;
+      float bh   = float(numLines) * lineH + 2.0f * pady;
+      _drawSlate(ctx, TW, TH, margin - padx, textTop - pady, bw, bh);
+    }
+    // the frame-time history graph belongs to page 1; it sits just ABOVE its text block
+    if (page == PAGE_FRAME) {
       float gw   = 240.0f * uiscale;
       float gh   = 78.0f * uiscale;
       float gbot = textTop - 8.0f * uiscale;
@@ -402,39 +488,32 @@ struct PerfHud {
     }
   }
 
-  // VR path: render the HUD content into an offscreen RT sized to the content and
-  //  publish its texture (+ aspect) to VrHudOverlay. The DMVR output node reads it
-  //  next frame and draws it as a head-locked panel in both eyes. Uses a FIXED scale
-  //  (not the window SSAA scale) since the panel is magnified in-headset, not viewed
-  //  1:1 on-screen.
+  // VR path: render the HUD content into an offscreen RT and publish its texture (+
+  //  aspect) to VrHudOverlay. The VR output node reads it next frame and draws it as a
+  //  head-locked panel in both eyes. Uses a FIXED scale (not the window SSAA scale) since
+  //  the panel is magnified in-headset, not viewed 1:1 on-screen.
+  //
+  // The RT is sized to the TALLEST page and a fixed column count, and the graph's strip
+  //  is reserved on every page: cycling pages must never resize or re-aspect a panel the
+  //  wearer is reading.
   void _renderPanelRT(Context* ctx) {
     auto& overlay = VrHudOverlay::instance();
-    int   mode    = _mode.load();
-    if (mode == OFF) {
+    int   page    = _page.load();
+    if (page == PAGE_OFF) {
       overlay._enabled.store(false);
       return;
     }
-    std::string text     = _statsText();
-    int         numLines = 1 + int(std::count(text.begin(), text.end(), '\n'));
-    // longest line in chars (the debug fonts are fixed-width, so stringWidth is exact)
-    int maxchars = 0, cur = 0;
-    for (char ch : text) {
-      if (ch == '\n') {
-        maxchars = std::max(maxchars, cur);
-        cur      = 0;
-      } else
-        cur++;
-    }
-    maxchars = std::max(maxchars, cur);
+    std::string text     = _pages.pageText(page);
+    int         numLines = _pages.maxLineCount();
 
     const float uiscale = 2.0f; // fixed crisp panel scale
     auto        fontman = FontMan::instance();
     fontman->setCurrentFont(uiscale >= 2.75f ? "i48" : (uiscale >= 1.5f ? "i32" : "i16"));
     float lineH  = float(FontMan::currentFont()->description().miCharHeight);
     float margin = 12.0f * uiscale;
-    float textW  = float(FontMan::stringWidth(maxchars));
-    float graphH = (mode == GRAPH) ? (78.0f * uiscale + 8.0f * uiscale) : 0.0f;
-    float graphW = (mode == GRAPH) ? 240.0f * uiscale : 0.0f;
+    float textW  = float(FontMan::stringWidth(PerfHudPages::maxLineCols()));
+    float graphH = 78.0f * uiscale + 8.0f * uiscale;
+    float graphW = 240.0f * uiscale;
     int   TW     = int(std::max(textW, graphW) + 2.0f * margin);
     int   TH     = int(float(numLines) * lineH + graphH + 2.0f * margin);
     TW           = std::max(TW, 16);
@@ -455,10 +534,25 @@ struct PerfHud {
     //  separate ALPHA quad in the DM eye-pass, and this premultiplied RT composites over it
     //  with PREMA (fringeless, no double-darken). Text over the transparent clear is already
     //  premultiplied (rgb = color*coverage, a = coverage).
-    float textTop = margin + graphH; // graph sits above the text block
-    if (mode == GRAPH)
-      _drawGraph(ctx, float(TW), float(TH), margin, margin, graphW, 78.0f * uiscale);
-    _drawText(ctx, float(TW), float(TH), text, margin, textTop);
+    // CENTER each page's block in the fixed-size quad, per page. The RT never resizes
+    //  (TH is sized for the tallest page + the graph strip), so a short page's block
+    //  would otherwise hug the top with dead quad below it. Content height uses the
+    //  PAGE'S OWN fixed line count (frozen at scene bind) and counts the graph strip
+    //  only on the page that draws one — so the offset is a per-page constant and the
+    //  text NEVER moves while a page is up; switching pages recenters for that page.
+    //  Horizontal: the text column block and the graph each center on their own width.
+    float pageGraphH = (page == PAGE_FRAME) ? graphH : 0.0f;
+    float contentH   = float(_pages.pageLineCount(page)) * lineH + pageGraphH;
+    float yTop       = std::max(margin, (float(TH) - contentH) * 0.5f);
+    // Horizontal: center on the page's NOMINAL content width (a per-page constant),
+    //  not on the panel-wide column allocation — (TW - textW)/2 degenerates to the
+    //  margin because TW is DERIVED from textW. Nominal widths cannot move with
+    //  value-digit changes, so the block stays put within a page.
+    float nomW  = float(FontMan::stringWidth(_pages.pageNominalCols(page)));
+    float textX = std::max(margin, (float(TW) - nomW) * 0.5f);
+    if (page == PAGE_FRAME)
+      _drawGraph(ctx, float(TW), float(TH), (float(TW) - graphW) * 0.5f, yTop, graphW, 78.0f * uiscale);
+    _drawText(ctx, float(TW), float(TH), text, textX, yTop + pageGraphH);
 
     ctx->popRenderContextFrameData();
     fbi->popScissor();
@@ -479,6 +573,45 @@ struct PerfHud {
     fontman->endTextBlock(ctx);
     ctx->PopModColor();
     ctx->MTXI()->PopUIMatrix();
+  }
+
+  // ONE straight-ALPHA quad in the desktop HUD's own UI space, tinted from the shared
+  // VrHudOverlay slate. Drawn BEFORE the text (the desktop path draws glyphs straight to
+  // the frame, so there is no premultiplied-RT hole problem to work around here — that
+  // split exists only because the VR panel round-trips through an RT).
+  void _drawSlate(Context* ctx, float TW, float TH, float px, float py, float pw, float ph) {
+    if (not _mtl) {
+      _mtl = std::make_shared<FreestyleMaterial>();
+      _mtl->gpuInit(ctx, "orkshader://solid");
+    }
+    if (not _vbuf) {
+      _vbuf = std::make_shared<DynamicVertexBuffer<SVtxV16T16C16>>(64 << 10, 0);
+      _vbuf->SetRingLock(true);
+    }
+    // the ALPHA-BAKED technique: a runtime setBlendingMacro never reaches a compiled
+    // pipeline (the pass's state_block does), which is why an opaque-state quad drawn
+    // with a 0.5 alpha vertex color shows nothing at all.
+    auto tek     = _mtl->technique("vtxcolor_alpha");
+    auto par_mvp = _mtl->param("MatMVP");
+    auto RCFD    = std::make_shared<RenderContextFrameData>(ctx);
+    auto mtxi    = ctx->MTXI();
+    auto gbi     = ctx->GBI();
+    const auto& s = VrHudOverlay::instance()._slate_rgba;
+    mtxi->PushUIMatrix(int(TW), int(TH));
+    {
+      VtxWriter<SVtxV16T16C16> vw;
+      vw.Lock(ctx, _vbuf.get(), 6);
+      fvec4 bg(s[0], s[1], s[2], s[3]);
+      auto  V = [&](float x, float y) { vw.AddVertex(SVtxV16T16C16(fvec3(x, y, 0), fvec4(), bg)); };
+      V(px, py);  V(px + pw, py);       V(px + pw, py + ph);
+      V(px, py);  V(px + pw, py + ph);  V(px, py + ph);
+      vw.UnLock(ctx);
+      _mtl->begin(tek, RCFD);
+      _mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
+      gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
+      _mtl->end(RCFD);
+    }
+    mtxi->PopUIMatrix();
   }
 
   void _drawGraph(Context* ctx, float TW, float TH, float px, float py, float pw, float ph) {
@@ -522,9 +655,8 @@ struct PerfHud {
       V(px, py);  V(px + pw, py);       V(px + pw, py + ph);
       V(px, py);  V(px + pw, py + ph);  V(px, py + ph);
       vw.UnLock(ctx);
-      _mtl->begin(tek, RCFD);
+      _mtl->begin(_mtl->technique("vtxcolor_alpha"), RCFD);
       _mtl->bindParamMatrix(par_mvp, mtxi->RefMVPMatrix());
-      _mtl->_rasterstate->setBlendingMacro(BlendingMacro::ALPHA);
       gbi->DrawPrimitiveEML(vw, PrimitiveType::TRIANGLES);
       _mtl->end(RCFD);
     }

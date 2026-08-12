@@ -78,7 +78,18 @@ VulkanRenderInfo::VulkanRenderInfo(VkRtGroupImpl* rtgi) {
       // single-sample depth; in the read-only color pass we don't re-resolve (prepass already did).
       _rainfo_depth.imageView   = dbuf_impl->_msaa_imgobj->_vkimageview;
       _rainfo_depth.imageLayout = dbuf_impl->_currentLayout;
-      if (not rtgi->_depthReadOnlyMode) {
+      if (rtgi->_needsManualDepthResolve()) {
+        // MULTIVIEW: this resolve names ONE resolve-target subresource for a pass covering
+        // SEVERAL views, and what each view's share of it receives is left to the
+        // implementation — Metal (so MoltenVK, whose instanced multiview is a single Metal
+        // pass) can only resolve one array slice, and measured here it resolved NEITHER
+        // eye: the single-sample copy every sampler reads stayed at the far clear. So this
+        // pass resolves nothing and VkRtGroupImpl::_resolveMultiviewDepth does all the
+        // layers explicitly once it ends. Uniform across drivers on purpose: a resolve
+        // that works only where the driver happens to loop over views is not one we can
+        // reason about.
+        _rainfo_depth.resolveMode = VK_RESOLVE_MODE_NONE;
+      } else if (not rtgi->_depthReadOnlyMode) {
         _rainfo_depth.resolveMode        = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
         _rainfo_depth.resolveImageView   = single_depth;
         _rainfo_depth.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;

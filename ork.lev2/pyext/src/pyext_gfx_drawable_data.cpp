@@ -9,6 +9,7 @@
 #include <ork/lev2/input/inputdevice.h>
 #include <ork/lev2/gfx/terrain/terrain_drawable.h>
 #include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h>
+#include <ork/lev2/gfx/terrain/grass_drawable.h>
 #include <ork/lev2/gfx/camera/cameradata.h>
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/scenegraph/sgnode_grid.h>
@@ -575,6 +576,221 @@ void pyinit_gfx_drawabledatas(py::module& module_lev2) {
               [](terrain::terrain_chunk_drawable_data_ptr_t d) -> int { return d->_chunk; },
               [](terrain::terrain_chunk_drawable_data_ptr_t d, int v) { d->_chunk = v; });
   type_codec->registerStdCodec<terrain::terrain_chunk_drawable_data_ptr_t>(tchunk_type);
+  /////////////////////////////////////////////////////////////////////////////////
+  // GrassDrawableData (GRASS) — the reflected task+mesh grass carpet; the HF manifest and
+  // the GrassFieldSource material are referenced BY NAME and resolved by the wire step.
+  auto grass_type = //
+      py::class_<terrain::GrassDrawableData, DrawableData, terrain::grass_drawable_data_ptr_t>(
+          module_lev2, "GrassDrawableData")
+          .def(py::init([](py::kwargs kwargs) {
+            auto d = std::make_shared<terrain::GrassDrawableData>();
+            // ops-self-defend: an unknown kwarg RAISES instead of vanishing — a dropped
+            // radius or channel name would author a carpet nobody asked for.
+            static const std::set<std::string> known = {
+                "hf_asset",       "material_asset",  "field_dim",       "tile_size",
+                "grid_dim",       "lod0_radius",     "lod1_radius",     "cull_radius",
+                "fade_pow",       "lod_ceiling",     "height_channel",  "normal_channel",
+                "density_channel","dryness_channel", "density_scale",   "blade_height",
+                "blade_height_var","blade_width",    "blade_taper",     "clump_radius",
+                "clump_lean",     "clump_phase_var", "clump_hue_var",   "clump_height_var",
+                "color_a",        "color_b",         "dry_color",       "dry_fraction",
+                "dry_fade_start", "dry_fade_end",    "backlit",         "wind_dir",
+                "wind_amp",       "wind_freq",       "stereo_widen"};
+            for (auto item : kwargs) {
+              auto key = item.first.cast<std::string>();
+              if (known.find(key) == known.end())
+                throw std::invalid_argument("GrassDrawableData: unknown kwarg '" + key + "'");
+            }
+            auto str_kw = [&](const char* k, std::string& dst) {
+              if (kwargs.contains(k)) dst = kwargs[k].cast<std::string>();
+            };
+            auto flt_kw = [&](const char* k, float& dst) {
+              if (kwargs.contains(k)) dst = kwargs[k].cast<float>();
+            };
+            auto int_kw = [&](const char* k, int& dst) {
+              if (kwargs.contains(k)) dst = kwargs[k].cast<int>();
+            };
+            auto v3_kw = [&](const char* k, fvec3& dst) {
+              if (kwargs.contains(k)) dst = kwargs[k].cast<fvec3>();
+            };
+            str_kw("hf_asset", d->_hf_asset_name);
+            str_kw("material_asset", d->_material_asset_name);
+            int_kw("field_dim", d->_field_dim);
+            flt_kw("tile_size", d->_tile_size);
+            int_kw("grid_dim", d->_grid_dim);
+            flt_kw("lod0_radius", d->_lod0_radius);
+            flt_kw("lod1_radius", d->_lod1_radius);
+            flt_kw("cull_radius", d->_cull_radius);
+            flt_kw("fade_pow", d->_fade_pow);
+            flt_kw("lod_ceiling", d->_lod_ceiling);
+            str_kw("height_channel", d->_height_channel);
+            str_kw("normal_channel", d->_normal_channel);
+            str_kw("density_channel", d->_density_channel);
+            str_kw("dryness_channel", d->_dryness_channel);
+            flt_kw("density_scale", d->_density_scale);
+            flt_kw("blade_height", d->_blade_height);
+            flt_kw("blade_height_var", d->_blade_height_var);
+            flt_kw("blade_width", d->_blade_width);
+            flt_kw("blade_taper", d->_blade_taper);
+            flt_kw("clump_radius", d->_clump_radius);
+            flt_kw("clump_lean", d->_clump_lean);
+            flt_kw("clump_phase_var", d->_clump_phase_var);
+            flt_kw("clump_hue_var", d->_clump_hue_var);
+            flt_kw("clump_height_var", d->_clump_height_var);
+            v3_kw("color_a", d->_color_a);
+            v3_kw("color_b", d->_color_b);
+            v3_kw("dry_color", d->_dry_color);
+            flt_kw("dry_fraction", d->_dry_fraction);
+            flt_kw("dry_fade_start", d->_dry_fade_start);
+            flt_kw("dry_fade_end", d->_dry_fade_end);
+            flt_kw("backlit", d->_backlit);
+            v3_kw("wind_dir", d->_wind_dir);
+            flt_kw("wind_amp", d->_wind_amp);
+            flt_kw("wind_freq", d->_wind_freq);
+            flt_kw("stereo_widen", d->_stereo_widen);
+            return d;
+          }))
+          .def_property(
+              "hf_asset",
+              [](terrain::grass_drawable_data_ptr_t d) -> std::string { return d->_hf_asset_name; },
+              [](terrain::grass_drawable_data_ptr_t d, std::string v) { d->_hf_asset_name = v; })
+          .def_property(
+              "material_asset",
+              [](terrain::grass_drawable_data_ptr_t d) -> std::string { return d->_material_asset_name; },
+              [](terrain::grass_drawable_data_ptr_t d, std::string v) { d->_material_asset_name = v; })
+          .def_property(
+              "field_dim",
+              [](terrain::grass_drawable_data_ptr_t d) -> int { return d->_field_dim; },
+              [](terrain::grass_drawable_data_ptr_t d, int v) { d->_field_dim = v; })
+          .def_property(
+              "tile_size",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_tile_size; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_tile_size = v; })
+          .def_property(
+              "grid_dim",
+              [](terrain::grass_drawable_data_ptr_t d) -> int { return d->_grid_dim; },
+              [](terrain::grass_drawable_data_ptr_t d, int v) { d->_grid_dim = v; })
+          .def_property(
+              "lod0_radius",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_lod0_radius; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_lod0_radius = v; })
+          .def_property(
+              "lod1_radius",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_lod1_radius; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_lod1_radius = v; })
+          .def_property(
+              "cull_radius",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_cull_radius; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_cull_radius = v; })
+          .def_property(
+              "fade_pow",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_fade_pow; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_fade_pow = v; })
+          .def_property(
+              "lod_ceiling",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_lod_ceiling; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_lod_ceiling = v; })
+          .def_property(
+              "height_channel",
+              [](terrain::grass_drawable_data_ptr_t d) -> std::string { return d->_height_channel; },
+              [](terrain::grass_drawable_data_ptr_t d, std::string v) { d->_height_channel = v; })
+          .def_property(
+              "normal_channel",
+              [](terrain::grass_drawable_data_ptr_t d) -> std::string { return d->_normal_channel; },
+              [](terrain::grass_drawable_data_ptr_t d, std::string v) { d->_normal_channel = v; })
+          .def_property(
+              "density_channel",
+              [](terrain::grass_drawable_data_ptr_t d) -> std::string { return d->_density_channel; },
+              [](terrain::grass_drawable_data_ptr_t d, std::string v) { d->_density_channel = v; })
+          .def_property(
+              "dryness_channel",
+              [](terrain::grass_drawable_data_ptr_t d) -> std::string { return d->_dryness_channel; },
+              [](terrain::grass_drawable_data_ptr_t d, std::string v) { d->_dryness_channel = v; })
+          .def_property(
+              "density_scale",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_density_scale; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_density_scale = v; })
+          .def_property(
+              "blade_height",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_blade_height; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_blade_height = v; })
+          .def_property(
+              "blade_height_var",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_blade_height_var; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_blade_height_var = v; })
+          .def_property(
+              "blade_width",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_blade_width; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_blade_width = v; })
+          .def_property(
+              "blade_taper",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_blade_taper; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_blade_taper = v; })
+          .def_property(
+              "clump_radius",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_clump_radius; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_clump_radius = v; })
+          .def_property(
+              "clump_lean",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_clump_lean; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_clump_lean = v; })
+          .def_property(
+              "clump_phase_var",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_clump_phase_var; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_clump_phase_var = v; })
+          .def_property(
+              "clump_hue_var",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_clump_hue_var; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_clump_hue_var = v; })
+          .def_property(
+              "clump_height_var",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_clump_height_var; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_clump_height_var = v; })
+          .def_property(
+              "color_a",
+              [](terrain::grass_drawable_data_ptr_t d) -> fvec3 { return d->_color_a; },
+              [](terrain::grass_drawable_data_ptr_t d, fvec3 v) { d->_color_a = v; })
+          .def_property(
+              "color_b",
+              [](terrain::grass_drawable_data_ptr_t d) -> fvec3 { return d->_color_b; },
+              [](terrain::grass_drawable_data_ptr_t d, fvec3 v) { d->_color_b = v; })
+          .def_property(
+              "dry_color",
+              [](terrain::grass_drawable_data_ptr_t d) -> fvec3 { return d->_dry_color; },
+              [](terrain::grass_drawable_data_ptr_t d, fvec3 v) { d->_dry_color = v; })
+          .def_property(
+              "dry_fraction",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_dry_fraction; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_dry_fraction = v; })
+          .def_property(
+              "dry_fade_start",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_dry_fade_start; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_dry_fade_start = v; })
+          .def_property(
+              "dry_fade_end",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_dry_fade_end; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_dry_fade_end = v; })
+          .def_property(
+              "backlit",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_backlit; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_backlit = v; })
+          .def_property(
+              "wind_dir",
+              [](terrain::grass_drawable_data_ptr_t d) -> fvec3 { return d->_wind_dir; },
+              [](terrain::grass_drawable_data_ptr_t d, fvec3 v) { d->_wind_dir = v; })
+          .def_property(
+              "wind_amp",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_wind_amp; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_wind_amp = v; })
+          .def_property(
+              "wind_freq",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_wind_freq; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_wind_freq = v; })
+          .def_property(
+              "stereo_widen",
+              [](terrain::grass_drawable_data_ptr_t d) -> float { return d->_stereo_widen; },
+              [](terrain::grass_drawable_data_ptr_t d, float v) { d->_stereo_widen = v; });
+  type_codec->registerStdCodec<terrain::grass_drawable_data_ptr_t>(grass_type);
   /////////////////////////////////////////////////////////////////////////////////
   /*auto terdrawinst_type = //
       py::class_<TerrainDrawableInst, terraindrawableinst_ptr_t>(module_lev2, "TerrainDrawableInst")

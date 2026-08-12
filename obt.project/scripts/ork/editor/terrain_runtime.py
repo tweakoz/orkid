@@ -123,14 +123,22 @@ class TerrainRuntime:
   PREVIEW_DIM = 512
   FULL_DIM = 2048
   MAX_DIM = 16384          # dim slider ceiling AND the vertex-source text cap (bake_dim)
-  DEFAULT_SKYBOX = "<ork_envmaps2>/blender_courtyard.xir"
+  # IBL warm-up/source for the (always-procedural) sky — outdoor by law; the
+  # visible sky is the Hillaire atmosphere, never this texture.
+  DEFAULT_SKYBOX = "<ork_envmaps2>/desert4k.xir"
 
   def __init__(self, *, preview_dim=PREVIEW_DIM, full_dim=FULL_DIM, chunk=128):
     self.document = None
     self.source_label = "untitled"
+    self._source_py = None
     self.extent_m = float(_HeightFieldBase.EXTENT_M)
     self.material_class = None
     self.material_params = {}
+    # suggested display resolutions off the DSL class (base.py RENDER_DIM/BAKE_DIM/
+    # BAKE_RES — same read-the-class contract as EXTENT_M/MATERIAL_CLASS)
+    self.render_dim_hint = None
+    self.bake_dim_hint = None
+    self.bake_res_hint = None
     self.skybox_path = self.DEFAULT_SKYBOX
 
     # DSL source mode (top-level "Terrain Parameters"): the resolved HeightField
@@ -238,8 +246,12 @@ class TerrainRuntime:
       with open(source, "r") as f:
         self.document = _doc_from_json(json.load(f))
       self.source_label = os.path.splitext(os.path.basename(str(source)))[0]
+      self._source_py = None          # doc-json has no authoring .py to key state on
       self.material_class = None
       self.material_params = {}
+      self.render_dim_hint = None
+      self.bake_dim_hint = None
+      self.bake_res_hint = None
       self._reset_dsl_kwargs()        # no DSL source -> Terrain Parameters absent
     else:
       if isinstance(source, str) and source == "new":
@@ -256,9 +268,17 @@ class TerrainRuntime:
       self._capture_dsl_kwargs(cls, dsl_kwargs)
       self.document = self._trace_param_document(self._dsl_kwargs)
       self.source_label = os.path.splitext(os.path.basename(str(dsl_path)))[0]
+      # the authoring source, kept for the composed scene's reflected scene-source
+      # (see build_scene_data) — a host keys its per-scene state on it
+      self._source_py = None if dsl_path == "new" else str(dsl_path)
       self.extent_m = float(cls.EXTENT_M)
       self.material_class = getattr(cls, "MATERIAL_CLASS", None)
       self.material_params = dict(getattr(cls, "MATERIAL_PARAMS", {}) or {})
+      # suggested display resolutions (the terrain suggests its own quality;
+      # viewer2 -d / explicit build args override)
+      self.render_dim_hint = getattr(cls, "RENDER_DIM", None)
+      self.bake_dim_hint = getattr(cls, "BAKE_DIM", None)
+      self.bake_res_hint = getattr(cls, "BAKE_RES", None)
     if extent_m is not None:
       self.extent_m = float(extent_m)
     self._outdir = str(_Path.expandPathString(f"<assetcache>/terrainedit/{self.source_label}"))
@@ -829,6 +849,12 @@ class TerrainRuntime:
     if self.document is None:
       raise RuntimeError("TerrainRuntime.build_scene_data(): no document loaded")
     dim = int(dim) if dim is not None else self.dim
+    # BAKE_DIM suggestion (the scene path's render/bake split, honored here so a
+    # class-suggested quality applies WITHOUT a scene file): the terrain is
+    # computed at bake_dim; the render mesh (vs dim / drawable render_dimension)
+    # stays at `dim` and downsamples from it. No suggestion -> bake == render,
+    # byte-identical to the old single-dim path.
+    bake_dim = max(dim, int(self.bake_dim_hint)) if self.bake_dim_hint else dim
     payloads = [self._elaborate_payload(dim, simple_material=simple_material, index=0)]
     for i, contrib in enumerate(self._contributors, start=1):
       payloads.append(contrib._elaborate_payload(dim, simple_material=False, index=i))
@@ -840,12 +866,31 @@ class TerrainRuntime:
     class _TerrainDocScene(Scene):
       def __init__(self):
         super().__init__()
+        # RENDER GRAPH — compositor preset + AA. Render params are declared
+        # HERE; the sky() call below AMENDS this scenegraph (the declared-
+        # upstream path) and carries sky params only.
         SG = self.scenegraph(
-            preset="ForwardPBR", skybox_path=skybox,
-            SkyboxIntensity=2.0, DiffuseIntensity=1.0, SpecularIntensity=1.0,
-            AmbientLight=vec3(0.10),
-            ssaa=2,
-            msaa=2)  # scene param -> _mergedParams -> fwd node MSAA RtGroup (3=8x)
+            preset="ForwardPBR",
+            msaa=2,
+            ssaa=0)
+        # PROCEDURAL SKY — always: Hillaire atmosphere + celestial ensemble +
+        # the ACES tone stage, the same sky ork.scene.viewer.py plays from
+        # scene files. Frozen afternoon clock (raking light models relief);
+        # the live time controls ([ ] scrub) still move it. skybox_path is the
+        # IBL warm-up/source only — the visible sky is procedural.
+        self.sky(
+            haze = { "preset": "hazy_day2", "distance_m": 3000.0,  "shadow": True },
+            time_of_day   = 15.5,
+            time_scale    = 0.0,
+            latitude_deg  = 36.0,
+            day_of_year   = 223.0,
+            moon          = True,
+            stars         = True,
+            sun_color     = vec3(1.0, 0.82, 0.60),
+            sun_intensity = 2.5,
+            sun_params    = {"shadow_map_size": 4096,
+                             "shadow_caster": True},
+            skybox_path   = skybox)
         for pl in payloads:
           suffix = pl["suffix"]                       # "" for the primary -> names unchanged
           asset_name = pl["asset_name"]               # display-keyed product dir (#88 v1)
@@ -854,7 +899,7 @@ class TerrainRuntime:
           extent_m, chunk = pl["extent_m"], pl["chunk"]
           # embed the DOCUMENT's elaborated graph directly (no DSL re-trace) — the
           # HeightFieldGenData is what serializes + defers its bake to the C++ load.
-          gd = HeightFieldGenData(dimension=dim, extent_m=extent_m, graph=pl["graph"])
+          gd = HeightFieldGenData(dimension=bake_dim, extent_m=extent_m, graph=pl["graph"])
           gd.asset_name = asset_name
           self._asset_gens.append((asset_name, gd))
           # bake_dim = MAX_DIM: the vertex-source SHADER TEXT bakes the per-chunk array
@@ -866,7 +911,7 @@ class TerrainRuntime:
                                         extent_m=extent_m, chunk=chunk, relax=pl["relax"])
           if dimlog:
             tag = "" if pl["index"] == 0 else f"[{pl['index']}]"
-            print(f"[terrain-dim] SCENE{tag} dim={dim} vs(bake_dim={vs.bake_dim} "
+            print(f"[terrain-dim] SCENE{tag} dim={dim} gd_dim={bake_dim} vs(bake_dim={vs.bake_dim} "
                   f"maxnc={vs.maxnc} HEIGHTS_OFF={vs.HEIGHTS_OFF} TOTAL={vs.TOTAL}) "
                   f"extent={extent_m} chunk={chunk}", flush=True)
           self.asset.Ptex3d(mat_name, dsl_class=pl["mat_cls"], vertex_source=vs, **pl["mat_params"])
@@ -884,12 +929,16 @@ class TerrainRuntime:
           self.entity(entity_name, components=[SG.component(nodes={
               asset_name: {"drawable": TerrainChunkDrawableData(
                   hf_asset=asset_name, material_asset=mat_name, chunk=chunk,
+                  render_dimension=dim,     # mesh/physics grid (manifest = bake_dim)
                   layout_dim_cap=MAX_DIM,   # MUST equal the vs bake_dim above
                   debug_material_assets=dbg_names)},
           })])
 
     scene = _TerrainDocScene()
     sd = ecs.SceneData()
+    if getattr(self, "_source_py", None):
+      from ork.hypergraph.ecs.scene.resolve import portable_scene_path
+      sd.scene_script_path = portable_scene_path(self._source_py)
     scene.build(sd)
     return sd
 

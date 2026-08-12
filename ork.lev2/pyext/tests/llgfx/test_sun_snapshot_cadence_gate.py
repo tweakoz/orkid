@@ -163,7 +163,7 @@ class GateApp(ComponentizedApplication):
       L = lev2.DynamicDirectionalLight()
       L.data.color = vec3(1, 1, 1)
       L.data.intensity = 4.0
-      L.data.shadowBias = 2e-4
+      L.data.shadowBias = 0.05  # metres
       L.data.shadowMapSize = 2048
       L.data.shadowCascadeCount = CASCADES
       L.data.shadowMaxDistance = 250.0

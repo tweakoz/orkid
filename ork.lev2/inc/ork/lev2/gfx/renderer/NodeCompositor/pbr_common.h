@@ -155,6 +155,40 @@ enum class SkySource {
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+// DIRECT DIFFUSE BRDF — which lobe the ANALYTIC lights (point, spot cookie,
+// sun) shade their diffuse with. OREN_NAYAR is the default: rough dielectrics
+// — rock, bark, dirt, cloth — flatten toward their albedo at grazing sun
+// instead of falling off on a cosine, which is what Lambert gets wrong on
+// exactly the surfaces a landscape is made of.
+//
+// The AMBIENT/IBL diffuse is NOT selected by this and stays Lambert: it is a
+// cosine-convolved SH irradiance, and matching it would mean re-convolving the
+// probe, not scaling the read (see the comment at the env site in fwdtools.i2).
+//
+// TWO CURRENCIES, one registry. The crc of the enumerant's NAME is the identity
+// the scene DSL, the pyext and any saved state traffic in — same machinery as
+// CommonStuff::_brdftype / setBRDF(tokens.GGX). The enum's VALUE is a small
+// ordinal, and that ordinal is what the shader UBO carries, so no crc literal
+// is ever baked into shader text (lib_brdf::diffuseBRDF).
+///////////////////////////////////////////////////////////////////////////////
+
+enum class DiffuseBrdfModel : int {
+  LAMBERT    = 0, // albedo/pi — what the engine shaded with before the selector
+  OREN_NAYAR = 1, // qualitative A/B microfacet retro-reflection (DEFAULT)
+  BURLEY     = 2, // Disney: Schlick grazing retro-reflection, roughness-driven f90
+};
+
+// crc(name) -> model. False for an unknown crc, out_ untouched — every caller
+// refuses out loud and names the valid set rather than shading with a guess.
+bool diffuseBrdfModelFromCrc(uint64_t crc, DiffuseBrdfModel& out_);
+// Same registry through the spelling: name -> crc -> model. The name IS the
+// token spelling ("OREN_NAYAR"), so a string in an .ecs and a tokens.X in a
+// scene resolve identically.
+bool diffuseBrdfModelFromName(const std::string& name, DiffuseBrdfModel& out_);
+const char* diffuseBrdfModelName(DiffuseBrdfModel model);
+std::string diffuseBrdfModelValidSet(); // "LAMBERT, OREN_NAYAR, BURLEY"
+
+///////////////////////////////////////////////////////////////////////////////
 // SKYLIGHT slice B3 — cycle state for the procedural IBL feed (spec §2 lagged
 // tier). ONE snapshot texture and ONE job at a time: the SNAPSHOT LAW says the
 // sliced prefilter's source must stay immutable for the job's whole multi-frame
@@ -254,6 +288,11 @@ struct SkyIblState {
   std::atomic<uint64_t> _cycles_started = {0};
   fvec3 _last_snapshot_dir_to_sun     = fvec3(0, 1, 0);
   uint64_t _last_snapshot_medium_hash = 0;
+  // the PRESENTATION half of the same stamp (SkyAtmosphereData
+  // ::hazePresentationHash): the snapshot bakes the artist haze layer into the
+  // sky it captures, so a haze edit has to start a cycle even though it is not a
+  // medium edit and must never re-bake a LUT.
+  uint64_t _last_snapshot_haze_hash = 0;
   bool _ever_snapped                  = false;
 
   // CROSSFADE. A publish replaces every filtered map at once, which lit
@@ -503,6 +542,10 @@ struct CommonStuff : public ork::Object {
   // userProperty) to pick a forced debug technique. 0 = no override = the declared path.
   int _terrainMaterialMode = 0;
   uint64_t _brdftype = 0;
+  // THE DIRECT DIFFUSE LOBE (see DiffuseBrdfModel above). Bound on every PBR
+  // draw as an ordinal; live-editable (the player's POST page row reaches it
+  // through the SceneGraphSystem's UpdatePbrCommon notify).
+  DiffuseBrdfModel _diffuseBrdfModel = DiffuseBrdfModel::OREN_NAYAR;
   float _dppZbias = 1.0e-3f;
   bool _enable_skybox = true;
 

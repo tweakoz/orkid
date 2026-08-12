@@ -360,6 +360,15 @@ void TextureInterface::initTextureFromImage(Texture* ptex, image_ptr_t img, bool
       break;
   }
   tid._autogenmips = autogenmips;
+  if (autogenmips) {
+    // A mip chain the SAMPLER cannot reach is worse than no chain: TextureSamplingModeData's
+    // default minify is LINEAR, which lowers to a non-trilinear mip mode, and its default
+    // _maxMipLevel (8) clamps LOD below the chain's tail on a large atlas. Asking for mips
+    // therefore also selects trilinear + an unclamped LOD range (the backend clamps to the
+    // levels the image actually has).
+    tid._samplingMode._texFiltModeMin = ETextureMinifyFilterMode::LINEAR_MIPMAP_LINEAR;
+    tid._samplingMode._maxMipLevel    = 16;
+  }
   tid._allow_async = asynchronous;
   tid._data        = (const void*) img_to_use->_data->data();
   initTextureFromData(ptex, tid);

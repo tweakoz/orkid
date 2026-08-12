@@ -299,7 +299,10 @@ struct Scene {
   // UNION sun camera enclosing all cascade slices. Walks enabled drawable nodes and calls
   // Drawable::onShadowPreRender on each that wantsShadowCull(), batched into one dispatch phase. When
   // NO drawable wants it the phase is never opened (sunless/non-culled scenes stay byte-identical).
-  void shadowCull(Context* ctx, const CameraMatrices& cammtx);
+  // ...and CULLSETS narrow it: family_mask restricts the fan-out to the caster
+  // families of ONE cullset, so a set is culled exactly once against its own
+  // volume. The all-families default is the pre-cullset call verbatim.
+  void shadowCull(Context* ctx, const CameraMatrices& cammtx, uint32_t family_mask = kShadowFamilyAll);
   void gpuExit(Context* ctx);
 
   void pickWithRay(fray3_constptr_t ray, SgPickBuffer::callback_t callback);

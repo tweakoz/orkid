@@ -264,7 +264,9 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
         return d;
       },
       py::arg("grammar"), py::arg("env") = hm::lsystemmoduledata_ptr_t());
-  hmmod.def("_moduleIdentityHash", [](hm::lsystemmoduledata_ptr_t mod) -> uint64_t {
+  // ANY module: the cook-identity hash is content-only over reflected state, so a gate on any
+  // family's params (a scatter's placement knobs as much as an L-system's grammar) reads it here.
+  hmmod.def("_moduleIdentityHash", [](dflow::dgmoduledata_ptr_t mod) -> uint64_t {
     return hm::hypermeshModuleIdentityHash(mod.get());
   });
   // ---- the FAMILY-NEUTRAL grammar seams (ork::grammar, ork.core). Bound here only because the six
@@ -374,11 +376,16 @@ void pyinit_gfx_hypermesh(py::module& module_lev2) {
       .def_readwrite("source", &hm::LeafScatterModuleData::_source)
       .def_readwrite("per_node", &hm::LeafScatterModuleData::_per_node)
       .def_readwrite("min_gen", &hm::LeafScatterModuleData::_min_gen)
+      .def_readwrite("max_radius", &hm::LeafScatterModuleData::_max_radius)
       .def_readwrite("size", &hm::LeafScatterModuleData::_size)
       .def_readwrite("aspect", &hm::LeafScatterModuleData::_aspect)
       .def_readwrite("roll", &hm::LeafScatterModuleData::_roll)
       .def_readwrite("pitch", &hm::LeafScatterModuleData::_pitch)
+      .def_readwrite("embed", &hm::LeafScatterModuleData::_embed)
+      .def_readwrite("twist", &hm::LeafScatterModuleData::_twist)
+      .def_readwrite("up_bias", &hm::LeafScatterModuleData::_up_bias)
       .def_readwrite("jitter", &hm::LeafScatterModuleData::_jitter)
+      .def_readwrite("jitter_deg", &hm::LeafScatterModuleData::_jitter_deg)
       .def_readwrite("seed", &hm::LeafScatterModuleData::_seed);
   py::class_<hm::MergeMeshData, dflow::DgModuleData, hm::mergemeshdata_ptr_t>(hmmod, "MergeMesh")
       .def_static("createShared", []() -> hm::mergemeshdata_ptr_t { return hm::MergeMeshData::createShared(); })

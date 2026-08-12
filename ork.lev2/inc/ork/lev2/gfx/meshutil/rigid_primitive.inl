@@ -930,7 +930,13 @@ struct InstancedRigidPrimitiveDrawable final : public lev2::InstancedDrawable {
   // phase (submit+wait), so it completes before the render pass reads the results.
   //////////////////////////////////////////////////////////////////////////////
 
-  void enableCull(bool e) { _cullEnabled = e; }
+  // ...and a culled instanced primitive IS the instanced-scatterer sun-cullset
+  // family (drawable.h ShadowFamily): the same class of caster a far cascade
+  // band is authored to leave out. Unculled, it is an ordinary OTHER caster.
+  void enableCull(bool e) {
+    _cullEnabled              = e;
+    this->_shadowFamily = e ? lev2::ShadowFamily::INSTANCED : lev2::ShadowFamily::OTHER;
+  }
 
   void onGpuUpdate(lev2::Context* ctx) const override {
     if (not _cullEnabled)

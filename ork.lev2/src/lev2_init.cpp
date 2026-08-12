@@ -58,6 +58,7 @@
 #include <ork/lev2/gfx/hypermesh/hm_drawable.h>
 #include <ork/lev2/gfx/sdf/sdfdflow.h> // E.7: the sdfgrid family
 #include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h>
+#include <ork/lev2/gfx/terrain/grass_drawable.h>
 ///////////////////////////////////////////////////////////////////////////////
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_node_forward.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/sky_atmosphere.h>
@@ -519,6 +520,7 @@ struct ClassToucher {
     HypermeshGenData::GetClassStatic();
     ScatterSinkData::GetClassStatic();
     terrain::TerrainChunkDrawableData::GetClassStatic();
+    terrain::GrassDrawableData::GetClassStatic();
 
     particle::RingEmitterData::GetClassStatic();
     particle::EllipticalEmitterData::GetClassStatic();
@@ -595,7 +597,6 @@ struct ClassToucher {
 
     RegisterClassX(OutputCompositingNode);
     RegisterClassX(VrOutputNode);
-    RegisterClassX(DualMonoVrOutputNode);
     RegisterClassX(SinglePassStereoVrOutputNode);
     RegisterClassX(ScreenOutputCompositingNode);
 
@@ -778,7 +779,7 @@ struct ClassToucher {
     // HSVG grade post-fx node — same polymorphic-map deserialize requirement;
     // without this touch the .ecs "class":"PostFxNodeHSVG" fails objclazz lookup.
     RegisterClassX(PostFxNodeHSVG);
-    // ACES tonemap post-fx node — the player's --devkeys injects it into the SG
+    // ACES tonemap post-fx node — the player attaches one into the SG
     // _postfx_nodes map, so the Cmd+R round-trip re-deserializes "PostFxNodeACES";
     // without this touch that FindClass fails objclazz (JsonDeserializer assert).
     RegisterClassX(PostFxNodeACES);

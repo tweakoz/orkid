@@ -34,6 +34,17 @@ void RenderQueue::exportRenderableNodes(ork::fixedvector<const RenderQueue::Node
 
 ///////////////////////////////////////////////////////////////////////////////
 
+size_t RenderQueue::countAtOrAboveSortKey(int skey) const {
+  size_t count = 0;
+  for (const Node& n : _nodes) {
+    if (n._renderable and (n._renderable->_sortkey >= skey))
+      count++;
+  }
+  return count;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 void RenderQueue::Reset() { _nodes.clear(); }
 
 ///////////////////////////////////////////////////////////////////////////////

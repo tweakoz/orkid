@@ -5,6 +5,19 @@
 namespace ork::ecssim {
 using eref_ptr_t = std::shared_ptr<EntityRef>;
 
+// SELF-DEFEND. The Entity wrapper is nullable — a lookup that found nothing hands
+// back a null-wrapped Entity rather than Python None — and every transform accessor
+// below dereferences it. Reaching one with nothing inside is a SCRIPT bug (a missed
+// `if not ent:`), so it says so by name instead of faulting inside the engine at
+// some offset the traceback cannot explain.
+static Entity* _entOrThrow(pyentity_ptr_t ent, const char* what) {
+  if (nullptr == ent.get())
+    throw std::runtime_error(
+        std::string("Entity.") + what + ": the entity wrapper is EMPTY (the lookup found "
+        "no entity) - test it with `if ent:` before using it");
+  return ent.get();
+}
+
 void register_entity(typename py::module_& module, typename nanobindadapter::codec_ptr_t type_codec) {
   using namespace ::ork::python;
   /////////////////////////////////////////////////////////////////////////////////
@@ -33,30 +46,30 @@ void register_entity(typename py::module_& module, typename nanobindadapter::cod
                    .prop_rw(
                        "translation",
                        [](pyentity_ptr_t ent) -> fvec3 {
-                         auto trans = ent->transform();
+                         auto trans = _entOrThrow(ent, "translation")->transform();
                          return trans->_translation;
                        },
                        [](pyentity_ptr_t ent, const fvec3& pos) {
-                         auto trans          = ent->transform();
+                         auto trans          = _entOrThrow(ent, "translation")->transform();
                          trans->_translation = pos;
                        })
                    .prop_rw(
                        "orientation",
                        [](pyentity_ptr_t ent) -> fquat {
-                         auto trans = ent->transform();
+                         auto trans = _entOrThrow(ent, "orientation")->transform();
                          return trans->_rotation;
                        },
                        [](pyentity_ptr_t ent, const fquat& rot) {
-                         auto trans          = ent->transform();
+                         auto trans          = _entOrThrow(ent, "orientation")->transform();
                          trans->_rotation = rot;
                        })
                    .prop_rw(
                        "scale",
                        [](pyentity_ptr_t ent) -> float {
-                         return ent->transform()->_uniformScale;
+                         return _entOrThrow(ent, "scale")->transform()->_uniformScale;
                        },
                        [](pyentity_ptr_t ent, float s) {
-                         ent->transform()->_uniformScale = s;
+                         _entOrThrow(ent, "scale")->transform()->_uniformScale = s;
                        })
                    .def(
                        "findComponentByName",
@@ -65,6 +78,10 @@ void register_entity(typename py::module_& module, typename nanobindadapter::cod
                          auto wrapped = pycomponent_ptr_t(comp);
                          return wrapped;
                        })
+                   // FALSY when the wrapper is empty. A lookup that found no entity hands back a
+                   // null-wrapped Entity rather than Python None, and without this every such
+                   // wrapper was TRUTHY — so `if not ent:` passed and the next line faulted.
+                   .def("__bool__", [](pyentity_ptr_t ent) -> bool { return ent.get() != nullptr; })
                    .def("__repr__", [](pyentity_ptr_t ent) -> std::string { return FormatString("ent<%p>", ent.get()); });
   type_codec->registerStdCodec<pyentity_ptr_t>(ent_t);
 };

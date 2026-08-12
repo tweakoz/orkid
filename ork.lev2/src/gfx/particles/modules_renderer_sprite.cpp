@@ -73,10 +73,13 @@ void SpriteRendererInst::onLink(GraphInst* inst) {
   _onLink(inst);
   auto ptcl_context         = inst->_impl.getShared<Context>();
   ptcl_context->setRenderLambda(this, _srd->_draw_order, [this](const RenderContextInstData& RCID) { this->_render(RCID); });
-  // PRE-RENDER GPU upload (render-pass-safe): refresh the material's gradient LUT texture.
+  // PRE-RENDER GPU hook (render-pass-safe): first-frame material gpuInit, then refresh the
+  // material's gradient LUT texture.
   ptcl_context->setGpuUpdateLambda(this, [this](ork::lev2::Context* ctx) {
-    if (_srd->_material)
+    if (_srd->_material) {
+      _srd->_material->gpuInitIfNeeded(ctx);
       _srd->_material->onGpuUpdate(ctx);
+    }
   });
   _input_size               = typedInputNamed<FloatXfPlugTraits>("Size");
   _input_gradient_phase     = typedInputNamed<FloatXfPlugTraits>("GradientPhase");
@@ -210,14 +213,13 @@ void SpriteRendererInst::_render(const ork::lev2::RenderContextInstData& RCID) {
 
   auto material = _srd->_material;
 
-  if (nullptr == material->_pipeline) {
-    Timer gpu_init_timer;
-    gpu_init_timer.Start();
-    material->gpuInit(RCID);
-    OrkAssert(material->_pipeline);
-    double gpu_init_time = gpu_init_timer.SecsSinceStart();
-    printf("gpu_init_time<%f>\n", gpu_init_time);
-  }
+  // NEVER initialize here: this runs inside the recording render pass. The pre-pass hook
+  // (onLink -> setGpuUpdateLambda -> MaterialBase::gpuInitIfNeeded) owns the shader load.
+  OrkAssertIFMT(
+      material->_pipeline != nullptr,
+      "sprite renderer: material<%s> has no pipeline at draw time — its pre-pass gpuInit "
+      "(drawable onGpuUpdate fan-out) never ran",
+      material->GetClass()->Name().c_str());
 
   fmtx4 mtx;
 

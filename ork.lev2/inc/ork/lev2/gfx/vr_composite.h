@@ -106,18 +106,4 @@ double vrCompositeDepthToXrImage(
     uint32_t dstY = 0,
     bool flipV    = false);
 
-////////////////////////////////////////////////////////////////////////////////
-// Per-eye depth CAPTURE (DualMonoVr). Both eyes render through ONE shared forward-node
-// RTG, so the left eye's depth is overwritten by the right eye before composite. Called
-// from the per-eye assemble path (ONLY when the active device ownsHmdPresentation — zero
-// cost desktop), this copies srcDepth (the shared render RTG's depth this eye just wrote)
-// into a caller-owned samplable device-local depth texture via a same-format vkCmdCopyImage
-// recorded IN-FRAME (ordered after the eye's render, before the sibling's). dstDepth is
-// lazily (re)built to the source extent+format and left in SHADER_READ so
-// vrCompositeDepthToXrImage can sample it. Returns false on any unavailable precondition.
-bool vrCaptureEyeDepth(
-    Context* ctx,
-    Texture* srcDepth,
-    std::shared_ptr<Texture>& dstDepth);
-
 } // namespace ork::lev2::vulkan

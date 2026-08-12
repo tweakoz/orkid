@@ -53,7 +53,7 @@
 #                          ships here — sun+IBL down to the sky, post gamma up —
 #                          and moving it onto the medium is a retune, not a fix.
 #   ORK_FORESTSKY_CLOUDBASE  deck altitude offset m ASL (default 1850)
-#   ORK_FORESTSKY_CLOUDGAIN  cloud radiance gain (lit/shadow/haze; default 1.0
+#   ORK_FORESTSKY_CLOUDGAIN  cloud radiance gain (lit/shadow; default 1.0
 #                            — cloudgauge colors were scaled to a dimmer
 #                            32-deg-sun exposure; raise if decks read dark
 #                            against the brighter afternoon sky)
@@ -61,12 +61,6 @@
 #                          feet (establishing shots; 0 = 1.7 m eye default)
 #   FOREST_ADAPT_FLOOR     the tone stage's DEAD-OF-NIGHT adaptation anchor
 #                          (default ADAPT_FLOOR below). See that constant.
-#   FOREST_TIME_SCALE      clock rate (default 25.0, the shipped bench rate).
-#                          0 FREEZES the ephemeris at TIME_OF_DAY — the only way
-#                          to measure a still of this scene at a stated hour: the
-#                          library day runs ~2 deg of sun per wall second, so an
-#                          offscreen boot at midnight otherwise lands in twilight
-#                          (scn_nightcal's header states the same at length).
 #   plus the shared deck knobs via _cloudgauge_input.env_state():
 #   ORK_CLOUDGAUGE_MODE=all|cirrus|alto|cumulus  ORK_CLOUDGAUGE_T=<thresh 0..1.05>
 #   ORK_CLOUDGAUGE_TILE=<mult>  ORK_CLOUDGAUGE_RES=1024|2048
@@ -153,10 +147,10 @@ SOLVED_TIME_OF_DAY  = 9.56923    # hours UT (longitude 0)
 # The knob the architecture puts in front: launch the same forest at any hour.
 TIME_OF_DAY = _envf("ORK_FORESTSKY_TOD", SOLVED_TIME_OF_DAY)
 
-# clock rate. The forest's 25x is an owner bench tweak (waived in the sky-library
-# family invariant); 0 freezes the ephemeris, which is what a measured still of a
-# stated hour needs.
-TIME_SCALE = _envf("FOREST_TIME_SCALE", 25.0)
+# clock rate: 0 — the ephemeris is FROZEN at TIME_OF_DAY. The sky-clock borrow
+# keys ([ ] - = \ while a HUD editor page is up) and the SKY edit page are the
+# ways to move time; a still measured at a stated hour needs no env override.
+TIME_SCALE = 0.0
 
 ###############################################################################
 # THE DEAD-OF-NIGHT ADAPTATION ANCHOR — the one number that decides whether this
@@ -193,19 +187,23 @@ ADAPT_FLOOR = _envf("FOREST_ADAPT_FLOOR", 32.0)
 # occludes them at the horizon.
 TERRAIN_MEAN_M = 1451.0
 
-# deck altitude offset: AGL spec altitudes -> ASL over the alpine terrain
-# (cumulus 1500+1850=3350 ASL ~ 1.9 km over the valley floor).
-CLOUD_BASE_M = _envf("ORK_FORESTSKY_CLOUDBASE", 1850.0)
+# deck altitude offset: AGL spec altitudes -> ASL over the alpine terrain.
+# 3000 (owner, "clouds too low"): cumulus 1500+3000=4500 ASL — clear of the
+# 2500-3500 m ridgelines, grazed only by the highest peaks (relief tops at
+# 5000). ORK_FORESTSKY_CLOUDBASE remains the height control at tojson/launch.
+CLOUD_BASE_M = _envf("ORK_FORESTSKY_CLOUDBASE", 3000.0)
 
 # cloud radiance gain — CloudLayerMtl's constructor colors (mirrored here;
 # keep in sync with _cloud_deck.CloudLayerMtl defaults) were tuned against
-# the dim 32-degree gauge sun; one gain rides all four so the decks track the
+# the dim 32-degree gauge sun; one gain rides them so the decks track the
 # brighter (or, at sunset, dimmer) forest exposure without re-tuning each.
+# overcast_color is along for the ride only: it is a CHROMATICITY now (the
+# deck's fade target is the atmosphere's own in-scatter), so a uniform gain
+# on it cancels out.
 CLOUD_GAIN = _envf("ORK_FORESTSKY_CLOUDGAIN", 1.0)
 _CLOUD_BASE_COLORS = {
     "lit_color":      (0.60, 0.575, 0.55),
     "shadow_color":   (0.155, 0.170, 0.20),
-    "haze_color":     (0.30, 0.38, 0.47),
     "overcast_color": (0.295, 0.305, 0.325),
 }
 
@@ -240,7 +238,13 @@ class ForestProcSkyScene(ForestScene):
     # author's HSVG grade FIRST and the tonemap LAST.
     ##########################
 
-    self.sky(latitude_deg  = SOLVED_LATITUDE_DEG,
+    self.sky(
+             haze={"preset": "hazy_day2", 
+                  "shadow": True,
+                  "distance_m": 2500, 
+                  "phase_g": 0.0,
+                  "scale_height_m": 2000},
+             latitude_deg  = SOLVED_LATITUDE_DEG,
              day_of_year   = SOLVED_DAY_OF_YEAR,
              time_of_day   = TIME_OF_DAY,
              moon          = True,
@@ -250,19 +254,77 @@ class ForestProcSkyScene(ForestScene):
              diffuse_intensity = DIFF_INTENSITY,
              ambient_light     = vec3(0.0),
              time_scale    = TIME_SCALE,
+             # THE SKY THIS SCENE REFILTERS is broad gradients plus a disc — no
+             # angular structure a 512x256 equirect resolves and a 256x128 one
+             # does not. The refilter is linear in snapshot AREA and this clock
+             # runs a rebake cycle every few frames, so the quarter-area capture
+             # is the cheapest frame-time on offer here; a scene whose sky
+             # carries fine structure (a baked HDRI vista) restates it.
+             ibl_snapshot_extent = (256, 128),
              # the display-encode stage's dead-of-night anchor, DECLARED (see
              # ADAPT_FLOOR above) — it rides the .ecs into the player, which is
              # the only process that renders this scene.
-             tonemap       = {"adapt_floor": ADAPT_FLOOR},
+             #tonemap       = {"adapt_floor": ADAPT_FLOOR},
              # cloud shadows off the decks below (strength 0 = engine default =
              # whole cookie path disarmed, so it must be armed per-scene).
              # Extent sized to the alpine sightlines; softness = the mip bias
              # that keeps these fuzzier than the cascade edges.
              # FOREST_CLOUD_SHADOW=<0..1> (0 = off, the A/B leg).
-             sun_params    = {"cloud_shadow_strength":
+             # ...and how much of the SKY term the deck takes with it. The
+             # darkening under a cloud is linear in this, so half the engine
+             # default is half the darkening: at 0.65 the decks sat heavier on
+             # this meadow than the look wants.
+             sun_params    = {# FIVE BANDS, the outermost at 10 km — the alpine
+                              # sightlines run further than the stock ladder's
+                              # 640 m outer radius, past which the engine returns
+                              # every fragment AND every haze-march step
+                              # unshadowed, so distant ridges and the air over
+                              # them carried no shadow at all. The ladder stays
+                              # geometric off the innermost band, which is left at
+                              # its stock 10 m: 10 * 5.6234^4 = 10 km, so the
+                              # sharpest cascade is untouched and the reach is
+                              # bought in the outer bands whose texels are already
+                              # metres wide (10 / 56 / 316 / 1778 / 10000 m).
+                              "cascades": 5,
+                              "shadow_band_radius": 5.0,
+                              "shadow_band_ratio": 4.0,
+                              "shadow_max_distance": 10000,
+                              # CULLSETS — what each band's shadow pass is even
+                              # allowed to look at. The outermost band's reach is
+                              # what sizes the cull volume, so with one shared
+                              # volume and one shared survivor list the km-scale
+                              # band dragged the WHOLE scattered canopy into every
+                              # near band's depth pass as well as its own. Two
+                              # sets fix that: the inner four bands keep
+                              # everything (terrain, the scattered instances, and
+                              # ordinary props), and the outer band takes terrain
+                              # alone — it is there for distant ridges and the
+                              # air above them, and a tree a kilometre out casts
+                              # nothing a viewer can resolve. Trees keep shadowing
+                              # all the way to the near set's outer radius, which
+                              # is further than the 640 m the stock ladder reached
+                              # at all, so the look only gains.
+                              "cullsets": {"near": ["terrain", "instanced", "other"],
+                                           "far":  ["terrain"]},
+                              "band_cullsets": ["near", "near", "near", "near", "far"],
+                              "cloud_shadow_strength":
                                   float(os.environ.get("FOREST_CLOUD_SHADOW", "1.5")),
                               "cloud_shadow_extent": 9000.0,
-                              "cloud_shadow_softness": 0.0})
+                              "cloud_shadow_softness": 4.0,
+                              "cloud_ibl_weight": 0.325,
+                              # Cascade shadow's slice of the SKY term, scene-wide.
+                              # Owner-tuned 2026-08-07: terrain wants its ambient
+                              # UNTOUCHED in tree shadow (0.2 and 0.35 both read
+                              # too dark) — the grass carpet, which does need a
+                              # deep ambient bite, carries its OWN weight instead
+                              # (GrassAmbShadow, 0.4). Live dial kept for tuning.
+                              "cascade_ibl_weight":
+                                  float(os.environ.get("FOREST_CASCADE_IBL", "0.0")),
+                              # Direct-term shadow FLOOR — the lever that BRIGHTENS
+                              # cascade shadows past stock (owner 2026-08-07:
+                              # terrain tree shadow ~25% brighter than stock).
+                              "cascade_floor":
+                                  float(os.environ.get("FOREST_SHADOW_FLOOR", "0.04"))})
 
     # display-side lift: the forest's own HSVG post node (an identity pass at
     # value=gamma=1) — raise gamma so the sky-matched dim frame re-exposes

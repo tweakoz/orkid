@@ -75,6 +75,18 @@ check("requested an append DEVICE ext (non-empty)", bool(dev_append_name))
 check("append DEVICE ext present in final VkDeviceCreateInfo list",
       any((f"device ext append <{dev_append_name}> present=1") in l for l in lines) if dev_append_name else False)
 
+# device-ext AVAILABILITY FILTER leg. A producer may advertise the ext set of the
+# platform it was built against (a Linux-built OpenXR runtime hands back its dma-buf
+# set on macOS); one unsupported name fails vkCreateDevice with
+# VK_ERROR_EXTENSION_NOT_PRESENT and asserts the whole app dead. The backend injects a
+# name no implementation can advertise: it must be DROPPED, and reaching the verdict
+# line at all proves device creation survived the drop.
+req_dev_absent = next((l for l in lines if "request absent device ext" in l), "")
+dev_absent_name = req_dev_absent.split("<", 1)[-1].rstrip(">") if "<" in req_dev_absent else ""
+check("requested an absent DEVICE ext (non-empty)", bool(dev_absent_name))
+check("unsupported DEVICE ext dropped (not in final VkDeviceCreateInfo list)",
+      any((f"device ext absent <{dev_absent_name}> dropped=1") in l for l in lines) if dev_absent_name else False)
+
 if proc.returncode != 0:
     print(f"NOTE child returncode={proc.returncode}")
 

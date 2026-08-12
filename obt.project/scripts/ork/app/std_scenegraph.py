@@ -1,7 +1,6 @@
 import sys, math
 from ork import path as ork_path
 from ork.app.application import ApplicationComponent
-from ork.renderoverrides import depth_prepass_override
 from orkengine.core import vec3, vec4, quat, VarMap, lev2_pyexdir
 from orkengine import lev2 
 sys.path.append(str(ork_path.py_lev2utils)) # add parent dir to path
@@ -216,11 +215,10 @@ class StandardSceneGraphComponent(ApplicationComponent):
 
     if self.using_pbr:
       self.pbr_common = SG.pbr_common
+      # the depth prepass is an ENGINE INVARIANT — every sampler-side depth
+      # consumer (haze shafts, soft particles, water) reads the single-sample
+      # image only the prepass fills, so there is no arm where it is off.
       self.pbr_common.useDepthPrepass = True
-      # ORKID_DPP, when set, has the last word (see ork.renderoverrides).
-      _dpp = depth_prepass_override()
-      if _dpp is not None:
-        self.pbr_common.useDepthPrepass = _dpp
       self.pbr_common.useFloatColorBuffer = self.use_float_color_buffer
 
     self.rendernode = SG.compositorrendernode

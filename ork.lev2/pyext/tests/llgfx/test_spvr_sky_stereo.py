@@ -4,8 +4,8 @@
 #
 # THE DEFECT THIS CLOSES. The skybox fragment derives its view ray by
 # unprojecting the fullscreen quad through inv_vp, and inv_vp arrives from the
-# MONO per-draw provider. Under DMVR that is correct for free (one draw per eye,
-# one matrix per draw). Under single-pass stereo it CANNOT be: one draw carries
+# MONO per-draw provider. For a mono pass that is correct for free (one draw, one
+# matrix per draw). Under single-pass stereo it CANNOT be: one draw carries
 # both views, and VR frusta are per-eye ASYMMETRIC, so no single matrix produces
 # both eyes' rays. The peer authored here (FWD_SKYBOX_PROC_ST) unprojects through
 # spvr_inv_vp[ofx_viewIndex] instead — a one-matrix substitution, everything

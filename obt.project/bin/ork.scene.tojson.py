@@ -32,7 +32,7 @@ from orkengine import core  # core MUST be imported before lev2
 from orkengine import lev2
 from orkengine import ecs
 
-from ork.hypergraph.ecs.scene.resolve import resolve_scene_file, load_scene_class
+from ork.hypergraph.ecs.scene.resolve import resolve_scene_file, load_scene_class, portable_scene_path
 
 
 def parse_args():
@@ -72,6 +72,8 @@ def main():
 
   scene = scene_class()
   sd    = ecs.SceneData()
+  # reflected scene source (token form) — see portable_scene_path()
+  sd.scene_script_path = portable_scene_path(scene_path)
   scene.build(sd)
 
   js = sd.serializeJson()

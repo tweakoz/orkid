@@ -38,15 +38,40 @@ class ShowcaseScene(Scene):
   def __init__(self):
     super().__init__()
 
-    SG = self.scenegraph(
-      preset             = "ForwardPBR",
-      skybox_path        = "<ork_envmaps2>/blender_courtyard.xir",
-      SkyboxIntensity    = 1.0,
-      DiffuseIntensity   = 1.0,
-      SpecularIntensity  = 1.0,
-      AmbientLight       = vec3(0),
-      msaa = 2,
-      ssaa = 1 )
+    # PROCEDURAL SKY (replaces the baked blender_courtyard IBL). The point is
+    # the ANALYTIC celestial sun: the diffuse-BRDF selector (HUD POST page)
+    # moves only analytic light, which the old pure-IBL showcase could not
+    # show. Clock FROZEN — a showcase must be deterministic. Mid-morning sun
+    # (el ~38, az ~99 ESE at this site/hour) forms clear terminators on the
+    # dielectric rows; intensity 3.0 keeps the sun prominent without blowing
+    # out the albedo comparison the grid exists for. No haze, no moon/stars
+    # (frozen daylight — they never rise), no cascades (no ground to catch
+    # them; shadowless keeps the BRDF A/B clean). IBL comes from the sky's
+    # own refiltered snapshot — no envmap is declared or loaded.
+    SG = self.sky(
+      skybox_intensity   = 1.0,
+      diffuse_intensity  = 1.0,
+      specular_intensity = 1.0,
+      ambient_light      = vec3(0),
+      msaa               = 2,
+      ssaa               = 1,
+      latitude_deg  = 36.0,
+      day_of_year   = 223.0,
+      time_of_day   = 8.5,
+      time_scale    = 0.0,
+      celestial     = True,
+      moon          = False,
+      stars         = False,
+      sun_intensity = 3.0,
+      sun_params    = {"shadow_caster": False},
+      # NO tone-stage adaptation: the adaptation exists for scenes with a
+      # night, and this clock is frozen — a deterministic material gauge
+      # wants a fixed transfer function, not one that re-exposes under the
+      # A/B it exists to judge. (Also: with the sky-declared stage attached,
+      # this scene currently renders BLACK — adaptation crush, reported as an
+      # engine defect aug09 — while the player's injected default ACES node,
+      # which the HUD POST page edits, passes the frame unchanged.)
+      tonemap       = False)
 
     # Direct icosphere mesh — subdivisions=4 → 5120 triangles, 2562 vertices.
     # Per-vertex outward-pointing normals (analytic sphere), so no marching-

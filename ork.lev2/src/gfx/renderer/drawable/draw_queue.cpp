@@ -73,6 +73,24 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
                       ? RCFD->userPropertyAs<bool>("renderingPROBE"_crcu)
                       : false;
 
+  // SUN-CASCADE CULLSETS — the ONE family gate. A cascade band draws only the
+  // caster families its cullset subscribes to (the CPD carries the mask); every
+  // other pass carries the all-families default and skips nothing, so a scene
+  // that authors no cullsets enqueues exactly the drawables it always did.
+  // Here rather than in each producer's render callback because "other" (props,
+  // models — anything with no cull of its own) has no callback of its own to
+  // gate, and a family filter that only covered the GPU-culled families would
+  // be a filter with a hole in it.
+  const uint32_t cullset_families =
+      topCPD._sunCascadeShadowPass ? topCPD._sunCascadeCullFamilies : kShadowFamilyAll;
+  const bool cullset_filtering = (cullset_families != kShadowFamilyAll);
+  // per-family census (ORKID_SUN_CULLSET_CENSUS=1; OFF = not one instruction).
+  // The band's enqueued caster count BY FAMILY is the draw-traffic evidence a
+  // cullset rig is judged on — a far band that still enqueues the instanced
+  // family did not filter anything.
+  static const bool s_census = (getenv("ORKID_SUN_CULLSET_CENSUS") != nullptr);
+  int census[kShadowFamilyCount] = {0, 0, 0};
+
   int numdrawables = 0;
 
   bool do_all = (LayerName == "All");
@@ -83,8 +101,8 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
     printf("DrawQueue::enqueueLayerToRenderQueue numlayers<%zu>\n", mLayerLut.size());
     }
   //////////////////////////////////////////////////////////////////////////////////////////////
-  auto do_layer = [target,renderer,&numdrawables,LayerName,is_probe_pass](const lev2::DrawQueueLayer* player){
-      player->_items.atomicOp([player,target,renderer,&numdrawables,LayerName,is_probe_pass](const DrawQueueLayer::itemvect_t& unlocked){
+  auto do_layer = [target,renderer,&numdrawables,LayerName,is_probe_pass,cullset_filtering,cullset_families,&census](const lev2::DrawQueueLayer* player){
+      player->_items.atomicOp([player,target,renderer,&numdrawables,LayerName,is_probe_pass,cullset_filtering,cullset_families,&census](const DrawQueueLayer::itemvect_t& unlocked){
         int max_index = player->_itemIndex;
         for (int id = 0; id < max_index; id++) {
           auto item = unlocked[id];
@@ -99,6 +117,11 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
             if (is_probe_pass && pdrw->_excludeFromProbe) {
               continue;
             }
+            // cullset family gate (see above) — inert unless a band narrowed the mask
+            if (cullset_filtering && (0 == (cullset_families & shadowFamilyBit(pdrw->_shadowFamily)))) {
+              continue;
+            }
+            census[uint32_t(pdrw->_shadowFamily)]++;
             numdrawables++;
             pdrw->enqueueToRenderQueue(item, renderer);
           }
@@ -130,6 +153,19 @@ void DrawQueue::enqueueLayerToRenderQueue(const std::string& LayerName, lev2::IR
       //printf( "layer<%s> count<%d>\n", TestLayerName.c_str(), player->_itemIndex );
       target->debugMarker(FormatString("DrawQueue::enqueueLayerToRenderQueue layer itemcount<%d>", player->_itemIndex + 1));
     }
+  }
+
+  if (s_census and topCPD._sunCascadeShadowPass) {
+    printf(
+        "[cullset] band<%d> layer<%s> mask<0x%x> enqueued terrain<%d> instanced<%d> other<%d> total<%d>\n",
+        topCPD._sunCascadeBand,
+        LayerName.c_str(),
+        cullset_families,
+        census[uint32_t(ShadowFamily::TERRAIN)],
+        census[uint32_t(ShadowFamily::INSTANCED)],
+        census[uint32_t(ShadowFamily::OTHER)],
+        numdrawables);
+    fflush(stdout);
   }
 
   //printf( "DB<%p> enqueued %d drawables\n", this, numdrawables);

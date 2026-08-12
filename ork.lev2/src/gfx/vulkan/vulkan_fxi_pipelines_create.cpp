@@ -78,12 +78,13 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipeline(
   PIPE_CREATE_INFO.pInputAssemblyState = &primclass->_input_assembly_state;
 
   ////////////////////////////////////////////////////
-  // dynamic states (viewport, scissor, blend constants, cull mode, depth write)
-  //  depth write MUST be dynamic: the same material pipeline is submitted into
-  //  both the depth prepass (read/write depth) and the color pass, which runs
-  //  with the depth attachment in DEPTH_READ_ONLY_OPTIMAL. A baked
-  //  depthWriteEnable=TRUE there violates VUID-vkCmdDraw-None-06886.
-  //  _bindPipeline sets it per draw from (baked value AND not read-only pass).
+  // dynamic states (viewport, scissor, blend constants, cull mode)
+  //  Depth write is NOT here: this path BAKES depthWriteEnable from the resolved
+  //  rasterstate. Declaring it dynamic would make _bindPipeline's per-draw computation
+  //  authoritative for every classic/SSBO renderable, and that has been observed to
+  //  corrupt depth write on model/probe renderables. Only _createPipelineMesh declares
+  //  it (see the note there); _bindPipeline gates its setter on _dynamicDepthWrite so
+  //  the state command is never issued against a pipeline that baked it.
   ////////////////////////////////////////////////////
 
   std::vector<VkDynamicState> dynamic_states = {
@@ -591,12 +592,13 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipelineSSBO(vkprimclass_ptr_t primc
   PIPE_CREATE_INFO.pInputAssemblyState = &primclass->_input_assembly_state;
 
   ////////////////////////////////////////////////////
-  // dynamic states (viewport, scissor, blend constants, cull mode, depth write)
-  //  depth write MUST be dynamic: the same material pipeline is submitted into
-  //  both the depth prepass (read/write depth) and the color pass, which runs
-  //  with the depth attachment in DEPTH_READ_ONLY_OPTIMAL. A baked
-  //  depthWriteEnable=TRUE there violates VUID-vkCmdDraw-None-06886.
-  //  _bindPipeline sets it per draw from (baked value AND not read-only pass).
+  // dynamic states (viewport, scissor, blend constants, cull mode)
+  //  Depth write is NOT here: this path BAKES depthWriteEnable from the resolved
+  //  rasterstate. Declaring it dynamic would make _bindPipeline's per-draw computation
+  //  authoritative for every classic/SSBO renderable, and that has been observed to
+  //  corrupt depth write on model/probe renderables. Only _createPipelineMesh declares
+  //  it (see the note there); _bindPipeline gates its setter on _dynamicDepthWrite so
+  //  the state command is never issued against a pipeline that baked it.
   ////////////////////////////////////////////////////
 
   std::vector<VkDynamicState> dynamic_states = {
@@ -805,17 +807,23 @@ vkpipelinestate_ptr_t VkFxInterface::_createPipelineMesh(vkrasterstate_ptr_t vkr
   PIPE_CREATE_INFO.pInputAssemblyState = nullptr;
 
   ////////////////////////////////////////////////////
-  // dynamic states (viewport, scissor, blend constants, cull mode, depth write)
-  //  depth write MUST be dynamic: the same material pipeline is submitted into
-  //  both the depth prepass (read/write depth) and the color pass, which runs
-  //  with the depth attachment in DEPTH_READ_ONLY_OPTIMAL. A baked
-  //  depthWriteEnable=TRUE there violates VUID-vkCmdDraw-None-06886.
-  //  _bindPipeline sets it per draw from (baked value AND not read-only pass).
+  // dynamic states (viewport, scissor, blend constants, cull mode, DEPTH WRITE)
+  //  Depth write is dynamic HERE ONLY. The same mesh pipeline is submitted into passes
+  //  with opposite depth-attachment state — the depth prepass and the read-only-depth
+  //  color pass write/forbid-writes respectively, and the forward node's draw-last tail
+  //  re-enters the color pass writable — so a baked depthWriteEnable cannot be right in
+  //  all of them (a TRUE baked into a DEPTH_READ_ONLY_OPTIMAL pass is
+  //  VUID-vkCmdDraw-None-06886). _bindPipeline sets it per draw from
+  //  (baked writemaskZ AND not read-only pass), gated on _dynamicDepthWrite.
+  //  The classic and SSBO paths deliberately still BAKE it: making them dynamic hands
+  //  the bind-time computation authority over every renderable in the engine, and that
+  //  computation has a known history of getting it wrong outside the mesh path.
   ////////////////////////////////////////////////////
 
   std::vector<VkDynamicState> dynamic_states = {
       VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR, VK_DYNAMIC_STATE_BLEND_CONSTANTS,
-      VK_DYNAMIC_STATE_CULL_MODE_EXT};
+      VK_DYNAMIC_STATE_CULL_MODE_EXT, VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT};
+  pipeline->_dynamicDepthWrite = true;
   VkPipelineDynamicStateCreateInfo dynamicState = {};
   initializeVkStruct(dynamicState, VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
   dynamicState.dynamicStateCount = dynamic_states.size();

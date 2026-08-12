@@ -21,38 +21,59 @@ tokens = CrcStringProxy()
 
 # GLFW cursor keycodes (what ezapp uievents carry); letters are ASCII uppercase.
 KEY_RIGHT, KEY_LEFT, KEY_DOWN, KEY_UP = 262, 263, 264, 265
-KEY_SLASH = 47  # '/' -> shoot
+KEY_ENTER = 257  # Enter -> shoot (was '/'; owner aug07 — keep clear of the sky-clock keys)
 KEY_LSHIFT, KEY_RSHIFT = 340, 344   # shift held -> sprint (SetSprint scales move_force + max_speed)
 KEY_CAPSLOCK = 280                  # caps lock = AUTOWALK toggle (hands-free auto-forward). GLFW reports it
                                     # held while the LED is on (down on lock-on, up on lock-off), so
                                     # held(280) == autowalk engaged; W/S still override it.
 SPRINT = 5.0                        # sprint multiplier; shared default so a VR locomotion layer + walker agree
+# AUTOWALK SPEED RING — with caps lock engaged, each SHIFT press steps this ring instead
+# of holding a sprint. The entries MULTIPLY the scene's authored max_speed (the controller
+# reads |MoveInput| as a scale of the scene's own speed), so a scene's tuning is preserved
+# at every step. Engaging autowalk always starts at 1x: the least surprising thing a fresh
+# hands-free walk can do is walk at the speed the scene was authored for.
+AUTOWALK_SPEEDS = (0.5, 1.0, 2.0, 4.0, 8.0, 16.0)
+AUTOWALK_DEFAULT_STEP = 1           # index of 1.0x
+_SHIFTS = {KEY_LSHIFT, KEY_RSHIFT}
 
 # GAMEPAD (S1): the host forwards the pad as abstract tokens — GamepadButton {button, down}
 # (edge, like InputKey) + GamepadAxes {lx,ly,rx,ry,l2,r2,connected} (per-tick analog). THIS
 # script owns the pad mapping (DUAL-DPAD scheme): LEFT stick + LEFT dpad = locomotion;
-# FACE BUTTONS = a right-dpad of DISCRETE camera-angle steps; R1 = jump; right stick unbound.
+# RIGHT stick VERTICAL = live speed trim (horizontal still unbound);
+# SQUARE/CIRCLE (the right-dpad's left/right) = discrete camera YAW steps; CROSS (its
+# bottom, PS4 X) = fire; TRIANGLE (its top) = jump. There is no camera PITCH step:
+# the owner dropped it, which is what freed the bottom face button for fire — and moving
+# fire off R2 frees both analog triggers for the HUD's editor pages.
+# BOTH BUMPERS ARE THE HOST'S (the HUD page ring, L1 back / R1 forward), which is why jump
+# sits on a face button and no scene binding may claim L1/R1.
 # Button ids arrive as crcstring tokens; cache their hashes once.
 GP_CROSS      = tokens.CROSS.hashed
-GP_TRIANGLE   = tokens.TRIANGLE.hashed
 GP_SQUARE     = tokens.SQUARE.hashed
 GP_CIRCLE     = tokens.CIRCLE.hashed
-GP_L1         = tokens.L1.hashed
-GP_R1         = tokens.R1.hashed
+GP_TRIANGLE   = tokens.TRIANGLE.hashed
 GP_DPAD_UP    = tokens.DPAD_UP.hashed
 GP_DPAD_DOWN  = tokens.DPAD_DOWN.hashed
 GP_DPAD_LEFT  = tokens.DPAD_LEFT.hashed
 GP_DPAD_RIGHT = tokens.DPAD_RIGHT.hashed
 GP_DEADZONE   = 0.15   # stick deadzone before analog contributes
 
-# FACE BUTTONS as a RIGHT-DPAD of DISCRETE CAMERA STEPS (positional, per PRESS EDGE — not
-# held-repeat; held-repeat is a possible follow-up). TRIANGLE(top)=pitch up, CROSS(bottom)=
-# pitch down, SQUARE(left)=yaw left, CIRCLE(right)=yaw right. The C++ controller consumes
-# these as TurnStep/PitchStep (absolute radian deltas), frame-timing robust where a rate is not.
+# RIGHT-STICK VERTICAL = LIVE SPEED TRIM (owner aug08). Centered = 1x, full up = 16x, full
+# down = 0.5x, interpolated in LOG2 space (exponent -1 .. 0 .. +4) so equal deflections feel
+# like equal speed RATIOS — a linear ramp would spend most of its travel above 8x and make
+# the useful 1-2x band a sliver. Deflection is rescaled past the deadzone (0 at the edge,
+# 1 at the rail) so the trim leaves 1x continuously instead of jumping to 1.5x.
+RSTICK_LOG2_UP = 4.0    # full up   -> 2^4  = 16x
+RSTICK_LOG2_DN = -1.0   # full down -> 2^-1 = 0.5x
+# the character controller's own sanity ceiling (kSpeedScaleMax, CharacterController.cpp):
+# the trim is clamped to it here so a stacked input can't ask for a scale that silently
+# saturates on the other side of the message.
+SPEED_SCALE_MAX = 16.0
+
+# FACE BUTTONS: SQUARE(left)/CIRCLE(right) are DISCRETE CAMERA YAW STEPS (positional, per
+# PRESS EDGE — not held-repeat), consumed by the C++ controller as TurnStep (absolute
+# radian deltas), frame-timing robust where a rate is not. CROSS(bottom) fires.
 YAW_STEP_DEG   = 15.0  # per-press camera yaw step (SQUARE / CIRCLE)
-PITCH_STEP_DEG = 10.0  # per-press camera pitch step (TRIANGLE / CROSS)
 YAW_STEP_RAD   = YAW_STEP_DEG * math.pi / 180.0
-PITCH_STEP_RAD = PITCH_STEP_DEG * math.pi / 180.0
 
 # SHOOT TUNING (script-owned, like PARAMS)
 SHOOT_SPEED   = 30.0   # m/s muzzle speed
@@ -83,9 +104,12 @@ class WalkInput:
   def __init__(self):
     self.keys = set()
     self.dbg_events = 0
+    # AUTOWALK speed-ring position (index into AUTOWALK_SPEEDS); SHIFT steps it while caps
+    # lock is engaged, and engaging caps lock resets it to 1x.
+    self.autowalk_step = AUTOWALK_DEFAULT_STEP
+    self.shift_chorded = False
     self.gp_axes = None      # latest analog snapshot (dict) while a pad is connected, else None
     self.gp_buttons = set()  # currently-held gamepad button hashes
-    self.r2_held = False     # R2 trigger-as-button latch (fire on press edge, hysteresis)
     # STAGE-3 liveness (script): per ~5s counters of gamepad messages received + charctl
     # sends dispatched. Prints only after a gamepad message has been seen (silent with no
     # pad), only when nonzero OR just transitioned to zero. rx dies -> notify dispatch
@@ -122,11 +146,24 @@ def onSystemLink(simulation):
       W.charctl, PARAMS, W.ball_spawner), flush=True)
 
 
+def _speed_trim(ax):
+  # RIGHT-STICK VERTICAL -> speed multiplier (1x when no pad / centered). ry is [-1,1] with
+  # UP NEGATIVE (gamepaddevice.h), matching the ly convention above.
+  if not ax:
+    return 1.0
+  v = -ax["ry"]                 # stick up -> positive -> faster
+  a = abs(v)
+  if a <= GP_DEADZONE:
+    return 1.0
+  u = min((a - GP_DEADZONE) / (1.0 - GP_DEADZONE), 1.0)
+  return 2.0 ** ((RSTICK_LOG2_UP if v > 0.0 else RSTICK_LOG2_DN) * u)
+
+
 def _send_state(simulation):
   W    = simulation.vars.walk
   held = W.keys.__contains__
   # LOCOMOTION — |MoveInput| IS the SPEED SCALE (controller semantic: <=1 analog fraction
-  # of base speed; >1 multiplies force AND max speed, clamped 4x controller-side).
+  # of base speed; >1 multiplies force AND max speed, clamped 16x controller-side).
   # Per-source scales (owner call): KEYBOARD 1x · L-DPAD 2x · L-STICK 4x(*deflection).
   # Each source's direction is normalized BEFORE scaling so diagonals don't outrun it.
   def _dirscale(x, z, scale):
@@ -134,10 +171,15 @@ def _send_state(simulation):
     if m < 1e-6: return (0.0, 0.0)
     return (x / m * scale, z / m * scale)
   kz = (1.0 if held(ord("W")) else 0.0) - (1.0 if held(ord("S")) else 0.0)
-  if held(KEY_CAPSLOCK) and kz == 0.0:   # AUTOWALK: caps lock -> auto-forward; W adds, S brakes/reverses
+  autowalking = held(KEY_CAPSLOCK)
+  if autowalking and kz == 0.0:          # AUTOWALK: caps lock -> auto-forward; W adds, S brakes/reverses
     kz = 1.0
   kx = (1.0 if held(ord("D")) else 0.0) - (1.0 if held(ord("A")) else 0.0)
-  kx, kz = _dirscale(kx, kz, 1.0)        # keyboard: 1x base speed
+  # THE SCALE GOES THROUGH _dirscale, not into kz ahead of it: _dirscale NORMALIZES the
+  # direction before applying its scale, so a magnitude written into kz above is discarded
+  # (the autowalk ring stepped, printed, and moved nothing — owner-observed). The ring is
+  # the keyboard source's scale while caps lock is engaged, 1x otherwise.
+  kx, kz = _dirscale(kx, kz, AUTOWALK_SPEEDS[W.autowalk_step] if autowalking else 1.0)
   turn = (0.3 if held(KEY_RIGHT) else 0.0) - (0.3 if held(KEY_LEFT) else 0.0)
   # cursor UP = look up (positive semantic pitch = view/camera rises)
   pitch = (0.3 if held(KEY_UP) else 0.0) - (0.3 if held(KEY_DOWN) else 0.0)
@@ -156,9 +198,21 @@ def _send_state(simulation):
     m = math.sqrt(rx * rx + rz * rz)
     if m > 1e-6:
       sx, sz = (rx / m) * 4.0 * min(m, 1.0), (rz / m) * 4.0 * min(m, 1.0)
-    # RIGHT STICK: unbound — camera angle is the FACE BUTTONS (discrete TurnStep/PitchStep).
+    # RIGHT STICK: vertical is the SPEED TRIM below; horizontal unbound — camera angle is
+    # the FACE BUTTONS (discrete TurnStep/PitchStep).
   mx = kx + dx + sx
   mz = kz + dz + sz                     # stacked sources exceed 4? controller clamps at 4x
+  # SPEED TRIM applies to the ASSEMBLED magnitude, after every source has been normalized
+  # and scaled: direction is untouched, so it modulates keyboard, dpad, stick, normal walk
+  # and autowalk identically, in one place. Against the autowalk ring it is a MOMENTARY
+  # MULTIPLIER, not an override: the ring is the cruise setting, and a centered stick is
+  # exactly 1.0, so releasing the stick lands back on the ring value with nothing to resume.
+  trim = _speed_trim(ax)
+  if trim != 1.0:
+    mx, mz = mx * trim, mz * trim
+    m = math.sqrt(mx * mx + mz * mz)
+    if m > SPEED_SCALE_MAX:
+      mx, mz = mx * SPEED_SCALE_MAX / m, mz * SPEED_SCALE_MAX / m
   turn  = max(-0.3, min(0.3, turn))
   pitch = max(-0.3, min(0.3, pitch))
   W.sends += 1  # STAGE-3 liveness: script -> character-controller dispatch
@@ -166,9 +220,11 @@ def _send_state(simulation):
   W.charctl.notify(tokens.TurnInput,  {tokens.rate: float(turn)})
   W.charctl.notify(tokens.PitchInput, {tokens.rate: float(pitch)})
   # SPRINT: keyboard SHIFT only (the C++ controller SETS the scale, not accumulates). Gamepad
-  # sprint is unbound — R1 is JUMP now; L3 (left-stick click) is the ready pad-sprint candidate:
+  # sprint is unbound — TRIANGLE is JUMP; L3 (left-stick click) is the ready pad-sprint candidate:
   #   if GP_L3 in gpb: sprint = SPRINT
-  sprint = SPRINT if (held(KEY_LSHIFT) or held(KEY_RSHIFT)) else 1.0
+  # SHIFT is the SPEED RING while autowalk is engaged (handled on the key edge above), so
+  # it must not also hold a sprint there — one key, one meaning per mode.
+  sprint = SPRINT if ((held(KEY_LSHIFT) or held(KEY_RSHIFT)) and not autowalking) else 1.0
   W.charctl.notify(tokens.SetSprint, {tokens.scale: float(sprint)})
 
 
@@ -213,13 +269,30 @@ def onSystemNotify(simulation, evID, table):
       W.dbg_events += 1
       print("[walk_input] InputKey key=%s down=%s" % (key, down), flush=True)
     if down:
+      # EDGE ONLY: a key already in the held set is a platform auto-repeat, and a repeat
+      # must not step the speed ring (or fire a jump) a second time.
+      repeat = key in W.keys
       W.keys.add(key)
+      if key == KEY_CAPSLOCK and not repeat:
+        W.autowalk_step = AUTOWALK_DEFAULT_STEP   # fresh engage -> 1x
+      if key in (KEY_LSHIFT, KEY_RSHIFT) and not repeat:
+        W.shift_chorded = False                   # a fresh hold, nothing chorded onto it yet
+      elif W.keys & _SHIFTS:
+        # SHIFT IS ALSO A CHORD KEY (the host's shift-` steps the HUD page ring), so a
+        # shift press that carries another key is not a speed press. Any other key going
+        # down during the hold disarms this one; the ring steps on the RELEASE of a shift
+        # that was pressed alone. That is the only way this script can tell the two apart
+        # without knowing what the host consumed.
+        W.shift_chorded = True
       if key == 32:  # SPACE -> one-shot jump
         W.charctl.notify(tokens.Jump, {})
-      if key == KEY_SLASH:  # '/' -> shoot (synchronous CameraRay query + spawn)
+      if key == KEY_ENTER:  # Enter -> shoot (synchronous CameraRay query + spawn)
         _shoot(simulation)
     else:
       W.keys.discard(key)
+      if key in (KEY_LSHIFT, KEY_RSHIFT) and not W.shift_chorded and KEY_CAPSLOCK in W.keys:
+        W.autowalk_step = (W.autowalk_step + 1) % len(AUTOWALK_SPEEDS)
+        print("[walk_input] autowalk speed %gx" % AUTOWALK_SPEEDS[W.autowalk_step], flush=True)
     _send_state(simulation)
     return
   if evID.hashed == tokens.GamepadButton.hashed:  # GAMEPAD: abstract button edge (token id)
@@ -230,13 +303,11 @@ def onSystemNotify(simulation, evID, table):
     down = table[tokens.down]
     if down:
       W.gp_buttons.add(h)
-      if h == GP_R1:  # R1 -> one-shot jump (was CROSS; CROSS is now a camera-down step)
+      if h == GP_TRIANGLE:  # TRIANGLE -> one-shot jump (the bumpers are the HUD's)
         W.charctl.notify(tokens.Jump, {})
-      # FACE BUTTONS as a right-dpad of DISCRETE CAMERA STEPS (per press edge):
-      elif h == GP_TRIANGLE:  # top    -> pitch step UP
-        W.charctl.notify(tokens.PitchStep, {tokens.radians: float(PITCH_STEP_RAD)})
-      elif h == GP_CROSS:     # bottom -> pitch step DOWN
-        W.charctl.notify(tokens.PitchStep, {tokens.radians: float(-PITCH_STEP_RAD)})
+      elif h == GP_CROSS:     # bottom (PS4 X) -> FIRE (same _shoot as Enter; was R2)
+        _shoot(simulation)
+      # SQUARE / CIRCLE as DISCRETE CAMERA YAW STEPS (per press edge):
       elif h == GP_SQUARE:    # left   -> yaw step LEFT
         W.charctl.notify(tokens.TurnStep, {tokens.radians: float(-YAW_STEP_RAD)})
       elif h == GP_CIRCLE:    # right  -> yaw step RIGHT
@@ -256,19 +327,12 @@ def onSystemNotify(simulation, evID, table):
       W.gp_axes = {"lx": table[tokens.lx], "ly": table[tokens.ly],
                    "rx": table[tokens.rx], "ry": table[tokens.ry],
                    "l2": table[tokens.l2], "r2": table[tokens.r2]}
-      # R2 TRIGGER = FIRE (same _shoot as '/'): analog trigger as a button — edge on
-      # press with HYSTERESIS (>0.5 fires, must fall below 0.3 to re-arm) so a held
-      # half-squeeze can't machine-gun on axis jitter.
-      r2 = W.gp_axes["r2"]
-      if not W.r2_held and r2 > 0.5:
-        W.r2_held = True
-        _shoot(simulation)
-      elif W.r2_held and r2 < 0.3:
-        W.r2_held = False
+      # BOTH TRIGGERS ARE UNBOUND HERE: fire moved to CROSS, and L2/R2 now belong to the
+      # player's HUD editor pages (value adjust). The axes still arrive and are still
+      # published in gp_axes for a scene that wants them.
     else:  # pad unplugged -> zero everything the pad was driving
       W.gp_axes = None
       W.gp_buttons.clear()
-      W.r2_held = False
     _send_state(simulation)
 
 

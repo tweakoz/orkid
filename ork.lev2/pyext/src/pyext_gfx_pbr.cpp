@@ -337,6 +337,19 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               _SKYATMO_PROP_FLOAT("starlight_intensity", _starlightIntensity)
               _SKYATMO_PROP_FLOAT("moon_rayleigh_strength", _moonRayleighStrength)
               _SKYATMO_PROP_FLOAT("airglow_altitude_km", _airglowAltitudeKm)
+              // AERIAL PERSPECTIVE / ground haze — presentation tier, deliberately
+              // OUTSIDE mediumHash(): tweaking any of these re-lights the frame
+              // and must never re-bake the static LUTs.
+              _SKYATMO_PROP_FLOAT("haze_density", _hazeDensity)
+              _SKYATMO_PROP_FLOAT("haze_scale_height", _hazeScaleHeight)
+              _SKYATMO_PROP_FLOAT("haze_phase_g", _hazePhaseG)
+              _SKYATMO_PROP_FLOAT("haze_max_distance_km", _hazeMaxDistanceKm)
+              _SKYATMO_PROP_VEC3("haze_scatter_tint", _hazeScatterTint)
+              _SKYATMO_PROP_VEC3("haze_inscatter_tint", _hazeInscatterTint)
+              // 0/1/2 = off / inline / quarter-res, and the artistic gain on the
+              // shaft term both armed modes honour identically (1 = physical).
+              _SKYATMO_PROP_FLOAT("haze_sun_shadow", _hazeSunShadow)
+              _SKYATMO_PROP_FLOAT("haze_sun_shadow_gain", _hazeSunShadowGain)
               // slice B3 — IBL feed policy (the lagged tier)
               _SKYATMO_PROP_FLOAT("ibl_refilter_angle_deg", _iblRefilterAngleDeg)
               // chaining mode's own minimum sun step (degrees); see the header
@@ -405,6 +418,12 @@ void pyinit_gfx_pbr(py::module& module_lev2) {
               "ibl_feed_enable",
               [](pbr::skyatmospheredata_ptr_t a) -> bool { return a->_iblFeedEnable; },
               [](pbr::skyatmospheredata_ptr_t a, bool v) { a->_iblFeedEnable = v; })
+          .def_property(
+              // OFF disarms the forward haze march outright (the armed uniform
+              // goes to zero and the shader branch is never taken).
+              "aerial_perspective_enable",
+              [](pbr::skyatmospheredata_ptr_t a) -> bool { return a->_aerialPerspectiveEnable; },
+              [](pbr::skyatmospheredata_ptr_t a, bool v) { a->_aerialPerspectiveEnable = v; })
           .def_property_readonly(
               "medium_hash", [](pbr::skyatmospheredata_ptr_t a) -> uint64_t { return a->mediumHash(); })
           .def("__repr__", [](pbr::skyatmospheredata_ptr_t a) -> std::string {

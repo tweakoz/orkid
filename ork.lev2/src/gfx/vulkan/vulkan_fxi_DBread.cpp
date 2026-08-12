@@ -712,8 +712,10 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       // Defensive cap — not a hardware limit. Vulkan spec minimum for
       // maxPerStageDescriptorUniformBuffers is 12; MoltenVK + most desktop
       // GPUs support 16+. Bumped from 8 in PBR2 Phase 2 when the per-lobe
-      // UBO split pushed the PBR fragment shader's UBO count over 8.
-      OrkAssert(refs->_uniblks.size() <= 16);
+      // UBO split pushed the PBR fragment shader's UBO count over 8; bumped
+      // from 16 when lib_sky (ublk_sky_atmo, aerial perspective) joined the
+      // forward fragment stage and took it to 17.
+      OrkAssert(refs->_uniblks.size() <= 32);
     }
     /////////////////////////////////
     auto num_issbos = shader_input_stream->ReadItem<size_t>();
@@ -851,10 +853,16 @@ vkfxsfile_ptr_t VkFxInterface::_readFromDataBlock(datablock_ptr_t vkfx_datablock
       auto vk_program      = std::make_shared<VkFxShaderPass>(vulkan_shaderfile.get());
       vk_program->_tek_name = str_tek_name;
       vk_tek->_vk_passes.push_back(vk_program);
-      // atomic: globally unique program index (shader loads may run concurrently)
+      // atomic: globally unique program index (shader loads may run concurrently).
+      // This counter is process-lifetime: it never recycles, so a long session that
+      // loads many shader files walks it monotonically toward the budget ceiling.
       static std::atomic<int> prog_index(0);
       vk_program->_pipeline_bits_prg = prog_index.fetch_add(1);
-      OrkAssert(vk_program->_pipeline_bits_prg < 255);
+      OrkAssertIFMT(
+          vk_program->_pipeline_bits_prg < kmax_pipeline_bits_prg,
+          "shader program id budget (%d) exhausted — widen the program field in the pipeline key "
+          "(see VkFxInterface::_pipelineBitsForShader)",
+          kmax_pipeline_bits_prg);
 
       if (str_stages.find("V") != std::string::npos) {
         auto str_vtx_name = tecniq_input_stream->ReadIndexedString(chunkreader);

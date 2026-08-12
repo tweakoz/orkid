@@ -143,13 +143,22 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
   // terrain texbake), so an offscreen player waiter (--offscreen / --snapshot) knows the bake is pending
   // BEFORE the first onGpuUpdate even runs (the marker can't wait on the render-thread build to fire it).
   // Ended exactly once: WARM-bind, COLD rebind, or an inert (no-section) build — see endSectionAsync().
-  if (self->_section_bake) {
+  // ...unless this drawable belongs to a node that LAUNCHES HIDDEN (_launch_hidden): its
+  // bake cannot start until a host switches its set on, so claiming it at stage time would
+  // park the waiter on work that may never begin. That case registers below instead.
+  if (self->_section_bake and not self->_launch_hidden) {
     asyncWorkBegin("hypermesh_section_bake");
     state->_sectionAsyncPending = true;
   }
 
   drw->_liveRecompute = [self, state](Context* ctx, ComputeDrawable* drawable) {
     if (not state->_built) {
+      // the launch-hidden half of the marker above: first build IS the moment the bake
+      // becomes pending, and the same endSectionAsync() closes it exactly once.
+      if (self->_section_bake and self->_launch_hidden and not state->_sectionAsyncPending) {
+        asyncWorkBegin("hypermesh_section_bake");
+        state->_sectionAsyncPending = true;
+      }
       //////////////////////////////////////////////////////////////////
       // resolve the material — direct assignment wins; else poll the resolver
       // (the AssetSystem may materialize artifacts a frame after stage time).
@@ -476,6 +485,11 @@ drawable_ptr_t HypermeshDrawableData::createDrawable() const {
       drawable->_perViewComputeShadow   = cdd->_perViewComputeShadow;   // cascade-cull fix
       drawable->_argsSSBOShadow         = cdd->_argsSSBOShadow;         // cascade-cull fix
       drawable->_shadowStorageOverrides = cdd->_shadowStorageOverrides; // cascade-cull fix
+      // SUN-CULLSET FAMILY: a hypermesh that runs the INSTANCE cull is the
+      // instanced-scatterer family (the canopy a far band has no business
+      // drawing); an un-culled one is an ordinary caster and stays OTHER.
+      if (cdd->_perViewComputeShadow)
+        drawable->_shadowFamily = ShadowFamily::INSTANCED;
       drawable->_oneShotRender          = cdd->_oneShotRender;  // A2: the one-shot impostor-bake hook
       //////////////////////////////////////////////////////////////////
       // E.6/2.12 — collect MaterialParamSinks: resolve each sink's param

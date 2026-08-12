@@ -91,11 +91,11 @@ def author(floor=None):
     env.pop(FLOOR_ENV, None)
   else:
     env[FLOOR_ENV] = repr(float(floor))
-  # frozen clock + the dead of night: the anchor under test acts only there, and
-  # a scene authored mid-day would still serialize it, but a reader of this gate
-  # should see the configuration the number is FOR.
+  # dead of night: the anchor under test acts only there, and a scene authored
+  # mid-day would still serialize it, but a reader of this gate should see the
+  # configuration the number is FOR. (The forest clock is frozen by authoring —
+  # TIME_SCALE = 0.0 in the scene — so only the hour needs stating.)
   env["ORK_FORESTSKY_TOD"] = "0.0"
-  env["FOREST_TIME_SCALE"] = "0.0"
   out = os.path.join(tempfile.mkdtemp(prefix="forestfloor_"), "scene.ecs")
   proc = subprocess.run([tool, "-i", SCENE, "-o", out], env=env,
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,

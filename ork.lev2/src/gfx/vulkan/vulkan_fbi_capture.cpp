@@ -467,8 +467,14 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
   region.bufferRowLength   = 0; // 0 means tightly packed
   region.bufferImageHeight = 0; // 0 means tightly packed
   // baseArrayLayer selects ONE layer of a layered (multiview) attachment; layerCount stays 1
-  //  because the destination is a single 2D host image.
-  region.imageSubresource  = {VK_IMAGE_ASPECT_COLOR_BIT, 0, uint32_t(capbuf->_captureLayer), 1};
+  //  because the destination is a single 2D host image. The ASPECT comes off the buffer's
+  //  usage — a depth attachment copied with the color aspect is an invalid transfer.
+  const bool is_depth_src = ("depth"_crcu == rtbi->_usage);
+  region.imageSubresource  = {
+      VkImageAspectFlags(VkFormatConverter::_instance.aspectForUsage(rtbi->_usage)),
+      0,
+      uint32_t(capbuf->_captureLayer),
+      1};
   region.imageOffset       = {int32_t(x), int32_t(y), 0}; // Specify where to copy from in the source image
   region.imageExtent       = {uint32_t(w), uint32_t(h), 1};
 
@@ -625,10 +631,52 @@ captureasync_ptr_t VkFrameBufferInterface::captureAsFormat(
       break;
     }
     ///////////////////////////////////////////////////////
-    case EBufferFormat::R32F:
-      OrkAssert(false);
-      // glReadPixels(x, y, w, h, GL_RED, GL_FLOAT, capbuf->_data);
+    ///////////////////////////////////////////////////////
+    // single-channel float readback. THE DEPTH PATH: a Z32F attachment (a shadow
+    // cascade slice, a depth prepass buffer) copied out as raw float NDC depth,
+    // one value per texel. The staging bytes ARE R32F already, so the capture
+    // declares the source as R32F rather than as the image's Z32F: the
+    // conversion step only exists to reinterpret channel layouts, and depth has
+    // none to reinterpret. Restoring a depth image lands in the depth-attachment
+    // layout, not the color one the generic restore assumes.
+    ///////////////////////////////////////////////////////
+    case EBufferFormat::R32F: {
+      bool is_d32_source = (vkfmt == VK_FORMAT_D32_SFLOAT);
+      bool is_r32_source = (vkfmt == VK_FORMAT_R32_SFLOAT);
+      OrkAssert(is_d32_source || is_r32_source);
+      capbuf->_image->initWithFormat(w, h, destfmt);
+
+      size_t bufsize = w * h * 4;
+      auto staging_buffer =
+          std::make_shared<VulkanBuffer>(_contextVK, bufsize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, "capture_staging_r32f");
+
+      vkCmdCopyImageToBuffer(cb->_vkcmdbuf, vkimg, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, staging_buffer->_vkbuffer, 1, &region);
+
+      if (is_depth_src)
+        rtbi->_transitionToRenderTarget(cb);
+      else
+        rtbi->_transitionFromHostReadTo(cb, _restore_layout);
+
+      auto capbuf_impl             = capbuf->_impl.makeShared<VkCaptureBufferImpl>();
+      capbuf_impl->staging_buffer  = staging_buffer;
+      capbuf_impl->_actual_format  = VK_FORMAT_R32_SFLOAT;
+      capbuf_impl->_desired_format = destfmt;
+
+      auto async_impl            = std::make_shared<VkCaptureAsyncImpl>(_contextVK);
+      async_impl->capture_buffer = capbuf;
+      async_impl->width          = w;
+      async_impl->height         = h;
+      async_impl->format         = destfmt;
+      async_impl->_stagingBuffer = staging_buffer;
+      async_impl->_copySubmitted = true;
+
+      future->_impl.setShared<VkCaptureAsyncImpl>(async_impl);
+      future->_captureBuffer       = async_impl->capture_buffer;
+      future->_on_capture_complete = on_capture_complete;
+
+      _contextVK->_pending_captures.push_back(future);
       break;
+    }
     case EBufferFormat::R32UI:
       OrkAssert(false);
       // glReadPixels(x, y, w, h, GL_RED_INTEGER, GL_UNSIGNED_INT, capbuf->_data);

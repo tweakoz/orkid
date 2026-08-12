@@ -29,7 +29,7 @@ ImplementReflectionX(ork::lev2::SinglePassStereoVrOutputNode, "SinglePassStereoV
 namespace ork::lev2 {
 ///////////////////////////////////////////////////////////////////////////////
 // Per-EYE CPU stage bracket for the post-scene half (extract/postfx/downsample).
-//  Same resolve-once-per-eye shape DualMonoVr uses: OrkProfilerSampleScope stamps
+//  Resolved once per eye: OrkProfilerSampleScope stamps
 //  ONE static series per source site, and this node's eye body is one lambda run
 //  twice, so the macro alone cannot separate L from R.
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,10 +93,9 @@ struct SPVRIMPL {
     auto dsbufR                   = _ssaadownsamplebufferR->createRenderTarget(_vrnode->_format);
     dsbufR->_debugName            = "MsaaDownsampleBufferR";
 
-    // head-locked debug HUD panel — identical two-layer (slate + premultiplied text)
-    //  construction as DualMonoVr, for the same FontMan glyph-blend reason documented
-    //  there. Kept a peer implementation rather than shared: the two nodes are meant to
-    //  be diffable against each other, not coupled.
+    // head-locked debug HUD panel — two-layer construction (slate + premultiplied text),
+    //  which is what FontMan's glyph blend needs: text drawn straight over a translucent
+    //  slate would blend twice.
     _hudpanelmtl.gpuInit(context, "orkshader://ui");
     _hudpanel_tek_slate = _hudpanelmtl.technique("uidev_modcolor_alpha");
     _hudpanel_tek_text  = _hudpanelmtl.technique("uitextured_prema");
@@ -109,10 +108,10 @@ struct SPVRIMPL {
     _doinit = false;
   }
   ///////////////////////////////////////
-  // Head-locked debug HUD panel into THIS eye's just-downsampled buffer. Same
-  //  placement math and the same slate+premultiplied-text layering as DualMonoVr —
-  //  the panel is drawn per eye with that eye's V*P, so it carries natural stereo
-  //  disparity at the published depth. No-op when the overlay is disabled.
+  // Head-locked debug HUD panel into THIS eye's just-downsampled buffer, in the
+  //  slate+premultiplied-text layering built above. The panel is drawn per eye with that
+  //  eye's V*P, so it carries natural stereo disparity at the published depth. No-op when
+  //  the overlay is disabled.
   void _drawHudPanel(CompositorDrawData& drawdata, bool is_left_eye) {
     auto& overlay = VrHudOverlay::instance();
     if (not overlay._enabled.load())
@@ -136,7 +135,7 @@ struct SPVRIMPL {
                                    : _stereomatrices->MVPR(worldModel);
 
     // vertical placement is MEASURED through this eye's own mvp (two-point NDC span at
-    //  the panel depth) so no projection convention is assumed — see the DualMonoVr peer.
+    //  the panel depth) so no projection convention is assumed.
     float yoff = 0.0f;
     if (overlay._yoffset_frac != 0.0f) {
       const fvec4 a         = fvec4(0, 0, -dist, 1).transform(mvp);
@@ -248,9 +247,9 @@ struct SPVRIMPL {
   }
   ///////////////////////////////////////
   // R6 SEAM: copy ONE layer of the layered scene color into this eye's own 2D RtGroup,
-  //  at 1:1 and unfiltered. Everything after this point is the DualMonoVr per-eye chain
-  //  verbatim (postfx nodes, the downsample/dither blit, the HUD panel), so those
-  //  consumers keep their exact shape and the OpenXR handoff never sees a layered target.
+  //  at 1:1 and unfiltered. Everything after this point is a plain per-eye chain (postfx
+  //  nodes, the downsample/dither blit, the HUD panel) against 2D targets, so the OpenXR
+  //  handoff never sees a layered target.
   rtgroup_ptr_t _extractEye(CompositorDrawData& drawdata, rtgroup_ptr_t layered, bool is_left_eye) {
     auto context = drawdata.context();
     auto fbi     = context->FBI();
@@ -264,9 +263,9 @@ struct SPVRIMPL {
     if (nullptr == dst) {
       dst        = std::make_shared<RtGroup>(context, layered->width(), layered->height(), MsaaSamples::MSAA_1X);
       dst->_name = is_left_eye ? "spvr.eyeExtractL" : "spvr.eyeExtractR";
-      // no depth: nothing downstream of the scene pass reads it (DualMonoVr's postfx
-      //  chain and downsample are color-only), and a depth attachment here would only
-      //  be an unwritten one.
+      // no depth: nothing downstream of the scene pass reads it (the postfx chain and
+      //  downsample are color-only), and a depth attachment here would only be an
+      //  unwritten one.
       dst->_needsDepth = false;
       auto buf         = dst->createRenderTarget(src_buf->format());
       buf->_debugName  = is_left_eye ? "SpvrEyeExtractL" : "SpvrEyeExtractR";
@@ -298,8 +297,7 @@ struct SPVRIMPL {
     return dst;
   }
   ///////////////////////////////////////
-  // The per-eye downsample/dither blit — byte-for-byte the DualMonoVr operation, run
-  //  against this eye's extracted 2D source.
+  // The per-eye downsample/dither blit, run against this eye's extracted 2D source.
   void _downsample(
       CompositorDrawData& drawdata, //
       RtBuffer* render_out,         //
@@ -352,7 +350,7 @@ struct SPVRIMPL {
     context->debugPopGroup();
   }
   ///////////////////////////////////////
-  // Same world/root resolve DualMonoVr does: the spawncam VIEW matrix (world->root) fed
+  // World/root resolve: the spawncam VIEW matrix (world->root) fed
   //  to the device BEFORE the pose update, so this frame's eye cameras already carry the
   //  walker's placement and no draw path composes a root transform per draw.
   fmtx4 _computeRootMatrix(CompositorDrawData& drawdata) {
@@ -443,8 +441,8 @@ void SinglePassStereoVrOutputNode::gpuInit(lev2::Context* pTARG, int iW, int iH)
 }
 ///////////////////////////////////////////////////////////////////////////////
 void SinglePassStereoVrOutputNode::onGpuUpdate(CompositorDrawData& drawdata) {
-  // exactly-once-per-frame device update, for the same XR pacing contract DualMonoVr
-  //  documents (one xrWaitFrame/xrBeginFrame per frame). The world/root transform is fed
+  // exactly-once-per-frame device update — the XR pacing contract is one
+  //  xrWaitFrame/xrBeginFrame per frame. The world/root transform is fed
   //  in FIRST so this frame's eye cameras carry the walker's placement.
   auto impl        = _impl.get<SPVRIMPL_ptr_t>();
   fmtx4 rootmatrix = impl->_computeRootMatrix(drawdata);
@@ -598,7 +596,7 @@ void SinglePassStereoVrOutputNode::composite(CompositorDrawData& drawdata) {
         auto framedata = drawdata.RCFD();
 
         /////////////////////////////////////////////////////////////////////////////
-        // XR runtime handoff — the SAME two per-eye textures DualMonoVr hands over.
+        // XR runtime handoff — the two final per-eye textures.
         //  Depth layers are NOT published by this node in phase 1: the scene depth is a
         //  2-layer array and the depth-layer capture path takes a single 2D texture, so
         //  publishing one eye's slice under both eyes' names would be a silent lie. The
@@ -620,8 +618,7 @@ void SinglePassStereoVrOutputNode::composite(CompositorDrawData& drawdata) {
         }
 
         /////////////////////////////////////////////////////////////////////////////
-        // desktop mirror — identical to the DualMonoVr composite it must be diffable
-        //  against (same buffers, same halves, same flip decision, same techniques).
+        // desktop mirror — the two per-eye buffers side by side in the presented surface.
         /////////////////////////////////////////////////////////////////////////////
         drawdata.context()->debugPushGroup("SinglePassStereoVrOutputNode::to_screen");
 
@@ -652,9 +649,9 @@ void SinglePassStereoVrOutputNode::composite(CompositorDrawData& drawdata) {
           fbi->pushViewport(extents);
           fbi->pushScissor(extents);
 
-          // presentation origin — see the DualMonoVr peer for the derivation: the eye
-          //  buffers are top-down (runtime convention), the presented surface origin is the
-          //  context's, and DWI::quad2D is the only quad path that applies that correction.
+          // presentation origin: the eye buffers are top-down (runtime convention), the
+          //  presented surface origin is the context's, and DWI::quad2D is the only quad
+          //  path that applies that correction.
           const fvec4 uvrect = _flipY ? fvec4(0, 0, 1, 1) : fvec4(0, 1, 1, -1);
 
           auto tex_l = impl->_ssaadownsamplebufferL->texture(0).get();

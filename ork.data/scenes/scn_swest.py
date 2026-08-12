@@ -30,6 +30,8 @@
 # shots need a fly variant — the scn_msaatest/scn_roadscene env precedent):
 #   SWEST_FLY=1          walkable off -> the player's --camdist/--camheight orbit cam
 #   SWEST_SPAWN=x,y,z    walker spawn override (drop the eye into a chosen village)
+#   SWEST_HAZE=<preset>  distance haze via sky(haze=): "clear" | "hazy_day" |
+#                        "bladerunner" (HAZE_PRESETS; unset = pure geophysical)
 #   SWEST_TERRA_MODE=proc  per-pixel terrain material (bypass the stored atlas —
 #                        the [M]-devkey live path; the atlas hides per-pixel-slope
 #                        defects behind the render-dim mesh normal)
@@ -150,6 +152,14 @@ class SwestScene(Scene):
     matmode = os.environ.get("SWEST_MATMODE", "proc")
     if matmode not in ("proc", "stored"):
       raise ValueError("SWEST_MATMODE must be 'proc' or 'stored' (got %r)" % matmode)
+
+    # SWEST_HAZE=<preset> — distance haze / aerial perspective, authored through
+    # sky(haze=): a HAZE_PRESETS name ("clear", "hazy_day", "bladerunner").
+    # Unset = None = the same pure-geophysical sky "clear" names (zero artist
+    # density is the engine default). A bad name raises with the vocabulary
+    # (sky()'s own fail-loud). Env because an OFFSCREEN still needs its look
+    # before the first frame (the SWEST_TOD precedent).
+    haze = os.environ.get("SWEST_HAZE") or None
     stored   = (matmode == "stored")
     bake_res = int(os.environ.get("SWEST_BAKE_RES", "4096"))
     AdobeCls  = AdobeStored  if stored else Adobe
@@ -210,6 +220,7 @@ class SwestScene(Scene):
         # ensemble at all (no moon, no stars, no display-exposure drive), the
         # pre-sun baseline this toggle exists for.
         celestial     = (os.environ.get("SWEST_NOSUN") != "1"),
+        haze          = haze,
         moon          = True,
         stars         = True,
         sun_color     = vec3(1.0, 0.82, 0.60),
@@ -236,10 +247,15 @@ class SwestScene(Scene):
                          # bias that keeps these fuzzier than the buildings'
                          # 4K-cascade edges in the same frame.
                          # SWEST_CLOUD_SHADOW=<0..1> (0 = off, the A/B leg).
+                         # ...and how much of the SKY term goes with the deck.
+                         # The darkening is linear in this, so half the engine
+                         # default is half the darkening — at 0.65 the decks sat
+                         # heavier on the vale than the look wants.
                          "cloud_shadow_strength":
                              float(os.environ.get("SWEST_CLOUD_SHADOW", "3.0")),
                          "cloud_shadow_extent": 9000.0,
-                         "cloud_shadow_softness": 0.0})
+                         "cloud_shadow_softness": 0.0,
+                         "cloud_ibl_weight": 0.325})
 
     # SWEST_IBLFADE=<frames>: override the procedural-IBL crossfade window
     # (SkyAtmosphereData.ibl_crossfade_frames; 0 = hard swap). Unset = engine
@@ -248,15 +264,24 @@ class SwestScene(Scene):
     # would capture a half-faded IBL blend (hub gate-author rule, 2026-07-30).
     iblfade = os.environ.get("SWEST_IBLFADE")
     if iblfade is not None:
-      from orkengine.lev2 import SkyAtmosphereData
-      atmo = SkyAtmosphereData()
+      # SHARE sky()'s published atmosphere when there is one: the engine reads
+      # "SkyAtmosphere" as a whole pointer, so a second SkyAtmosphereData under
+      # the same key would erase the haze knobs sky(haze=) just wrote (the
+      # whole-pointer law _sky_dome.py states). Publish a fresh object only
+      # when sky() declared none.
+      atmo = None
+      for method, args, _ in self.SG._decl.sub_calls:
+        if method == "declareParams" and "SkyAtmosphere" in args[0]:
+          atmo = args[0]["SkyAtmosphere"]
+      if atmo is None:
+        from orkengine.lev2 import SkyAtmosphereData
+        atmo = SkyAtmosphereData()
+        self.SG._decl.sub_calls.append(("declareParams", ({"SkyAtmosphere": atmo},), {}))
       atmo.ibl_crossfade_frames = int(iblfade)
-      self.SG._decl.sub_calls.append(("declareParams", ({"SkyAtmosphere": atmo},), {}))
 
     # swest never asks for a depth prepass, it INHERITS one (the ECS path adds it
-    # automatically because NodeDef._skipAutoDepthPrepass defaults false). To force
-    # it either way, set ORKID_DPP=0/1 — engine-wide, every scene, no scene edit
-    # (ork/renderoverrides.py).
+    # automatically because NodeDef._skipAutoDepthPrepass defaults false). The
+    # prepass is an engine invariant — there is no arm that turns it off.
 
     self.system_data("HypermeshSystem")
 
@@ -385,10 +410,12 @@ class SwestScene(Scene):
                                                         # hm_mesh pool (and chunkier = the look
                                                         # the owner liked)
                                      floor     = False,
-                                     ladder_drop = 3.0,  # == swestvale KIVA_SINK_M: ladder
-                                                         # base on the shaft floor (sync by
-                                                         # hand until the kiva goes fully
-                                                         # parametric)  # SHAFT kiva: the asset owns NOTHING
+                                     ladder_drop = 3.0,  # MESH-LOCAL drop: the kiva instances
+                                                         # at swestvale BLD_SCALE, so the world
+                                                         # drop = 3.0 x BLD_SCALE == KIVA_SINK_M
+                                                         # (3.0 x BLD_SCALE) at ANY scale — the
+                                                         # hand-sync now rides the ONE scale
+                                                         # datum  # SHAFT kiva: the asset owns NOTHING
                                                          # below grade — no chamber-floor slab
                                      **({"sectioned": True} if stored else {}))
     kiva_sampler = (_mat("sw_sampler_kiva", SectionArrayPBR, instance_variation = 0.10)
@@ -444,7 +471,7 @@ class SwestScene(Scene):
     #   SWEST_CLOUD_TILE=<mult>   cloud-cell world size   (default 1.0)
     #   SWEST_CLOUD_BASE=<m>      deck altitude offset    (default 2000 ->
     #                             cumulus base 1500+2000 = 3500 m ASL)
-    #   SWEST_CLOUD_GAIN=<mult>   deck radiance gain (lit/shadow/haze colors;
+    #   SWEST_CLOUD_GAIN=<mult>   deck radiance gain (lit/shadow colors;
     #                             the scn_forest exposure-coupling
     #                             precedent — the library colors were tuned
     #                             against the dimmer gauge exposure)
@@ -460,7 +487,6 @@ class SwestScene(Scene):
           colors       = {
               "lit_color":      (0.60 * cg, 0.575 * cg, 0.55 * cg),
               "shadow_color":   (0.155 * cg, 0.170 * cg, 0.20 * cg),
-              "haze_color":     (0.30 * cg, 0.38 * cg, 0.47 * cg),
               "overcast_color": (0.295 * cg, 0.305 * cg, 0.325 * cg),
           })
 

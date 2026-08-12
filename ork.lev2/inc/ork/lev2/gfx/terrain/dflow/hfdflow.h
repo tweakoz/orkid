@@ -564,16 +564,48 @@ using thermalerodemoduledata_ptr_t = std::shared_ptr<ThermalErodeModuleData>;
 //   - terr  = the TOTAL surface column height (normalized; *height_scale_m = meters).
 //             A future bedrock/regolith split is `terr - bedrock = soil_depth` — additive.
 //   - sed   = SUSPENDED load (meters); the future Sediment (+Debris) layer precursor.
-//   - the erosion/deposition strengths are isolated, per-cell-READY scalars (a future
-//     per-cell erodibility field replaces the uniform coefficient at one line).
+//   - the erosion strength is now a PER-CELL scalar: the OPTIONAL "Erodibility" image
+//     input multiplies erosion_rate_per_s cell-by-cell (deposition stays uniform).
 //   - the water/vel fields already exist internally; exposing Flow/Flowdir/Sediment as
-//     extra output plugs (Milestone B) needs no solver change.
+//     extra output plugs needs no solver change.
 //
-// Milestone A (this): single hydraulic layer, single "Out" = Height; pure carving +
-// transport, no thermal/spread yet. float plugs (all PHYSICAL): sim_time_s, rain_mps,
-// evaporation_per_s, flow_speed_max_mps, capacity_Kc, erosion_rate_per_s,
-// deposition_rate_per_s. NO baked iteration count (derived). ~6 SSBOs, 3 dispatches/
-// iteration (each its own submit — the one-descriptor-set-per-pipeline rule).
+// ERODIBILITY (optional input, dimensionless): 1.0 = exactly the uniform rate, 0 = armored
+// (no carving), >1 = softer than nominal; clamped to [0,16] (a stability guard — a negative
+// multiplier would carve BACKWARDS). UNWIRED is the default and is BIT-IDENTICAL to the
+// uniform solver (the shader gate is a dispatch-uniform branch, so the field is never read).
+// A stratigraphy column feeds it directly: hardness per layer -> erodibility = 1/hardness.
+//
+// TWO STABILITY LAWS bound the solver at BOTH ends of the resolution range; both are
+// derived per-bake from (cell_size_m, sim_time_s) and ride the params SSBO:
+//
+//  1. PER-STEP EXCHANGE LIMIT (bed_clamp_frac). The signed bed change of one step is
+//     clamped to +/- bed_clamp_frac * (local relief) — down = b - min(4 neighbours),
+//     up = max(4 neighbours) - b — the same guard flow_erode has always carried. So a
+//     cell can neither be carved below its lowest neighbour nor built above its highest
+//     in one step, and mass is conserved (whatever leaves the bed enters suspension).
+//     This is what makes the grid-axis 2-cell (Nyquist) mode DECAY rather than ring: a
+//     checkerboard peak has up = 0 (it may only carve) and a pit has down = 0 (it may
+//     only fill), so the mode can never be amplified — at ANY cell size. A
+//     central-difference slope is blind to that mode, which is why the uniform solver
+//     needed creep to hold it down and this one does not.
+//
+//  2. SCALE-AWARE CREEP CEILING (creep_max_cells). creep_m2ps stays a PHYSICAL
+//     diffusivity (m^2/s) — resolution-independent by design — but a physical
+//     diffusivity smooths the SAME NUMBER OF METERS at every resolution, so a value
+//     that reads as "a couple of cells" at 32 m cells erases everything a 1 m grid can
+//     resolve. The effective diffusivity is therefore bounded by the per-node smoothing
+//     LENGTH measured in CELLS:  sqrt(4*D*sim_time_s) in [floor, creep_max_cells] * cell,
+//     i.e. D_eff = clamp(creep_m2ps, (0.5*cell)^2/(4*T), (creep_max_cells*cell)^2/(4*T)).
+//     The ceiling only bites where the authored creep would smooth away more than
+//     creep_max_cells cells per pass (fine grids); coarse grids keep the authored value
+//     verbatim, so existing graphs are unchanged. The floor is a numerical guard only.
+//
+// Single hydraulic layer, single "Out" = Height; pure carving + transport, no thermal/
+// spread yet (a bedrock/regolith split stays additive). float plugs (all PHYSICAL):
+// sim_time_s, rain_mps, evaporation_per_s, flow_speed_max_mps, capacity_Kc,
+// erosion_rate_per_s, deposition_rate_per_s, creep_m2ps, bed_clamp_frac, creep_max_cells.
+// NO baked iteration count (derived). ~6 SSBOs,
+// 3 dispatches/iteration (each its own submit — the one-descriptor-set-per-pipeline rule).
 ///////////////////////////////////////////////////////////////////////////////
 
 struct EroxModuleData : public TerrainModuleData {

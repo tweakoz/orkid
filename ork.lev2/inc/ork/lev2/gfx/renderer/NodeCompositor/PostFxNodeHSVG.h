@@ -24,6 +24,12 @@ public:
   float _value = 1.0f;
   float _gamma = 1.0f;
 
+  // ps_hsvg clamps value to 1 — ahead of the tone stage it would clip the HDR
+  // frame instead of grading it.
+  int chainStage() const final {
+    return CHAINSTAGE_GRADE;
+  }
+
   void doGpuInit(lev2::Context* pTARG, int w, int h) final; // virtual
   void DoRender(CompositorDrawData& drawdata) final;        // virtual
 

@@ -107,6 +107,11 @@ double vrCompositeBlitToXrImage(
   bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(cb, &bi);
 
+  // GPU timing (gpupassstats.h): this CB has no render pass, so the bracket is legal
+  // at its very ends. Both eyes go through here and sum under the one name.
+  int gpuslice = ctxVK->_mtSliceTimer ? ctxVK->_mtSliceTimer->sliceBegin(cb, "xr:blit") : -1;
+  ctxVK->_debugLabelBegin(cb, "xr:blit"); // same name into an attached capture tool
+
   auto barrier = [&](VkImage img,
                      VkImageLayout oldL,
                      VkImageLayout newL,
@@ -278,6 +283,9 @@ double vrCompositeBlitToXrImage(
       VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
   srcImgObj->_currentLayout = srcRestore;
 
+  if (ctxVK->_mtSliceTimer)
+    ctxVK->_mtSliceTimer->sliceEnd(cb, gpuslice);
+  ctxVK->_debugLabelEnd(cb);
   vkEndCommandBuffer(cb);
 
   // submit + WAIT (one-shot sync — X3 v1). Submit via the thread-safe queue wrapper
@@ -302,150 +310,6 @@ double vrCompositeBlitToXrImage(
   vkFreeCommandBuffers(ctxVK->_vkdevice, ctxVK->_vkcmdpool_graphics, 1, &cb);
 
   return elapsed;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// vrCaptureEyeDepth (OPENXR X3, depth) — PRESERVE one eye's scene depth before the sibling
-// eye overwrites the shared forward-render depth. Both DualMonoVr eyes render through ONE
-// forward RTG (per-viewport _bufferKey), so at composite time only the last-rendered eye's
-// depth survives. This captures each eye's depth (a straight same-format vkCmdCopyImage) into
-// a caller-owned samplable device-local depth texture, recorded IN-FRAME (secondary CB,
-// executed within this frame's primary CB — ordered AFTER the eye's forward render and BEFORE
-// the sibling eye's, so it reads the correct per-eye depth; a separate submit+wait would race
-// the not-yet-submitted render). dstDepth is lazily (re)built to match the source
-// extent+format and left in SHADER_READ so the depth-conversion pass below can sample it.
-// Returns false on any unavailable precondition (caller skips the depth layer for that frame).
-////////////////////////////////////////////////////////////////////////////////
-
-static void _ensureSamplableDepthTexture(
-    VkContext* ctxVK, texture_ptr_t& dst, uint32_t w, uint32_t h, VkFormat vkfmt) {
-  if (dst) {
-    if (auto ex = dst->_impl.tryAsShared<VulkanTextureObject>()) {
-      auto so = ex.value()->samplingImage();
-      if (so and so->_format == vkfmt and uint32_t(dst->_width) == w and uint32_t(dst->_height) == h)
-        return; // still valid — reuse
-    }
-  }
-  auto tex        = std::make_shared<Texture>();
-  tex->_width     = int(w);
-  tex->_height    = int(h);
-  tex->_texType   = ETEXTYPE_2D;
-  tex->_debugName = "vr_depth_capture";
-  tex->_source    = ETextureSource::FROM_RTG;
-  auto vk_tex     = tex->_impl.makeShared<VulkanTextureObject>(ctxVK->_txi.get());
-
-  auto ici = makeVKICI(int(w), int(h), 1, vkfmt, 1);
-  // TRANSFER_SRC so the ORKID_XR_DEPTH_DEBUG readback can copy the captured depth to a host
-  //  buffer (the D16 swapchain image itself is DEPTH_STENCIL_ATTACHMENT-only — not readable).
-  ici->usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT |
-               VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-  vk_tex->_imgobj[0]                 = std::make_shared<VulkanImageObject>(ctxVK, ici, "vr_depth_capture");
-  vk_tex->_imgobj[0]->_currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  vk_tex->_vksampler                 = ctxVK->_sampler_base;
-
-  auto IVCI   = createImageViewInfo2D(vk_tex->_imgobj[0]->_vkimage, vkfmt, VK_IMAGE_ASPECT_DEPTH_BIT);
-  VkResult ok = vkCreateImageView(ctxVK->_vkdevice, IVCI.get(), nullptr, &vk_tex->_imgobj[0]->_vkimageview);
-  OrkAssert(VK_SUCCESS == ok);
-
-  vk_tex->_vkdescriptor_info[0]              = std::make_shared<VkDescriptorImageInfo>();
-  vk_tex->_vkdescriptor_info[0]->imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-  vk_tex->_vkdescriptor_info[0]->imageView   = vk_tex->_imgobj[0]->_vkimageview;
-  vk_tex->_vkdescriptor_info[0]->sampler     = vk_tex->_vksampler->_vksampler;
-  vk_tex->_descset_sampling                  = vk_tex->_vkdescriptor_info[0];
-  vk_tex->_img_sampling                      = vk_tex->_imgobj[0];
-  dst = tex;
-}
-
-bool vrCaptureEyeDepth(Context* ctx_base, Texture* srcDepth, texture_ptr_t& dstDepth) {
-  auto ctxVK = static_cast<VkContext*>(ctx_base);
-  if (not ctxVK or not srcDepth)
-    return false;
-  auto try_vktex = srcDepth->_impl.tryAsShared<VulkanTextureObject>();
-  if (not try_vktex)
-    return false;
-  auto srcImgObj = try_vktex.value()->samplingImage();
-  if (not srcImgObj or srcImgObj->_vkimage == VK_NULL_HANDLE)
-    return false;
-  VkImage srcImage        = srcImgObj->_vkimage;
-  VkFormat srcFmt         = srcImgObj->_format;
-  VkImageLayout srcLayout = srcImgObj->_currentLayout;
-  uint32_t w              = uint32_t(srcDepth->_width);
-  uint32_t h              = uint32_t(srcDepth->_height);
-  if (w == 0 or h == 0 or srcFmt == VK_FORMAT_UNDEFINED)
-    return false;
-
-  _ensureSamplableDepthTexture(ctxVK, dstDepth, w, h, srcFmt);
-  auto dstImgObj   = dstDepth->_impl.getShared<VulkanTextureObject>()->samplingImage();
-  VkImage dstImage = dstImgObj->_vkimage;
-
-  // In-frame secondary CB (barriers/copy are illegal inside a render pass — suspend/resume,
-  //  mirroring _initTextureFromRtBuffer's in-frame RTG-texture GPU-op idiom).
-  bool was_active = ctxVK->_renderPassActive;
-  if (was_active)
-    ctxVK->suspendRenderPass();
-  auto cmdbuf      = ctxVK->beginRecordCommandBuffer("vrCaptureEyeDepth");
-  auto cmdbuf_impl = cmdbuf->_impl.getShared<VkSecondaryCommandBufferImpl>();
-  auto cb          = cmdbuf_impl->_vkcmdbuf;
-
-  const VkImageSubresourceRange depthRange{VK_IMAGE_ASPECT_DEPTH_BIT, 0, 1, 0, 1};
-  auto depthBarrier = [&](VkImage img, VkImageLayout oldL, VkImageLayout newL, //
-                          VkAccessFlags srcA, VkAccessFlags dstA,               //
-                          VkPipelineStageFlags srcS, VkPipelineStageFlags dstS) {
-    VkImageMemoryBarrier b{};
-    initializeVkStruct(b, VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-    b.srcAccessMask       = srcA;
-    b.dstAccessMask       = dstA;
-    b.oldLayout           = oldL;
-    b.newLayout           = newL;
-    b.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    b.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    b.image               = img;
-    b.subresourceRange    = depthRange;
-    vkCmdPipelineBarrier(cb, srcS, dstS, 0, 0, nullptr, 0, nullptr, 1, &b);
-  };
-
-  // Src depth was last a depth attachment or a sampled texture; restore it to the SAME layout
-  //  the engine tracks so the RTG's next-frame transition sees no discontinuity.
-  VkImageLayout srcRestore = (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED) //
-                                 ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-                                 : srcLayout;
-  bool restoreIsSampled    = (srcRestore == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-  depthBarrier(
-      srcImage, srcLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-      VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT,
-      VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-  depthBarrier(
-      dstImage, dstImgObj->_currentLayout, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, //
-      0, VK_ACCESS_TRANSFER_WRITE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
-
-  VkImageCopy copy{};
-  copy.srcSubresource = VkImageSubresourceLayers{VK_IMAGE_ASPECT_DEPTH_BIT, 0, 0, 1};
-  copy.srcOffset      = {0, 0, 0};
-  copy.dstSubresource = VkImageSubresourceLayers{VK_IMAGE_ASPECT_DEPTH_BIT, 0, 0, 1};
-  copy.dstOffset      = {0, 0, 0};
-  copy.extent         = {w, h, 1};
-  vkCmdCopyImage(
-      cb, srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy);
-
-  depthBarrier(
-      dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, //
-      VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-  depthBarrier(
-      srcImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, srcRestore, VK_ACCESS_TRANSFER_READ_BIT,
-      restoreIsSampled ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-      VK_PIPELINE_STAGE_TRANSFER_BIT,
-      restoreIsSampled ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
-
-  srcImgObj->_currentLayout = srcRestore;
-  dstImgObj->_currentLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-  ctxVK->endRecordCommandBuffer(cmdbuf);
-  ctxVK->enqueueSecondaryCommandBuffer(cmdbuf);
-  if (was_active)
-    ctxVK->resumeRenderPass();
-  return true;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -635,8 +499,8 @@ static bool _ensureDepthConvPipeline(VkContext* ctxVK, VkFormat depthFmt) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // ORKID_XR_DEPTH_DEBUG=1 discriminator (one-shot). The D16 swapchain image is not readable
-// (DEPTH_STENCIL_ATTACHMENT-only), so read back the CAPTURED source depth (standard-Z, made
-// TRANSFER_SRC-capable in _ensureSamplableDepthTexture), then apply the SAME conversion the FS
+// (DEPTH_STENCIL_ATTACHMENT-only), so read back the CAPTURED source depth (standard-Z; the caller's
+// source texture carries TRANSFER_SRC usage), then apply the SAME conversion the FS
 // does to report the PUBLISHED reverse-Z distribution. Prints rawStdZ min/max/mean + an 8-bucket
 // histogram of published revZ (bucket0 = background/far@floor, bucket7 = near geometry). Reading:
 //   degenerate histogram (all one bucket / noise)  => CAPTURE garbage (layout/aspect/uninit).
@@ -861,6 +725,10 @@ double vrCompositeDepthToXrImage(
   bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
   vkBeginCommandBuffer(cb, &bi);
 
+  // GPU timing: the depth-conversion pass, bracketed outside its render-pass instance.
+  int gpuslice = ctxVK->_mtSliceTimer ? ctxVK->_mtSliceTimer->sliceBegin(cb, "xr:depthconv") : -1;
+  ctxVK->_debugLabelBegin(cb, "xr:depthconv");
+
   auto imgBarrier = [&](VkImage img, VkImageLayout oldL, VkImageLayout newL, //
                         VkAccessFlags srcA, VkAccessFlags dstA,              //
                         VkPipelineStageFlags srcS, VkPipelineStageFlags dstS) {
@@ -928,6 +796,9 @@ double vrCompositeDepthToXrImage(
       VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT,
       VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
+  if (ctxVK->_mtSliceTimer)
+    ctxVK->_mtSliceTimer->sliceEnd(cb, gpuslice);
+  ctxVK->_debugLabelEnd(cb);
   vkEndCommandBuffer(cb);
 
   VkFenceCreateInfo fci{};

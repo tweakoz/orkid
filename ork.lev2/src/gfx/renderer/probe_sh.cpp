@@ -298,7 +298,7 @@ void ProbeSHProjector::project(Context* ctx, texture_ptr_t cubetex, int face_dim
     std::memcpy(m->_mappedaddr, &p, sizeof(AccumParams));
     fxi->unmapStorageBuffer(m.get());
 
-    ci->beginDispatchPhase();
+    ci->beginDispatchPhase("probe:sh");
     ci->bindStorageBuffer(_cs_accum, 0, _params_accum);
     ci->bindStorageBuffer(_cs_accum, 1, _ssbo_partials);
     ci->bindSampler(_cs_accum, 2, cubetex.get());
@@ -346,7 +346,7 @@ void ProbeSHProjector::projectEquirect(
     std::memcpy(m->_mappedaddr, &p, sizeof(EquiParams));
     fxi->unmapStorageBuffer(m.get());
 
-    ci->beginDispatchPhase();
+    ci->beginDispatchPhase("probe:sh");
     ci->bindStorageBuffer(_cs_equi, 0, _params_equi);
     ci->bindStorageBuffer(_cs_equi, 1, _ssbo_partials);
     ci->bindSampler(_cs_equi, 2, equitex.get());
@@ -370,7 +370,7 @@ void ProbeSHProjector::_reduceInto(Context* ctx, int slot) {
   std::memcpy(m->_mappedaddr, &p, sizeof(ReduceParams));
   fxi->unmapStorageBuffer(m.get());
 
-  ci->beginDispatchPhase();
+  ci->beginDispatchPhase("probe:sh");
   ci->bindStorageBuffer(_cs_reduce, 0, _params_reduce);
   ci->bindStorageBuffer(_cs_reduce, 1, _ssbo_partials);
   ci->bindStorageBuffer(_cs_reduce, 2, _ssbo_sh);

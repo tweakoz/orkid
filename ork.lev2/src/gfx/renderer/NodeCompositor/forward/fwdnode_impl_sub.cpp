@@ -43,6 +43,17 @@ void ForwardPbrNodeImpl::_render_dpp(forward_pass_ptr_t fpass) {
   // VkFrameBufferInterface::transitionDepthForWriting.
   FBI->transitionDepthForWriting(rtg_out);
   FBI->PushRtGroup(rtg_out.get());
+  { // TEMPORARY (aug11) prepass draw census — ORKID_DEBUG_RTGID=1
+    static const bool s_dppcensus = (getenv("ORKID_DEBUG_RTGID") != nullptr);
+    if (s_dppcensus) {
+      int f = _currentContext->GetTargetFrame();
+      if ((f % 500) == 0) {
+        printf("[RTGID] DPP      f<%d> rtg<%p> enqueued<%zu>\n",
+               f, (void*)rtg_out.get(), _currentIRenderer->countEnqueuedAtOrAboveSortKey(0));
+        fflush(stdout);
+      }
+    }
+  }
   _currentIRenderer->drawEnqueuedRenderables(true);
   FBI->PopRtGroup();
   _currentContext->debugPopGroup();
@@ -425,28 +436,39 @@ void ForwardPbrNodeImpl::_update_shadow_maps() {
 ////////////////////////////////////////
 
 namespace {
-constexpr size_t k_off_shmtx  = 0;   // mat4 sun_shadow_matrix[4]
-constexpr size_t k_off_splits = 256; // vec4 sun_split_distances (per-band SELECT radii, world meters)
-constexpr size_t k_off_dir    = 272; // vec4 sun_dir (xyz dir, w has_sun)
-constexpr size_t k_off_color  = 288; // vec4 sun_color (rgb, w intensity)
-constexpr size_t k_off_params = 304; // vec4 sun_shadow_params (bias, pcf, count, texel)
-constexpr size_t k_off_basis  = 320; // vec4 sun_cascade_basis (xyz = band anchor)
-constexpr size_t k_off_texel  = 336; // vec4 sun_cascade_texel (per-band 1/dim — S2b took the slot
-                                     //  the old sun_cascade_basis[1] reserved; same offset, and a
-                                     //  uniform-dim rig writes 1/map_dim four times)
-constexpr size_t k_off_ckmtx  = 352; // mat4 sun_cookie_matrix (world -> cookie uv)
-constexpr size_t k_off_ckpar  = 416; // vec4 sun_cookie_params (enable, strength, lod, EXTINCTION tau)
+// PER-BAND SCALARS PAST BAND 3. A vec4 carries four of them and the ladder now
+// reserves five, so each per-band scalar table is a PAIR of vec4s: the base one
+// (bands 0..3, every offset it ever had relative to its neighbours) plus a _hi
+// one whose .x is band 4. The alternative — a std140 float[5] — pads every
+// element to 16 bytes (80 bytes for 5 floats) and makes the shader's dynamic
+// index a stride-4 walk, so the pair is both smaller and simpler.
+constexpr size_t k_off_shmtx  = 0;   // mat4 sun_shadow_matrix[kSunCascadeStorage]
+constexpr size_t k_off_splits = 320; // vec4 sun_split_distances (bands 0..3 SELECT radii, world meters)
+constexpr size_t k_off_splits_hi = 336; // vec4 sun_split_distances_hi (x = band 4)
+constexpr size_t k_off_dir    = 352; // vec4 sun_dir (xyz dir, w has_sun)
+constexpr size_t k_off_color  = 368; // vec4 sun_color (rgb, w intensity)
+constexpr size_t k_off_params = 384; // vec4 sun_shadow_params (bias METRES, pcf, count, texel)
+constexpr size_t k_off_basis  = 400; // vec4 sun_cascade_basis (xyz = band anchor)
+constexpr size_t k_off_texel  = 416; // vec4 sun_cascade_texel (bands 0..3 1/dim — S2b took the slot
+                                     //  the old sun_cascade_basis[1] reserved, and a uniform-dim rig
+                                     //  writes 1/map_dim four times)
+constexpr size_t k_off_texel_hi = 432; // vec4 sun_cascade_texel_hi (x = band 4's 1/dim)
+constexpr size_t k_off_ckmtx  = 448; // mat4 sun_cookie_matrix (world -> cookie uv)
+constexpr size_t k_off_ckpar  = 512; // vec4 sun_cookie_params (enable, strength, lod, EXTINCTION tau)
 // S2a snapshot-flip crossfade — APPENDED (every offset above unchanged, so a
 // consumer that never reads the fade is untouched by this growth). The mat4
 // ARRAY is last on purpose — see the member-order note in stdtools.i2: the
 // offset following a mat4[] is rounded to 64 by the block reflection but not by
 // plain std140, and the two must not disagree about any member.
-constexpr size_t k_off_psplits = 432; // vec4 sun_split_distances_prev
-constexpr size_t k_off_pbasis  = 448; // vec4 sun_cascade_basis_prev (xyz = its band anchor)
-constexpr size_t k_off_fade    = 464; // vec4 sun_shadow_fade (weight, cur slice base, prev slice base, -)
-constexpr size_t k_off_skyamb  = 480; // vec4 sky_ambient (x = measured background luminance) — inserted BEFORE the trailing mat4[] per the member-order law (merge of the exposure split across S2b)
-constexpr size_t k_off_pshmtx  = 496; // mat4 sun_shadow_matrix_prev[4] (the OUTGOING snapshot's fit)
-constexpr size_t k_ubo_size    = 768; // reflected block size (the array's trailing pad included; was 752 pre-sky_ambient)
+constexpr size_t k_off_psplits = 528; // vec4 sun_split_distances_prev
+constexpr size_t k_off_psplits_hi = 544; // vec4 sun_split_distances_prev_hi (x = band 4)
+constexpr size_t k_off_pbasis  = 560; // vec4 sun_cascade_basis_prev (xyz = its band anchor)
+constexpr size_t k_off_fade    = 576; // vec4 sun_shadow_fade (weight, cur slice base, prev slice base, -)
+constexpr size_t k_off_skyamb  = 592; // vec4 sky_ambient (x = measured background luminance) — inserted BEFORE the trailing mat4[] per the member-order law (merge of the exposure split across S2b)
+constexpr size_t k_off_iblw    = 608; // vec4 sun_shadow_ibl_weights (x = cloud->IBL, y = cascade->IBL) — also
+                                      //  BEFORE the trailing mat4[] per the member-order law
+constexpr size_t k_off_pshmtx  = 624; // mat4 sun_shadow_matrix_prev[kSunCascadeStorage] (the OUTGOING snapshot's fit)
+constexpr size_t k_ubo_size    = 960; // reflected block size (the array's trailing pad included)
 // The block must FIT the allocation. A block that outgrew it mapped short and
 // dropped its tail fields with no error at all (S2a: the crossfade's prev
 // matrices simply never arrived), so growing this table past the buffer is a
@@ -455,6 +477,15 @@ static_assert(
     k_ubo_size <= PBRMaterial::kSunDataBufferBytes,
     "ublk_sun host layout exceeds PBRMaterial::sunDataBuffer's allocation — "
     "the tail fields would be silently truncated");
+// ...and BOTH mat4 arrays are sized by the storage ceiling, so raising that
+// constant without re-walking this table is also a build failure rather than a
+// tail nobody notices is short.
+static_assert(
+    k_off_splits == LightManager::kSunCascadeStorage * sizeof(fmtx4),
+    "ublk_sun: sun_shadow_matrix[] no longer ends where sun_split_distances begins");
+static_assert(
+    (k_off_pshmtx + LightManager::kSunCascadeStorage * sizeof(fmtx4)) <= k_ubo_size,
+    "ublk_sun: sun_shadow_matrix_prev[] runs past the declared block size");
 
 // ORKID_SUNSNAP_TRACE wall clock — seconds since the first traced event, so a
 // cadence can be READ off the trace instead of inferred from frame numbers
@@ -528,6 +559,23 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
   auto sun_buffer = PBRMaterial::sunDataBuffer(context);
   auto mapped     = FXI->mapUniformBuffer(sun_buffer, 0, k_ubo_size);
 
+  // Tunables come off the sun's DirectionalLightData (reflected — A8); a scene
+  // between suns reads the defaults rather than the last sun's numbers.
+  static const DirectionalLightData s_default_dldata;
+
+  // HOW MUCH OF EACH SHADOW FACTOR REACHES THE AMBIENT/IBL TERM — a cloud
+  // occludes sky, a tree occludes the disc (see DirectionalLightData). Written
+  // on every path for the same reason the cookie params are: a stale weight
+  // over a disarmed cookie is a shadow the frame does not have.
+  {
+    const DirectionalLightData* wd  = (sun and sun->_dldata) ? sun->_dldata : &s_default_dldata;
+    mapped->ref<fvec4>(k_off_iblw) = fvec4(
+        std::clamp(wd->_cloudShadowIblWeight, 0.0f, 1.0f),   //
+        std::clamp(wd->_cascadeShadowIblWeight, 0.0f, 1.0f), //
+        std::clamp(wd->_cascadeShadowFloor, 0.0f, 1.0f),     // .z — direct-term shadow floor
+        0.0f);
+  }
+
   // SUN COOKIE (cloud shadows) — published on the LightManager by whoever owns
   // the deck. Written on EVERY path including the sunless early-out: the cookie
   // params must never be stale, or a scene that drops its sun keeps a shadow.
@@ -558,14 +606,21 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
     mapped->unmap();
     _sun_job._active     = false; // an in-flight snapshot has no caster left to be fit for
     _sun_fade_remaining  = 0;
+    _sun_snap_valid      = false; // nothing is published any more — see the note below
     return;
   }
 
-  // Tunables come off the sun's DirectionalLightData (reflected — A8).
-  static const DirectionalLightData s_default_dldata;
   const DirectionalLightData* dldata = sun->_dldata ? sun->_dldata : &s_default_dldata;
 
-  int cascade_count  = std::clamp(dldata->_shadowCascadeCount, 2, LightManager::kSunCascadeStorage);
+  // BAND COUNT IS AUTHORED, NOT NEGOTIATED. A count past the storage ceiling
+  // used to CLAMP, which silently handed a scene asking for more coverage the
+  // ladder it already had — the fifth band would simply not exist and the
+  // missing far shadow would read as a shader bug. Say so instead.
+  OrkAssertI(
+      dldata->_shadowCascadeCount <= LightManager::kSunCascadeStorage,
+      "sun cascade count exceeds LightManager::kSunCascadeStorage — author fewer bands "
+      "or raise the storage ceiling (and the ublk_sun layout table with it)");
+  int cascade_count  = std::max(dldata->_shadowCascadeCount, 2);
   int map_dim        = std::max(dldata->shadowMapSize(), 128);
   float max_dist     = std::max(dldata->_shadowMaxDistance, 1.0f);
   float band_radius0 = std::max(dldata->_shadowBandRadius, 0.5f);
@@ -594,6 +649,15 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
     mapped->unmap();
     _sun_job._active    = false;
     _sun_fade_remaining = 0;
+    // ...AND THE HOLD IS BROKEN. This branch WIPES the shader-facing shadow
+    // params (cascade count 0), which only a snapshot PUBLISH ever writes back.
+    // Every-frame refits hid that: the frame after a caster re-arms republished
+    // them. Under any cadence — declared interval or refresh gate — the maps
+    // would be sampled with a count of zero, i.e. NO SHADOW, until the next
+    // tick. So a disarm invalidates the held snapshot outright and the re-arm
+    // reads as structural. (Measured: the shadow-attribution gate, which toggles
+    // shadowCaster between captures, came back with zero shadow pixels.)
+    _sun_snap_valid     = false;
     return;
   }
 
@@ -687,6 +751,11 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
   float band_res_ratio = std::clamp(dldata->_shadowBandResRatio, 1.0f, 8.0f);
   float jitter_amp     = (fade_frames > 0) ? std::clamp(dldata->_shadowJitterTexels, 0.0f, 1.0f) : 0.0f;
 
+  // CULLSETS — the authored rig, as authored. Compared as raw text every frame
+  // (cheap); PARSED only when a snapshot actually starts, which is where a
+  // mis-spelled family or a mis-counted band list gets to fail loud.
+  std::string cullset_rig = dldata->_shadowCullSets + "|" + dldata->_shadowBandCullSets;
+
   bool caster_changed = (sun != _sun_snap_caster) or (dldata->_skyBody != _sun_snap_body);
   bool rig_changed    = (map_dim != _sun_snap_map_dim)                     //
                      or (cascade_count != _sun_snap_cascades)              //
@@ -696,6 +765,7 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
                      or (dldata->GetShadowBias() != _sun_snap_bias)        //
                      or (dldata->_pcfDither != _sun_snap_pcf)              //
                      or (band_res_ratio != _sun_snap_res_ratio)            //
+                     or (cullset_rig != _sun_snap_cullsets)                //
                      or (want_sets != _sun_snap_sets);
   // ...and a per-band DIM change is one of the few rig edits the outgoing
   // snapshot cannot be faded from even though the array survives it: the fade's
@@ -724,7 +794,84 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
   // rather than silently running faster than it can blend.
   double held_secs  = _sun_snap_timer.SecsSinceStart();
   bool fade_settled = (_sun_fade_remaining <= 0);
-  bool elapsed  = (snap_interval <= 0.0f) or (held_secs >= double(snap_interval));
+  bool elapsed      = true;
+  if (snap_interval > 0.0f) {
+    elapsed = (held_secs >= double(snap_interval));
+  } else {
+    ////////////////////////////////////////
+    // REFRESH GATE — the UNDECLARED cadence. "No interval" used to mean "refit
+    // every frame", which redraws four identical depth passes for a still
+    // viewer under a still sun. The gate asks instead whether either PREMISE of
+    // the held fit has actually moved: the anchor the world-spheres are
+    // centered on, and the direction the light travels. Nothing else may enter
+    // it — camera ORIENTATION in particular is what a band fit is deliberately
+    // independent of (W7), and reading it here would hand that property back.
+    //
+    // The CEILING is not a staleness heuristic on the fit (the fit cannot go
+    // stale under premises that did not move); it is the CASTERS' clock, and it
+    // is OFF by default. Wind moves leaves and a walker moves a body without
+    // touching any premise above, but paying a full fit + cull + four depth
+    // passes four times a second to chase that (measured 1.9 ms on a PAUSED
+    // frame) is a worse trade than the frozen shimmer it buys (owner ruling,
+    // 2026-08-05). A scene that wants the shimmer declares a rate.
+    //
+    // ITS OFF VALUE IS 0 ONLY WHILE ANOTHER THRESHOLD IS ARMED: all three at 0
+    // is the disarmed gate above (refit every frame), so the ceiling cannot be
+    // the last one standing.
+    //
+    // A DECLARED interval takes the whole branch away: the declaration is the
+    // cadence, and a premise-drift trigger under it is exactly the "advisory
+    // number" the interval ruling forbids.
+    ////////////////////////////////////////
+    float ang_thresh  = std::max(dldata->_shadowRefreshAngleDeg, 0.0f);
+    float dist_thresh = std::max(dldata->_shadowRefreshDistance, 0.0f);
+    float max_secs    = std::max(dldata->_shadowRefreshMaxSecs, 0.0f);
+    bool gate_armed   = (ang_thresh > 0.0f) or (dist_thresh > 0.0f) or (max_secs > 0.0f);
+    if (gate_armed) {
+      // THE CASTER SET IS A PREMISE TOO. Neither the anchor nor the light
+      // direction moves when content ARRIVES, and the very first snapshot of a
+      // run is taken on the frame the scene is still assembling — so a gate that
+      // read only the two geometric premises published an EMPTY cascade and held
+      // it until the ceiling. (Measured: the shadow-attribution gate captured
+      // zero shadow pixels; every-frame refits had hidden it by redrawing on the
+      // next frame.) Counting the drawables in the depth-prepass role — the
+      // caster set itself, the same walk the cookie's self-defense makes — is
+      // what makes streamed-in geometry cast on the frame it lands. It is a
+      // refresh TRIGGER, not a structural one: an in-flight amortized snapshot
+      // must not restart every time a chunk streams in.
+      size_t caster_nodes = 0;
+      if (auto* dpp_scene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr) {
+        for (const auto& layer_name : dpp_scene->layersForRole("depth_prepass")) {
+          if (auto layer = dpp_scene->tryFindLayer(layer_name))
+            layer->_drawable_nodes.atomicOp([&](const scenegraph::Layer::drawablenodevect_t& nodes) { //
+              caster_nodes += nodes.size();
+            });
+        }
+      }
+      bool casters_changed = (caster_nodes != _sun_snap_casters);
+      _sun_snap_casters    = caster_nodes;
+      // cos of the travel angle, straight off two unit vectors — no acos on the
+      // per-frame path; the threshold is converted the other way once.
+      float cos_moved = std::clamp(sun_dir.dotWith(_sun_snap_sundir), -1.0f, 1.0f);
+      float cos_gate  = cosf(ang_thresh * float(DTOR));
+      bool sun_moved  = (ang_thresh > 0.0f) and (cos_moved < cos_gate);
+      bool eye_moved  = (dist_thresh > 0.0f) and ((cam_eye - _sun_snap_anchor).magnitude() > dist_thresh);
+      bool ceiling    = (max_secs > 0.0f) and (held_secs >= double(max_secs));
+      // WARM-UP. A drawable node exists several frames before it DRAWS — its
+      // pipeline compiles, its model loads, its buffers realize — so the first
+      // snapshots of a run are fit for a scene that is not on the GPU yet, and
+      // the caster COUNT cannot see that (the nodes were all there at frame 0).
+      // Measured: the shadow-attribution gate's first snapshot drew empty maps
+      // and the hold kept them for a quarter second, i.e. for its whole capture
+      // sequence. So the gate does not engage until the compositor has run a
+      // scene for k_gate_warm_frames — the every-frame path it replaces, for
+      // exactly as long as a scene takes to become drawable.
+      constexpr int k_gate_warm_frames = 60;
+      bool warming    = (_sun_gate_frames < k_gate_warm_frames);
+      _sun_gate_frames++;
+      elapsed         = warming or sun_moved or eye_moved or ceiling or casters_changed;
+    }
+  }
   bool start_job = structural or (elapsed and fade_settled and not _sun_job._active);
 
   if ((snap_interval > 0.0f) and elapsed and (not fade_settled) and (not _sun_cadence_floor_warned)) {
@@ -765,8 +912,8 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
     }
     mapped->ref<fvec4>(k_off_fade) = fvec4(
         _sun_fade_weight(),
-        float(_sun_live_set * LightManager::kSunCascadeStorage),
-        float(_sun_fade_prev_set * LightManager::kSunCascadeStorage),
+        float(_sun_live_set * lmgr->_sun_cascade_bands),
+        float(_sun_fade_prev_set * lmgr->_sun_cascade_bands),
         0.0f);
     if (getenv("ORKID_SUNSNAP_TRACE")) {
       printf("[sunsnap] frame<%d> t<%.3f> FADE w<%.4f> rem<%d> total<%d> secs<%g>\n",
@@ -890,17 +1037,37 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
   for (int i = 0; i < LightManager::kSunCascadeStorage; i++)
     split_dists[i] = fit_radius[i] * (1.0f - (4.0f + 2.0f * jitter_amp) / float(band_dim[i]));
 
-  // cascade-cull fix — accumulate the UNION of every cascade's ortho box in a fixed sun-light basis
-  // (F = sun_dir, R/U perpendicular). Each cascade box is [center ± radius] laterally and
+  ////////////////////////////////////////
+  // CULLSETS — resolve the authored rig HERE, at the one site that starts a
+  // snapshot, alongside every other premise the job freezes. Unauthored yields
+  // ONE set over every family and every band: one volume, one cull, no filter.
+  ////////////////////////////////////////
+  const SunCullSetPlan plan =
+      resolveSunCullSets(dldata->_shadowCullSets, dldata->_shadowBandCullSets, cascade_count);
+  _sun_job._plan = plan;
+
+  // cascade-cull fix — accumulate the UNION of a CULLSET's cascade ortho boxes in a fixed sun-light
+  // basis (F = sun_dir, R/U perpendicular). Each cascade box is [center ± radius] laterally and
   // [center - backoff, center + radius] along F (the toward-sun near backoff INCLUDED, so casters
   // behind the slice are kept). Min/max of dot(center,axis)±extent gives an AABB in the light basis
-  // that CONTAINS every cascade box -> _CULLCAM's survivors are a superset of every slice's casters.
+  // that CONTAINS every cascade box of that set -> _CULLCAM[s]'s survivors are a superset of every
+  // subscribed slice's casters.
+  //
+  // PER SET, not per band: the volume is the union of ONLY its own bands' fit
+  // radii, so a set whose outermost band is 1778 m is culled against 1778 m
+  // however far the ladder reaches past it. One union over every band is what
+  // dragged a scattered canopy into a 10 km box and then into every band's draw.
   const fvec3 cull_F = sun_dir;
   const fvec3 cull_R = up.crossWith(cull_F).normalized();
   const fvec3 cull_U = cull_F.crossWith(cull_R).normalized();
-  float uRmin = +1e30f, uRmax = -1e30f;
-  float uUmin = +1e30f, uUmax = -1e30f;
-  float uFmin = +1e30f, uFmax = -1e30f;
+  float uRmin[SunCullSetPlan::kMaxSets], uRmax[SunCullSetPlan::kMaxSets];
+  float uUmin[SunCullSetPlan::kMaxSets], uUmax[SunCullSetPlan::kMaxSets];
+  float uFmin[SunCullSetPlan::kMaxSets], uFmax[SunCullSetPlan::kMaxSets];
+  for (int s = 0; s < SunCullSetPlan::kMaxSets; s++) {
+    uRmin[s] = +1e30f; uRmax[s] = -1e30f;
+    uUmin[s] = +1e30f; uUmax[s] = -1e30f;
+    uFmin[s] = +1e30f; uFmax[s] = -1e30f;
+  }
 
   for (int ic = 0; ic < cascade_count; ic++) {
     float radius  = fit_radius[ic];
@@ -962,14 +1129,15 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
     }();
     float far_pad          = max_dist * s_farpad_scale;
     float band_far_extrude = radius + far_pad; // the band's OTHER toward-light extent (S3 varies this)
-    // fold THIS cascade's ortho box into the union (light-basis AABB) for the sun-shadow cull.
+    // fold THIS cascade's ortho box into ITS CULLSET's union (light-basis AABB) for the sun-shadow cull.
     {
+      const int cs = plan._bandSet[ic];
       float cr = center_snapped.dotWith(cull_R);
       float cu = center_snapped.dotWith(cull_U);
       float cf = center_snapped.dotWith(cull_F);
-      uRmin = std::min(uRmin, cr - radius); uRmax = std::max(uRmax, cr + radius);
-      uUmin = std::min(uUmin, cu - radius); uUmax = std::max(uUmax, cu + radius);
-      uFmin = std::min(uFmin, cf - backoff); uFmax = std::max(uFmax, cf + band_far_extrude);
+      uRmin[cs] = std::min(uRmin[cs], cr - radius); uRmax[cs] = std::max(uRmax[cs], cr + radius);
+      uUmin[cs] = std::min(uUmin[cs], cu - radius); uUmax[cs] = std::max(uUmax[cs], cu + radius);
+      uFmin[cs] = std::min(uFmin[cs], cf - backoff); uFmax[cs] = std::max(uFmax[cs], cf + band_far_extrude);
     }
     cascade_view[ic].lookAt(eye, center_snapped, up);
     cascade_proj[ic].ortho(-radius, radius, radius, -radius, 0.0f, backoff + band_far_extrude);
@@ -981,12 +1149,28 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
   }
   for (int i = 0; i < LightManager::kSunCascadeStorage; i++)
     _sun_job._dim[i] = band_dim[i];
-  _sun_job._texel = fvec4(
-      1.0f / float(band_dim[0]),
-      1.0f / float(band_dim[1]),
-      1.0f / float(band_dim[2]),
-      1.0f / float(band_dim[3]));
-  _sun_job._splits = fvec4(split_dists[0], split_dists[1], split_dists[2], split_dists[3]);
+  // the per-band scalar tables, split across the vec4 pair the shader reads (see
+  // the layout note): the base vec4 is bands 0..3 exactly as it always was, the
+  // _hi one carries whatever the ladder reserves past that.
+  auto band_scalars = [](const float* src, int lane) {
+    fvec4 rval(0, 0, 0, 0);
+    for (int i = 0; i < 4; i++) {
+      int band = lane * 4 + i;
+      if (band < LightManager::kSunCascadeStorage)
+        rval[i] = src[band];
+    }
+    return rval;
+  };
+  float band_texel[LightManager::kSunCascadeStorage];
+  for (int i = 0; i < LightManager::kSunCascadeStorage; i++)
+    band_texel[i] = 1.0f / float(band_dim[i]);
+  _sun_job._texel     = band_scalars(band_texel, 0);
+  _sun_job._texel_hi  = band_scalars(band_texel, 1);
+  _sun_job._splits    = band_scalars(split_dists, 0);
+  _sun_job._splits_hi = band_scalars(split_dists, 1);
+  // the bias travels in WORLD METRES; the evaluator divides by the band's own
+  // fitted depth range (fwdtools.i2), so one authored number means the same
+  // slack in every band of a ladder whose ranges differ by 3x or more.
   _sun_job._params = fvec4(
       dldata->GetShadowBias(),  //
       dldata->_pcfDither,       //
@@ -1001,52 +1185,67 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
   // a dim/set change REALLOCATES the depth array: the outgoing snapshot's
   // depth ceases to exist, so it can no longer be faded from (its matrices
   // would sample whatever the new allocation happens to contain).
-  bool storage_rebuilt = (map_dim != lmgr->_sun_cascade_dim) or (want_sets != lmgr->_sun_cascade_sets);
-  lmgr->ensureSunCascades(context, map_dim, want_sets);
+  bool storage_rebuilt = (map_dim != lmgr->_sun_cascade_dim)     //
+                      or (want_sets != lmgr->_sun_cascade_sets)  //
+                      or (cascade_count != lmgr->_sun_cascade_bands);
+  lmgr->ensureSunCascades(context, map_dim, cascade_count, want_sets);
   if (storage_rebuilt or band_dims_changed)
     _sun_pub_valid = false;
   if (1 == want_sets)
     _sun_live_set = 0; // single-buffered: there is only one set to sample
 
   ////////////////////////////////////////
-  // cascade-cull fix — ONE union-frustum sun cull per frame (BEFORE any cascade depth draw). Build
-  // _CULLCAM from the accumulated light-basis AABB (symmetric ortho about the box center, eye pulled
-  // to the near plane) and dispatch every GPU-culled drawable's shadow cull against it. Off-view
-  // casters (dropped by the eye cull) survive here, so the cascade passes below draw the correct
-  // shadow set. +1 dispatch (+1 fence) per frame total — Scene::shadowCull no-ops if nothing culls.
+  // cascade-cull fix — the union-frustum sun cull, now ONE PER CULLSET. Build _CULLCAM[s] from that
+  // set's accumulated light-basis AABB (symmetric ortho about the box center, eye pulled to the near
+  // plane). Off-view casters (dropped by the eye cull) survive here, so the cascade passes draw the
+  // correct shadow set.
+  //
+  // THE CULL ITSELF IS NOT DISPATCHED HERE. Bands are drawn in the plan's set-grouped order and each
+  // set's cull runs immediately before its first band (_render_sun_snapshot_bands), so a snapshot
+  // costs exactly one shadow cull PER SET — not per band, and not one giant cull the near bands then
+  // over-draw. With one set that is the single pre-cullset dispatch, in the same place in the frame
+  // (before any cascade depth draw) — Scene::shadowCull still no-ops when nothing culls.
   ////////////////////////////////////////
-  if (uRmax > uRmin and uUmax > uUmin and uFmax > uFmin) {
-    float hr    = (uRmax - uRmin) * 0.5f;
-    float hu    = (uUmax - uUmin) * 0.5f;
-    float depth = (uFmax - uFmin);
-    fvec3 boxcenter = cull_R * ((uRmin + uRmax) * 0.5f) //
-                    + cull_U * ((uUmin + uUmax) * 0.5f) //
-                    + cull_F * ((uFmin + uFmax) * 0.5f);
+  static const bool s_shadowtrace = (getenv("ORKID_SHADOWCULL_TRACE") != nullptr);
+  for (int s = 0; s < plan._numSets; s++) {
+    _sun_job._cullvalid[s] = false;
+    if (not(uRmax[s] > uRmin[s] and uUmax[s] > uUmin[s] and uFmax[s] > uFmin[s]))
+      continue; // no band subscribed to this set (or a degenerate fold) -> nothing to cull for
+    float hr    = (uRmax[s] - uRmin[s]) * 0.5f;
+    float hu    = (uUmax[s] - uUmin[s]) * 0.5f;
+    float depth = (uFmax[s] - uFmin[s]);
+    fvec3 boxcenter = cull_R * ((uRmin[s] + uRmax[s]) * 0.5f) //
+                    + cull_U * ((uUmin[s] + uUmax[s]) * 0.5f) //
+                    + cull_F * ((uFmin[s] + uFmax[s]) * 0.5f);
     fvec3 cull_eye  = boxcenter - cull_F * (depth * 0.5f);
-    _CULLCAM->_vmatrix.lookAt(cull_eye, boxcenter, up);
-    _CULLCAM->_pmatrix.ortho(-hr, hr, hu, -hu, 0.0f, depth);
+    auto CULLCAM    = _CULLCAM[s];
+    CULLCAM->_vmatrix.lookAt(cull_eye, boxcenter, up);
+    CULLCAM->_pmatrix.ortho(-hr, hr, hu, -hu, 0.0f, depth);
     // VP for the CULL (clip = world * VP): the camera convention is multiply_ltor(V,P), NOT operator*
     // (which is right-to-left and yields a VP the cull's plane extraction reads as garbage — an
     // off-view caster provably inside the ortho box was rejected until this).
-    _CULLCAM->_vpmatrix                 = fmtx4::multiply_ltor(_CULLCAM->_vmatrix, _CULLCAM->_pmatrix);
-    _CULLCAM->_ivpmatrix                = _CULLCAM->_vpmatrix.inverse();
-    _CULLCAM->_ivmatrix                 = _CULLCAM->_vmatrix.inverse();
-    _CULLCAM->_ipmatrix                 = _CULLCAM->_pmatrix.inverse();
-    _CULLCAM->_frustum.set(_CULLCAM->_vmatrix, _CULLCAM->_pmatrix);
-    _CULLCAM->_explicitProjectionMatrix = true;
-    _CULLCAM->_explicitViewMatrix       = true;
-    _CULLCAM->_aspectRatio              = 1.0f;
+    CULLCAM->_vpmatrix                 = fmtx4::multiply_ltor(CULLCAM->_vmatrix, CULLCAM->_pmatrix);
+    CULLCAM->_ivpmatrix                = CULLCAM->_vpmatrix.inverse();
+    CULLCAM->_ivmatrix                 = CULLCAM->_vmatrix.inverse();
+    CULLCAM->_ipmatrix                 = CULLCAM->_pmatrix.inverse();
+    CULLCAM->_frustum.set(CULLCAM->_vmatrix, CULLCAM->_pmatrix);
+    CULLCAM->_explicitProjectionMatrix = true;
+    CULLCAM->_explicitViewMatrix       = true;
+    CULLCAM->_aspectRatio              = 1.0f;
+    _sun_job._cullvalid[s]             = true;
     // shadow-flicker instrumentation (ORKID_SHADOWCULL_TRACE=1; OFF = not one instruction of cost).
-    // The union box is the ONLY caster-rejection volume for every cascade, so its per-frame motion
-    // is what a survivor-count series has to be correlated against. Corners are emitted in world
-    // space (box center +- the light-basis half-extents) alongside the anchor and light direction
-    // that drive them (the camera's ORIENTATION drives nothing here and is deliberately absent).
-    static const bool s_shadowtrace = (getenv("ORKID_SHADOWCULL_TRACE") != nullptr);
+    // A set's union box is the ONLY caster-rejection volume for the bands that subscribe to it, so
+    // its per-frame motion is what a survivor-count series has to be correlated against. Corners are
+    // emitted in world space (box center +- the light-basis half-extents) alongside the anchor and
+    // light direction that drive them (the camera's ORIENTATION drives nothing here and is
+    // deliberately absent).
     if (s_shadowtrace) {
       printf(
-          "[cullbox] frame<%d> anchor<%.3f %.3f %.3f> sundir<%.4f %.4f %.4f> center<%.3f %.3f %.3f> "
-          "hr<%.3f> hu<%.3f> depth<%.3f>",
+          "[cullbox] frame<%d> set<%s> mask<0x%x> anchor<%.3f %.3f %.3f> sundir<%.4f %.4f %.4f> "
+          "center<%.3f %.3f %.3f> hr<%.3f> hu<%.3f> depth<%.3f>",
           context->GetTargetFrame(),
+          plan._names[s].c_str(),
+          plan._familyMask[s],
           cam_eye.x, cam_eye.y, cam_eye.z,
           sun_dir.x, sun_dir.y, sun_dir.z,
           boxcenter.x, boxcenter.y, boxcenter.z,
@@ -1061,9 +1260,8 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
       printf("\n");
       fflush(stdout);
     }
-    if (auto* scene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr)
-      scene->shadowCull(context, *_CULLCAM);
   }
+  _sun_job._culled_set = -1; // nothing culled yet for THIS snapshot
 
   ////////////////////////////////////////
   // SNAPSHOT STARTED — record the STRUCTURAL premises (which caster, which
@@ -1085,7 +1283,15 @@ void ForwardPbrNodeImpl::_update_sun_cascades() {
   _sun_snap_bias        = dldata->GetShadowBias();
   _sun_snap_pcf         = dldata->_pcfDither;
   _sun_snap_res_ratio   = band_res_ratio;
+  _sun_snap_cullsets    = cullset_rig;
   _sun_snap_sets        = want_sets;
+  // ...and the refresh gate's geometric premises, recorded with the rest of
+  // them: the gate measures drift from the fit THIS job is being drawn for,
+  // never from the last published one, or an amortized snapshot would
+  // re-trigger itself. (The caster count is edge-tested in the gate itself —
+  // it is a change in the WORLD, not a premise of this fit.)
+  _sun_snap_anchor      = cam_eye;
+  _sun_snap_sundir      = sun_dir;
   _sun_snap_timer.Start();
 
   _sun_job._active     = true;
@@ -1132,8 +1338,22 @@ void ForwardPbrNodeImpl::_render_sun_snapshot_bands(int bands_this_frame, int fa
 
   int budget = std::clamp(bands_this_frame, 1, _sun_job._band_count);
   for (int n = 0; n < budget and _sun_job._next_band < _sun_job._band_count; n++) {
-    int ic    = _sun_job._next_band++;
-    int slice = _sun_job._target_set * LightManager::kSunCascadeStorage + ic;
+    // CULLSETS — bands are drawn in the plan's SET-GROUPED order (identity when
+    // one set, so an unauthored scene draws 0,1,2,... exactly as before). The
+    // grouping is what makes the per-set cull run once per SET: crossing into a
+    // set re-culls, and every band of that set then draws its survivors.
+    int ic    = _sun_job._plan._drawOrder[_sun_job._next_band++];
+    int cs    = _sun_job._plan._bandSet[ic];
+    int slice = _sun_job._target_set * lmgr->_sun_cascade_bands + ic;
+    if (cs != _sun_job._culled_set) {
+      _sun_job._culled_set = cs;
+      // the frozen union camera of THIS set (built at job start), and only the
+      // families the set subscribes to — a drawable outside the set is not
+      // culled for it and is not drawn in its bands.
+      if (_sun_job._cullvalid[cs])
+        if (auto* scene = _node->_pbrcommon ? _node->_pbrcommon->_scene : nullptr)
+          scene->shadowCull(context, *_CULLCAM[cs], _sun_job._plan._familyMask[cs]);
+    }
     if (getenv("ORKID_SUNSNAP_TRACE")) {
       printf("[sunsnap] frame<%d> DRAW band<%d> slice<%d>\n", context->GetTargetFrame(), ic, slice);
       fflush(stdout);
@@ -1143,6 +1363,10 @@ void ForwardPbrNodeImpl::_render_sun_snapshot_bands(int bands_this_frame, int fa
     CompositingPassData shadowCPD = _currentCIMPL->topCPD().clone();
     shadowCPD._debugName          = "SunCascadePass";
     shadowCPD._sunCascadeShadowPass = true; // cascade-cull fix: GPU-culled draws read the SHADOW set
+    // CULLSETS: this band draws only its set's caster families (the enqueue gate
+    // in DrawQueue reads this). All-families = the pre-cullset pass verbatim.
+    shadowCPD._sunCascadeCullFamilies = _sun_job._plan._familyMask[cs];
+    shadowCPD._sunCascadeBand         = ic;
 
     // The prologue's CPD carries NO layer set — and enqueueLayerToRenderQueue
     // only admits layers present on the ACTIVE CPD (HasLayer gate). Assign the
@@ -1243,8 +1467,9 @@ void ForwardPbrNodeImpl::_render_sun_snapshot_bands(int bands_this_frame, int fa
   if (fade_armed) {
     for (int ic = 0; ic < bands; ic++)
       pub->ref<fmtx4>(k_off_pshmtx + ic * sizeof(fmtx4)) = _sun_pub_shmtx[ic];
-    pub->ref<fvec4>(k_off_psplits) = _sun_pub_splits;
-    pub->ref<fvec4>(k_off_pbasis)  = fvec4(_sun_pub_anchor, 0);
+    pub->ref<fvec4>(k_off_psplits)    = _sun_pub_splits;
+    pub->ref<fvec4>(k_off_psplits_hi) = _sun_pub_splits_hi;
+    pub->ref<fvec4>(k_off_pbasis)     = fvec4(_sun_pub_anchor, 0);
     _sun_fade_prev_set   = _sun_live_set;
     _sun_fade_total      = fade_frames;
     _sun_fade_remaining  = fade_frames;
@@ -1261,6 +1486,7 @@ void ForwardPbrNodeImpl::_render_sun_snapshot_bands(int bands_this_frame, int fa
   for (int ic = 0; ic < bands; ic++)
     pub->ref<fmtx4>(k_off_shmtx + ic * sizeof(fmtx4)) = _sun_job._shmtx[ic];
   pub->ref<fvec4>(k_off_splits)     = _sun_job._splits;
+  pub->ref<fvec4>(k_off_splits_hi)  = _sun_job._splits_hi;
   pub->ref<fvec4>(k_off_params)     = _sun_job._params;
   pub->ref<fvec4>(k_off_basis)      = fvec4(_sun_job._anchor, 0);
   // per-band texel sizes travel with the matrices they belong to. The fade's
@@ -1268,13 +1494,14 @@ void ForwardPbrNodeImpl::_render_sun_snapshot_bands(int bands_this_frame, int fa
   // (see band_dims_changed), so within any fade window both snapshots were
   // drawn at the same per-band viewports and one table describes both.
   pub->ref<fvec4>(k_off_texel)      = _sun_job._texel;
+  pub->ref<fvec4>(k_off_texel_hi)   = _sun_job._texel_hi;
   // THE FLIP FRAME IS FULL PREV WEIGHT. The old form published
   // remaining/(total+1) — 12/13 for a 12-frame window — so every publish opened
   // with a 1/13 jump of the very quantity the fade exists to move smoothly.
   pub->ref<fvec4>(k_off_fade)       = fvec4(
       fade_armed ? _sun_fade_weight() : 0.0f,
-      float(_sun_live_set * LightManager::kSunCascadeStorage),
-      float(_sun_fade_prev_set * LightManager::kSunCascadeStorage),
+      float(_sun_live_set * lmgr->_sun_cascade_bands),
+      float(_sun_fade_prev_set * lmgr->_sun_cascade_bands),
       0.0f);
   pub->unmap();
 
@@ -1283,19 +1510,199 @@ void ForwardPbrNodeImpl::_render_sun_snapshot_bands(int bands_this_frame, int fa
   // to recover it would stall the render thread.
   for (int ic = 0; ic < bands; ic++)
     _sun_pub_shmtx[ic] = _sun_job._shmtx[ic];
-  _sun_pub_splits   = _sun_job._splits;
+  _sun_pub_splits    = _sun_job._splits;
+  _sun_pub_splits_hi = _sun_job._splits_hi;
   _sun_pub_anchor   = _sun_job._anchor;
   _sun_pub_cascades = bands;
   _sun_pub_valid    = true;
 
   _sun_job._active = false;
   if (getenv("ORKID_SUNSNAP_TRACE")) {
-    printf("[sunsnap] frame<%d> t<%.3f> PUBLISH live<%d> prevset<%d> fade_armed<%d> w<%.4f> rem<%d> splits<%g %g %g %g> psplits<%g %g %g %g>\n",
+    // the radii are printed PER LIVE BAND, not per vec4 lane: a trace that
+    // stopped at four could not tell a 5-band ladder from a 4-band one, which
+    // is the one thing this line is read for.
+    auto band_list = [](const fvec4& lo, const fvec4& hi, int count) {
+      std::string rval;
+      for (int i = 0; i < count; i++)
+        rval += FormatString("%s%g", i ? " " : "", (i < 4) ? lo[i] : hi[i - 4]);
+      return rval;
+    };
+    printf("[sunsnap] frame<%d> t<%.3f> PUBLISH live<%d> prevset<%d> fade_armed<%d> w<%.4f> rem<%d> bands<%d> splits<%s> psplits<%s>\n",
            context->GetTargetFrame(), _sunsnap_trace_now(), _sun_live_set, _sun_fade_prev_set, int(fade_armed),
-           fade_armed ? _sun_fade_weight() : 0.0f, _sun_fade_remaining,
-           _sun_job._splits.x, _sun_job._splits.y, _sun_job._splits.z, _sun_job._splits.w,
-           _sun_pub_splits.x, _sun_pub_splits.y, _sun_pub_splits.z, _sun_pub_splits.w);
+           fade_armed ? _sun_fade_weight() : 0.0f, _sun_fade_remaining, bands,
+           band_list(_sun_job._splits, _sun_job._splits_hi, bands).c_str(),
+           band_list(_sun_pub_splits, _sun_pub_splits_hi, _sun_pub_cascades).c_str());
     fflush(stdout);
+  }
+
+  ////////////////////////////////////////
+  // ORKID_SUN_CASCADE_DUMP=<prefix> — ONE-SHOT eyeball of the depth the bands
+  // actually hold. EVERY slice of the array (both snapshot sets when the double
+  // buffer is armed) lands as <prefix>_slice<N>.png beside a stats line: how
+  // much of the map is still CLEAR, the depth range the drawn texels span, the
+  // bounding box they occupy, and where the band ANCHOR itself projects through
+  // the published matrix. Three different faults read differently here: an
+  // all-clear map is a caster that never drew, a populated map whose content
+  // sits away from the anchor's texel is an anchor/matrix mismatch, and a
+  // populated map at the wrong depth range is a projection fault.
+  //
+  // The readback transitions the array out of the layout the shader samples, so
+  // the frame it fires on does not shade correctly; a diagnostic, not a live
+  // path (ORKID_SUN_COOKIE_DUMP precedent).
+  //
+  // ORKID_SUN_CASCADE_PROBE="x,y,z[;x,y,z...]" adds a WORLD POINT readout to
+  // every band's line: the point's uv/ndc.z through the published matrix, the
+  // depth actually STORED at that texel, and the difference. That difference is
+  // what separates the two ways a shadow can go missing — a stored depth equal
+  // to the point's own is a receiver looking at itself (no caster there), a
+  // stored depth well in front of it is a caster the sampler is failing to act
+  // on. Whichever band the shader would SELECT for the point is flagged.
+  ////////////////////////////////////////
+  if (const char* dumppfx = getenv("ORKID_SUN_CASCADE_DUMP")) {
+    static std::vector<fvec3> s_probes = []() -> std::vector<fvec3> {
+      std::vector<fvec3> rval;
+      const char* e = getenv("ORKID_SUN_CASCADE_PROBE");
+      if (nullptr == e)
+        return rval;
+      std::string all(e);
+      size_t pos = 0;
+      while (pos <= all.size()) {
+        size_t nx  = all.find(';', pos);
+        std::string one = all.substr(pos, (nx == std::string::npos) ? std::string::npos : (nx - pos));
+        float x = 0, y = 0, z = 0;
+        if (3 == sscanf(one.c_str(), "%f,%f,%f", &x, &y, &z))
+          rval.push_back(fvec3(x, y, z));
+        if (nx == std::string::npos)
+          break;
+        pos = nx + 1;
+      }
+      return rval;
+    }();
+    // ...on the Nth PUBLISH (ORKID_SUN_CASCADE_DUMP_AT, default 30): a scene
+    // needs a few snapshots before its streamed casters are on the GPU, and how
+    // many publishes a settle takes is scene- and rate-dependent, so the count
+    // is a knob rather than a constant nobody can reach.
+    static int s_dump_countdown = []() -> int {
+      if (const char* e = getenv("ORKID_SUN_CASCADE_DUMP_AT"))
+        return std::max(1, atoi(e));
+      return 30;
+    }();
+    if (s_dump_countdown > 0 and --s_dump_countdown == 0) {
+      auto FBI = context->FBI();
+      printf("[suncascade] live_set<%d> sets<%d> bands<%d> slices<%zu>\n",
+             _sun_live_set, _sun_snap_sets, bands, lmgr->_sun_cascade_rtgs.size());
+      for (int islice = 0; islice < int(lmgr->_sun_cascade_rtgs.size()); islice++) {
+        int ic    = islice % std::max(lmgr->_sun_cascade_bands, 1);
+        int slice = islice;
+        auto rtg  = lmgr->_sun_cascade_rtgs[slice];
+        if (nullptr == rtg or nullptr == rtg->_depthBuffer)
+          continue;
+        auto capbuf           = std::make_shared<CaptureBuffer>();
+        capbuf->_captureLayer = slice;
+        std::string path      = FormatString("%s_slice%d.png", dumppfx, slice);
+        int band              = slice;
+        int bdim              = _sun_job._dim[ic];
+        fvec3 anchor          = _sun_job._anchor;
+        fmtx4 shmtx           = _sun_job._shmtx[ic];
+        fvec4 splits          = _sun_job._splits;
+        fvec4 splits_hi       = _sun_job._splits_hi;
+        int bandcount         = _sun_job._band_count;
+        auto probes           = s_probes;
+        FBI->captureAsFormat(
+            rtg->_depthBuffer.get(),
+            capbuf,
+            EBufferFormat::R32F,
+            [capbuf, path, band, bdim, anchor, shmtx, splits, splits_hi, bandcount, probes]() {
+              auto src   = capbuf->_image;
+              int w      = int(src->_width);
+              int h      = int(src->_height);
+              auto depth = (const float*)src->_data->data();
+              float dmin = 1e30f, dmax = -1e30f;
+              int drawn = 0, x0 = w, x1 = -1, y0 = h, y1 = -1;
+              for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++) {
+                  float d = depth[y * w + x];
+                  if (d >= 0.999999f)
+                    continue;
+                  drawn++;
+                  dmin = std::min(dmin, d);
+                  dmax = std::max(dmax, d);
+                  x0   = std::min(x0, x);
+                  x1   = std::max(x1, x);
+                  y0   = std::min(y0, y);
+                  y1   = std::max(y1, y);
+                }
+              // the anchor's own texel — where the ground under the viewer must
+              // be if the render matrices and the published ones agree.
+              fvec4 aclip = fvec4(anchor, 1).transform(shmtx);
+              fvec3 andc  = aclip.xyz() * (1.0f / std::max(fabsf(aclip.w), 1e-9f));
+              float au    = andc.x * 0.5f + 0.5f;
+              float av    = 1.0f - (andc.y * 0.5f + 0.5f);
+              printf(
+                  "[suncascade] band<%d> dim<%d> of <%dx%d> drawn<%d> (%.2f%%) depthrange<%g..%g> "
+                  "bbox<%d %d %d %d> anchor<%.2f %.2f %.2f> anchor_uv<%.4f %.4f> anchor_z<%g>\n",
+                  band, bdim, w, h, drawn, 100.0f * float(drawn) / float(w * h),
+                  (drawn ? dmin : -1.0f), (drawn ? dmax : -1.0f), x0, y0, x1, y1,
+                  anchor.x, anchor.y, anchor.z, au, av, andc.z);
+              fflush(stdout);
+              // ...and the same reading for every declared world probe, sampled
+              // out of the depth this band actually holds. uv_scale is the band's
+              // viewport fraction of the slice (1.0 for a full-dim band), exactly
+              // the factor the evaluator applies.
+              float uv_scale = float(bdim) / float(w);
+              for (size_t ip = 0; ip < probes.size(); ip++) {
+                fvec3 P     = probes[ip];
+                fvec4 pclip = fvec4(P, 1).transform(shmtx);
+                fvec3 pndc  = pclip.xyz() * (1.0f / std::max(fabsf(pclip.w), 1e-9f));
+                float pu    = (pndc.x * 0.5f + 0.5f) * uv_scale;
+                float pv    = (0.5f - pndc.y * 0.5f) * uv_scale;
+                int tx      = int(pu * float(w));
+                int ty      = int(pv * float(h));
+                bool inmap  = (tx >= 0) and (tx < w) and (ty >= 0) and (ty < h) //
+                          and (fabsf(pndc.x) < 1.0f) and (fabsf(pndc.y) < 1.0f) //
+                          and (pndc.z > 0.0f) and (pndc.z < 1.0f);
+                float stored = inmap ? depth[ty * w + tx] : -1.0f;
+                // the band the EVALUATOR would pick for this point (innermost
+                // split sphere that contains it) — a reading in any other band
+                // is informative but is not the one the shader acts on.
+                float bdist = (P - anchor).magnitude();
+                int selband = -1;
+                for (int i = bandcount - 1; i >= 0; i--)
+                  if (bdist <= ((i < 4) ? splits[i] : splits_hi[i - 4]))
+                    selband = i;
+                printf(
+                    "[suncascade] band<%d> probe%zu<%.2f %.2f %.2f> uv<%.5f %.5f> texel<%d %d> "
+                    "ndcz<%g> stored<%g> delta<%g> inmap<%d> banddist<%.2f> selected_band<%d>\n",
+                    band, ip, P.x, P.y, P.z, pu, pv, tx, ty, pndc.z, stored, pndc.z - stored, int(inmap), bdist, selband);
+              }
+              fflush(stdout);
+              // MAGENTA = clear (nothing drew there), grayscale = the drawn
+              // depth stretched across its own range so any content is legible
+              // whatever slab it occupies.
+              auto out = std::make_shared<Image>();
+              out->initWithFormat(w, h, EBufferFormat::RGBA8);
+              auto dst   = (uint8_t*)out->_data->data();
+              float span = std::max(dmax - dmin, 1e-9f);
+              for (int i = 0; i < w * h; i++) {
+                float d = depth[i];
+                uint8_t r, g, b;
+                if (d >= 0.999999f) {
+                  r = 255; g = 0; b = 255;
+                } else {
+                  uint8_t v = uint8_t(std::clamp(255.0f * (1.0f - (d - dmin) / span), 0.0f, 255.0f));
+                  r = g = b = v;
+                }
+                dst[i * 4 + 0] = r;
+                dst[i * 4 + 1] = g;
+                dst[i * 4 + 2] = b;
+                dst[i * 4 + 3] = 255;
+              }
+              out->writeToFile(file::Path(path.c_str()));
+              printf("[suncascade] wrote %s\n", path.c_str());
+              fflush(stdout);
+            });
+      }
+    }
   }
 }
 
@@ -1337,9 +1744,10 @@ void ForwardPbrNodeImpl::_update_sun_cookie() {
 
   // DISARM is the default and must be reachable on EVERY early return: a stale
   // cookie is a shadow that outlives its clouds.
-  auto disarm = [lmgr]() {
+  auto disarm = [this, lmgr]() {
     lmgr->_sun_cookie          = lmgr->_sun_cookie_default;
     lmgr->_sun_cookie_strength = 0.0f;
+    _sun_cookie_valid          = false; // nothing published to hold onto
   };
 
   if (nullptr == _enumeratedLights) {
@@ -1401,6 +1809,22 @@ void ForwardPbrNodeImpl::_update_sun_cookie() {
     disarm();
     return;
   }
+
+  ////////////////////////////////////////
+  // COOKIE CADENCE — one fill serves _cloudShadowRefreshFrames frames. HELD, not
+  // recomputed: the published texture, matrix and dials are all last fill's, and
+  // they belong together (the matrix is what makes the texture a world-space
+  // field; refreshing it alone would slide the clouds' shadow across the ground
+  // by the camera's motion). Every DISARM above this point is unreachable from
+  // here and stays immediate — a strength of 0, a scene with no decks, or a lost
+  // light drops the cookie on the frame it happens, never at the next tick.
+  ////////////////////////////////////////
+  int cookie_refresh = std::clamp(dldata->_cloudShadowRefreshFrames, 1, 240);
+  if (_sun_cookie_valid and (_sun_cookie_held < (cookie_refresh - 1))) {
+    _sun_cookie_held++;
+    return;
+  }
+  _sun_cookie_held = 0;
 
   auto context = _currentContext;
   int dim      = std::clamp(dldata->_cloudShadowMapSize, 64, 4096);
@@ -1622,6 +2046,7 @@ void ForwardPbrNodeImpl::_update_sun_cookie() {
   lmgr->_sun_cookie          = tex;
   lmgr->_sun_cookie_matrix   = cookie_matrix;
   lmgr->_sun_cookie_strength = strength;
+  _sun_cookie_valid          = true; // a fill landed — the cadence may hold it
   lmgr->_sun_cookie_lod      = std::max(dldata->_cloudShadowSoftness, 0.0f);
   lmgr->_sun_cookie_extinction = std::max(dldata->_cloudExtinction, 0.0f);
   lmgr->_sun_cookie_disc_lod   = std::max(dldata->_cloudDiscSoftness, 0.0f);
@@ -1637,7 +2062,7 @@ void ForwardPbrNodeImpl::_update_sun_cookie() {
 //
 // The sky-view LUT is built from the CENTER-EYE position (L4) — the prologue's
 // mono CPD camera, the same source the cascade fit and the probe passes use —
-// so both DMVR eyes share one LUT.
+// so both eyes share one LUT.
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 void ForwardPbrNodeImpl::_update_sky_luts() {
@@ -1712,6 +2137,7 @@ void ForwardPbrNodeImpl::_update_sky_luts() {
   auto skyframe               = std::make_shared<SkyFrameState>();
   skyframe->_skyViewLUT       = _hillaire_sky->skyViewTexture();
   skyframe->_transmittanceLUT = _hillaire_sky->transmittanceTexture();
+  skyframe->_multiScatterLUT  = _hillaire_sky->multiScatterTexture();
   skyframe->_dirToSun         = dir_to_sun;
   skyframe->_dirToMoon        = dir_to_moon;
   skyframe->_moonIlluminance  = moon_illuminance;
@@ -1774,6 +2200,7 @@ void ForwardPbrNodeImpl::_update_sky_ibl() {
   ////////////////////////////////////////
 
   uint64_t medium_hash = atmo->mediumHash();
+  uint64_t haze_hash   = atmo->hazePresentationHash();
   float sun_delta_deg  = 0.0f;
   if (state->_ever_snapped) {
     float ct      = std::clamp(skyframe->_dirToSun.dotWith(state->_last_snapshot_dir_to_sun), -1.0f, 1.0f);
@@ -1841,8 +2268,15 @@ void ForwardPbrNodeImpl::_update_sky_ibl() {
   } else {
     sun_trigger = (sun_delta_deg > atmo->_iblRefilterAngleDeg);
   }
+  // THE HAZE STAMP is an immediate trigger beside the medium's, and it has to be
+  // its own: the artist layer is presentation tier (mediumHash never sees it, so
+  // a look edit never re-bakes the transmittance / multi-scatter LUTs), but the
+  // snapshot now bakes that layer into the sky it captures. Without this a haze
+  // edit would only reach reflections and SH ambient once something ELSE started
+  // a cycle — which under a still sun is never.
   bool trigger = (not state->_ever_snapped)                            //
                  or (medium_hash != state->_last_snapshot_medium_hash) //
+                 or (haze_hash != state->_last_snapshot_haze_hash)     //
                  or sun_trigger;
   if (not trigger)
     return;
@@ -1912,6 +2346,7 @@ void ForwardPbrNodeImpl::_update_sky_ibl() {
   state->beginCycle();
   state->_last_snapshot_dir_to_sun = skyframe->_dirToSun;
   state->_last_snapshot_medium_hash = medium_hash;
+  state->_last_snapshot_haze_hash   = haze_hash;
   state->_ever_snapped              = true;
 
   // the callback runs on THIS thread (render) after the swap's GPU UPLOADS have
@@ -2376,8 +2811,38 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
   _currentIRenderer->_debugLog  = false;
 
   ////////////////////////////////
+  // DRAW-LAST SPLIT. Renderables at IRenderable::kLastRenderableSortKey (the grass carpet)
+  // are held back from this segment and re-issued by _render_drawlast into a depth-WRITABLE
+  // continuation of the same pass: the color pass proper runs with the depth attachment in
+  // DEPTH_READ_ONLY_OPTIMAL (that is what lets in-pass DEPTH_MAP samplers read the prepass
+  // depth), and a read-only depth attachment forbids depth writes for EVERY draw in it.
+  // reset_after stays false here — the tail segment owns the queue reset, and resetting
+  // between the two would throw the held-back renderables away.
+  // PROBE captures keep the single-segment form: their RTG is a cube face in the middle of
+  // its face setup, so a pop/push there buys nothing a reflection bake can see.
+  ////////////////////////////////
 
-  _currentIRenderer->drawEnqueuedRenderables(true);
+  bool have_drawlast = (not fpass->_renderingPROBE) //
+                       and (_currentIRenderer->countEnqueuedAtOrAboveSortKey(
+                                IRenderable::kLastRenderableSortKey) > 0);
+
+  if (have_drawlast) {
+    _currentIRenderer->drawEnqueuedRenderables(false, 0, IRenderable::kLastRenderableSortKey - 1);
+    _render_drawlast(fpass);
+  } else {
+    _currentIRenderer->drawEnqueuedRenderables(true);
+  }
+
+  ////////////////////////////////
+  // QUARTER-RES SUN SHAFTS, half two: subtract the bilateral-upsampled shadow
+  // loss from the finished OPAQUE image. Here, and not earlier, because the
+  // draw-last segment above is opaque geometry (the grass carpet) that wants
+  // its shafts; and not later, because transparent surfaces must blend over an
+  // already-corrected image rather than be darkened by a loss marched for the
+  // opaque behind them. No-op in every mode but 2.
+  ////////////////////////////////
+
+  _composite_hazeshaft(fpass);
 
   // PBR2 Phase 2 — std_transparent layer. Drawn after opaques so the
   // (eventual P2.7) transmission lobe can sample the opaque framebuffer
@@ -2447,6 +2912,50 @@ void ForwardPbrNodeImpl::_render_colorpass(forward_pass_ptr_t fpass) {
     }
   }
 
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Draw-last segment — the tail of the color pass, run with a WRITABLE depth attachment.
+//
+// Everything the color pass draws before this point runs against depth in
+// DEPTH_READ_ONLY_OPTIMAL, so no draw in it can write depth. The carpet has to: it is a
+// dense, per-blade surface that must occlude (and be occluded by) the world it sits in.
+// Rather than make the whole color pass writable — which would re-arm the depth CLEAR
+// (loadOp follows _autoclear AND not read-only) and discard the prepass, and would strand
+// the in-pass DEPTH_MAP samplers with an attachment they may not read — this ends the
+// read-only segment and re-enters the same RTG once more with depth writable.
+//
+// SPVR needs no separate arrangement: the multiview viewMask lives on the RTG, so the
+// re-entered pass broadcasts to both eye layers exactly like the segment it continues.
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void ForwardPbrNodeImpl::_render_drawlast(forward_pass_ptr_t fpass) {
+
+  auto rtg_out = fpass->_rtg_out;
+  auto FBI     = _currentContext->FBI();
+
+  auto autorelease_dbg_group = _currentContext->debugPushGroupAutoRelease("ForwardPBR::draw-last");
+
+  // The segment CONTINUES a pass whose color the frame already depends on. _autoclear is
+  // re-read at every push (VkRtGroupImpl::_updateClearParams), so leaving the frame's value
+  // set would clear the skybox and every opaque draw back out at the re-entry.
+  bool saved_autoclear = rtg_out->_autoclear;
+  rtg_out->_autoclear  = false;
+
+  // PopRtGroup on a "user" RTG also clears _depthReadOnlyMode, so the push below transitions
+  // depth back to an attachment layout on its own; the explicit call states the requirement
+  // rather than leaning on that side effect.
+  FBI->PopRtGroup();
+  FBI->transitionDepthForWriting(rtg_out);
+  FBI->PushRtGroup(rtg_out.get());
+  _currentIRenderer->drawEnqueuedRenderables(true, IRenderable::kLastRenderableSortKey);
+  FBI->PopRtGroup();
+
+  // Hand the caller back the pass it pushed, in the state it pushed it: the segments after
+  // this one (std_transparent, aux channels, overlays) see read-only depth exactly as before.
+  FBI->transitionDepthForSampling(rtg_out);
+  FBI->PushRtGroup(rtg_out.get());
+  rtg_out->_autoclear = saved_autoclear;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////

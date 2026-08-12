@@ -20,6 +20,7 @@
 #include <ork/lev2/gfx/hypermesh/hmdflow.h> // D.3: hypermesh gens materialize to LiveHypermesh
 #include <ork/lev2/gfx/asset_gen_vdb.h>     // D.5: ImplicitSdf / VdbGridToDrawable / ParticleSystem
 #include <ork/lev2/gfx/terrain/terrain_chunk_drawable.h> // D.5 +terrain: by-name resolution
+#include <ork/lev2/gfx/terrain/grass_drawable.h>        // GRASS: same by-name resolution
 #include <ork/lev2/gfx/particle/drawable_data.h>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h> // v1b: eager skybox radiance warm
 #include <ork/file/path.h>
@@ -272,6 +273,24 @@ varmap::varmap_ptr_t materializeAndWireScene(scenedata_ptr_t scenedata, lev2::Co
                 tcd->_mode_materials.push_back(nullptr); // keep index alignment with the label list
               }
             }
+          }
+          // grass carpets serialize INLINE on the node like the terrain chunk above; the
+          // same two by-name references (the HF manifest + the GrassFieldSource material)
+          // resolve here. A missing one leaves the runtime field null and the drawable's
+          // bootstrap says so by name rather than drawing a lesser carpet.
+          if (auto gcd = std::dynamic_pointer_cast<lev2::terrain::GrassDrawableData>(nid->_drawabledata)) {
+            if (auto m = artifacts->typedValueForKey<std::string>(gcd->_hf_asset_name))
+              gcd->_resolved_manifest = m.value();
+            else
+              printf(
+                  "materializeAndWireScene: grass hf asset<%s> did not materialize\n",
+                  gcd->_hf_asset_name.c_str());
+            if (auto mt = artifacts->typedValueForKey<lev2::pbrmaterial_ptr_t>(gcd->_material_asset_name))
+              gcd->_resolved_material = mt.value();
+            else
+              printf(
+                  "materializeAndWireScene: grass material asset<%s> did not materialize\n",
+                  gcd->_material_asset_name.c_str());
           }
           // re-attach the materialized drawable by name
           if (not nid->_drawable_asset_name.empty()) {

@@ -154,7 +154,13 @@ libblock lib_deferred
       vec3 F = fresnelSchlickRoughness(satdot(halfdir,eye_dir), plc._F0,plc._roughness);
       vec3 diffusel = vec3(1) - F;
       diffusel *= (1 - plc._metallic);
-      vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
+      // Same shared lobe the forward path evaluates, PINNED TO LAMBERT: this
+      // block's uniforms (ub_frg) have no binder — the deferred render node is
+      // disabled (CompositingData::presetDeferredPBR) and no DeferredCompositingNodePbr
+      // exists in the tree — so a selector lane here would be a uniform nobody
+      // ever writes. The lane arrives with the node, not before it.
+      vec3 diffuse_term = diffuseBRDF(0, gbd._albedo, diffusel,
+                                      plc._roughness, gbd._wnrm, eye_dir, lightdir)*DiffuseLevel;
 
       //////////////////////////
       // filtered specular (WIP)
@@ -184,7 +190,9 @@ libblock lib_deferred
       vec3 fres = fresnelSchlickRoughness(satdot(halfdir,plc._viewdir), plc._F0,plc._roughness);
       vec3 diffusel = vec3(1) - fres;
       diffusel *= (1 - plc._metallic);
-      vec3 diffuse_term = (diffusel*gbd._albedo*INV_PI)*DiffuseLevel;
+      // Pinned to LAMBERT for the same reason as plcalc2 above.
+      vec3 diffuse_term = diffuseBRDF(0, gbd._albedo, diffusel,
+                                      plc._roughness, gbd._wnrm, plc._viewdir, lightdir)*DiffuseLevel;
 
       //////////////////////////
       // filtered specular (WIP)

@@ -166,6 +166,11 @@ public:
     // injections (e.g. outputRTG).
     void setUserSceneParam(const std::string& key, const varmap::VarMap::value_type& val);
   bool hasUserSceneParam(const std::string& key) const;
+    // Read-only view of the declared author params. A HOST reaches a declared
+    // OBJECT through this (the live SkyAtmosphereData under "SkyAtmosphere" is
+    // the same instance Scene::applyRuntimeParams hands the pbr common block),
+    // which is what lets a runtime editor poke it without a second copy.
+    const lev2::rendervar_strmap_t& userSceneParams() const { return _userParams; }
     // PBR2 P3.D — reflected post-fx node registry. Add a node under a
     // stable string key (overwrite on collision). Execution order is the
     // separate _postfx_order string (comma-delimited names). Both

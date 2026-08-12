@@ -93,7 +93,7 @@ public:
   //  implementations dedup their work to once per CONTEXT frame via
   //  Context::GetTargetFrame() — multiple assembles per frame are legitimate
   //  (shared-scene multi-viewport repaints), as are N Render() calls per
-  //  assemble (once per eye under DualMonoVr): frame-scoped work still runs
+  //  assemble (once per view on a per-eye output path): frame-scoped work still runs
   //  once. _frameIndex below increments per Render() i.e. per EYE — never
   //  use it for frame identity. Default no-op.
   virtual void renderPrologue(CompositorDrawData& drawdata) {
@@ -154,6 +154,29 @@ public:
   }
   virtual lev2::rtgroup_ptr_t GetOutputGroup() const {
     return nullptr;
+  }
+
+  // WHERE IN THE CHAIN THIS NODE IS ALLOWED TO RUN. Declaration order is an
+  // accident of authoring — a scene declares its sky (and with it the tone
+  // stage) in the first line of __init__, while an effect can be attached much
+  // later by the material that needs it — but the chain's stages are not
+  // negotiable:
+  //   EFFECT reads the forward node's HDR MRT (SSSS needs its SECOND color
+  //          attachment) and must therefore run while that group is still the
+  //          chain's carrier;
+  //   TONE   collapses the HDR group to a single display-referred buffer;
+  //   GRADE  clamps, so it can only follow the tone stage.
+  // Chain assembly stable-sorts on this, which is what keeps a tone stage
+  // declared FIRST from handing an effect a one-buffer input — a case an
+  // effect can only refuse, publishing its never-rendered rtgroup as the
+  // chain's output, i.e. a black frame.
+  enum ChainStage {
+    CHAINSTAGE_EFFECT = 0,
+    CHAINSTAGE_TONE   = 1,
+    CHAINSTAGE_GRADE  = 2,
+  };
+  virtual int chainStage() const {
+    return CHAINSTAGE_EFFECT;
   }
 
   bool _disabled = false;

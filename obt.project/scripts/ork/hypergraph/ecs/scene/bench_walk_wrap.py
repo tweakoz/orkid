@@ -3,13 +3,14 @@
 # into the stereo frame-time bench:
 #
 #   ORKEXP_SCENE_WRAP=ork.hypergraph.ecs.scene.bench_walk_wrap:wrap \
-#   ork.scene.viewer.py scn_forest_procsky --offscreen --no-devkeys
+#   ork.scene.viewer.py scn_forest_procsky --offscreen
 #
 # TWO overlays, no scene edits:
 #   1. preset -> FWDPBRVRDM. With no live XR runtime the SceneGraphSystem
-#      auto-registers a NoVrDevice at 1280x1280 per eye, so the dual-mono VR
-#      output node renders a 2560x1280 stereo surface — the VR frame cost on a
-#      desktop GPU, measurable headless.
+#      auto-registers a NoVrDevice at 1280x1280 per eye, so the VR output node
+#      renders a 2560x1280 stereo surface — the VR frame cost on a desktop GPU,
+#      measurable headless. That node is the single-pass stereo one: both VR
+#      preset strings resolve to it, and a device without multiview throws.
 #   2. bench_walk_system.py appended to the PythonSystem. It publishes the camera
 #      as a pure function of sim time (see that file); the scene keeps its own
 #      primary script (walker input), which is order-independent of appended ones.
@@ -22,15 +23,15 @@
 #
 #   BENCH_PRESET=<preset>   use this preset instead of FWDPBRVRDM. The point of
 #                           BENCH_PRESET=ForwardPBR is the MONO-VS-STEREO
-#                           discriminator: DMVR renders two SEQUENTIAL per-eye
-#                           passes into a 2560x1280 surface, mono renders ONE
-#                           1280x1280 pass. PER-EYE PIXEL COUNT IS IDENTICAL, so
-#                           the mono-to-stereo FPS ratio prices the second eye
-#                           pass directly (a ratio near 2 means the second pass
-#                           costs a whole frame; a ratio near 1 means it is
-#                           shared work). Nothing else about the run changes —
-#                           same tour, same witness, same scene state — so the
-#                           two runs stay comparable frame for frame.
+#                           discriminator: the VR node renders BOTH eyes into a
+#                           2560x1280 surface (single-pass, layered), mono
+#                           renders ONE 1280x1280 pass. PER-EYE PIXEL COUNT IS
+#                           IDENTICAL, so the mono-to-stereo FPS ratio prices the
+#                           second eye directly (a ratio near 2 means it costs a
+#                           whole frame; a ratio near 1 means it is shared work).
+#                           Nothing else about the run changes — same tour, same
+#                           witness, same scene state — so the two runs stay
+#                           comparable frame for frame.
 #
 #   BENCH_MSAA=<n>          override the scene's msaa scenegraph param (forest
 #                           hardcodes msaa=2). Comparability caveat: this changes
@@ -51,10 +52,10 @@
 #                           cost is that the IBL stops tracking the sun, so the
 #                           lighting slowly goes stale over a long run — which is
 #                           why this is a measurement mode with an off switch and
-#                           not a scene change. FOREST_TIME_SCALE=0 was rejected as
-#                           the mechanism: freezing the clock also freezes the
-#                           shadow refit and the sky, i.e. it changes the frame
-#                           being measured.
+#                           not a scene change. Zeroing the scene's TIME_SCALE was
+#                           rejected as the mechanism: freezing the clock also
+#                           freezes the shadow refit and the sky, i.e. it changes
+#                           the frame being measured.
 #
 # The atmosphere object this attaches is a DEFAULT-CONSTRUCTED SkyAtmosphereData,
 # which is exactly what the engine attaches for itself when a procedural-sky scene

@@ -221,9 +221,9 @@ void PhysicsDebugger::render(const RenderContextInstData& _RCID, lineqptr_t line
   const auto& CPD = RCFD->topCPD();
   auto pcamdata = CPD.cameraMatrices();
   if (nullptr == pcamdata) {
-    // a pass with no mono camera (e.g. a true single-pass-stereo CPD carries only
-    // stereo matrices) — refuse loudly rather than deref null. The dual-mono VR
-    // path (FWDPBRVRDM) publishes per-eye MONO matrices, so it never lands here.
+    // a pass with no mono camera (a single-pass-stereo CPD carries only stereo
+    // matrices) — refuse loudly rather than deref null. Any pass that publishes mono
+    // camera matrices (every desktop path) never lands here.
     static int s_nocam_warns = 0;
     if (s_nocam_warns < 4) {
       s_nocam_warns++;

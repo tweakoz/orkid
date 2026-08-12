@@ -313,6 +313,7 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _paramDiffuseLevel  = fxi->parameter(_shader, "DiffuseLevel");
   _paramSpecularLevel = fxi->parameter(_shader, "SpecularLevel");
   _paramSkyboxLevel   = fxi->parameter(_shader, "SkyboxLevel");
+  _paramDiffuseBrdfModel = fxi->parameter(_shader, "DiffuseBrdfModel");
 
   _paramSSAOTexture     = fxi->parameter(_shader, "SSAOMap");
   _paramSSAOWeight     = fxi->parameter(_shader, "SSAOWeight");
@@ -373,6 +374,17 @@ void PBRMaterial::gpuInit(Context* targ) /*final*/ {
   _parSkyMoonIlluminance  = fxi->parameter(_shader, "SkyMoonIlluminance");
   _parSkyViewLut          = fxi->parameter(_shader, "SkyViewLUT");
   _parSkyTransmittanceLut = fxi->parameter(_shader, "SkyTransmittanceLUT");
+  // AERIAL PERSPECTIVE — the medium members + multi-scatter LUT the forward
+  // haze march reads directly (the skybox reads none of them).
+  _parSkyRayleighScatter  = fxi->parameter(_shader, "SkyRayleighScatter");
+  _parSkyMieScatter       = fxi->parameter(_shader, "SkyMieScatter");
+  _parSkyOzoneAbsorb      = fxi->parameter(_shader, "SkyOzoneAbsorb");
+  _parSkyOzoneTent        = fxi->parameter(_shader, "SkyOzoneTent");
+  _parSkyMultiScatterLut  = fxi->parameter(_shader, "SkyMultiScatterLUT");
+  _parSkyHazeDensity      = fxi->parameter(_shader, "SkyHazeDensity");
+  _parSkyHazeScatterTint  = fxi->parameter(_shader, "SkyHazeScatterTint");
+  _parSkyHazeInscatterTint = fxi->parameter(_shader, "SkyHazeInscatterTint");
+  _parSkyHazeGeom         = fxi->parameter(_shader, "SkyHazeGeom");
   _parSkyCookieParams     = fxi->parameter(_shader, "SkyCookieParams");
   _parSkyCookieBody       = fxi->parameter(_shader, "SkyCookieBody");
   _parSkyCloudCookie      = fxi->parameter(_shader, "SkyCloudCookie");

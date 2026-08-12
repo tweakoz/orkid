@@ -12,6 +12,8 @@
 #   ork.ecs.player.exe /tmp/scat.ecs --camdist 220 --camheight 90
 ###############################################################################
 
+import os
+
 from orkengine.core import vec3, vec4, CrcStringProxy, lev2_pyexdir
 from orkengine.lev2 import TerrainChunkDrawableData, PostFxNodeHeatDistort
 
@@ -35,6 +37,24 @@ HEIGHT_M = 175.0    # total relief — navigable rolling hills (see scatterhills
 CHUNK    = 128
 BALL_R    = 0.25   # projectile radius (collider; visual = instance scale on a ~1m model)
 MAX_BALLS = 256    # instanced-node capacity
+
+# THE SKY SITE — an ANTARCTIC MIDSUMMER day (owner look target): the clearest
+# air on Earth under a low midnight-sun-class sun. At 77.8 S on day 355
+# (southern midsummer) the sun never sets and never climbs: it rides a
+# 11..36 degree band all day, so EVERY hour on this clock is long cold-white
+# side light. 18.0 h puts it at ~23 degrees bearing WSW — cross-light over the
+# field, long shadows; the clock is FROZEN (time_scale=0) so the demo look is
+# stable across runs and settle counts.
+#
+# ENV KNOBS (offscreen stills need their look before the first frame — the
+# forest/swest idiom; presentation-tier, a re-run not a re-cook):
+#   ORK_SCATTER_TOD=<hours>        — reposition the sun on the polar band
+#   ORK_SCATTER_HAZE=<preset|off>  — haze preset ("clear"/"hazy_day"/
+#                                    "bladerunner"); unset = clear polar air
+#   ORK_SCATTER_HAZE_DIST=<m>      — e-folding sight distance override, on top
+SKY_LATITUDE_DEG = -77.8
+SKY_DAY_OF_YEAR  = 355.0
+TIME_OF_DAY      = float(os.environ.get("ORK_SCATTER_TOD", "18.0"))
 
 
 class Boulder(HypermeshDSL):
@@ -90,12 +110,61 @@ class ScatterScene(Scene):
         AmbientLight       = vec3(0.0),
         CullFrustumScale   = 0.75,   # TEMP A/B TEST: narrow cull frustum (cull-more) — revert after
         DepthPrepass       = True,   # resolves a single-sample depth (the HZB occlusion source) + early-Z
-        msaa = 2,
-        ssaa = 0,
+        msaa = 3,
+        ssaa = 1,
         aux_channels       = ["heat"],
         postfx             = [("heatdistort", heat_fx)])
 
     self.system_data("HypermeshSystem")
+
+    ##########################
+    # THE SKY — the family's one call (scn_forest's mechanism: the scenegraph is
+    # already declared above, so the dome half AMENDS it — appends a second
+    # declareParams; later keys win). The sky source flips BAKED -> PROCEDURAL
+    # (Hillaire sky + analytic sun disc); cold4k stays as declared above, now as
+    # the IBL warm-up fallback until the first procedural IBL cycle publishes.
+    #
+    # ANTARCTIC SUMMER (see the SKY SITE block above): pure geophysical
+    # atmosphere — NO artist haze layer by default ("clear" = declare nothing;
+    # zero artist density is the engine default), deep Rayleigh blue at zenith
+    # over a bright near-white horizon band, and a frozen low sun whose light
+    # stays white because nothing warm is in the air. Moon and stars are off:
+    # a polar summer day has no night for them, and the bare sky is the look.
+    ##########################
+
+    haze = os.environ.get("ORK_SCATTER_HAZE") or None
+    if haze is not None and haze.lower() in ("off", "none"):
+      haze = None
+    dist_m = os.environ.get("ORK_SCATTER_HAZE_DIST")
+    if dist_m is not None:
+      # rides ON TOP of whichever declaration is in force (the forestg idiom):
+      # with no preset this alone authors a bare layer at engine-default tints —
+      # a clean distance-only sweep.
+      haze = {} if haze is None else {"preset": haze}
+      haze["distance_m"] = float(dist_m)
+
+    self.sky(
+        latitude_deg  = SKY_LATITUDE_DEG,
+        day_of_year   = SKY_DAY_OF_YEAR,
+        time_of_day   = TIME_OF_DAY,
+        time_scale    = 0.0,     # frozen clock: the demo's light never drifts
+        moon          = False,
+        stars         = False,
+        haze          = haze,
+        sun_color     = vec3(1.0),
+        # the tone stage's AUTHORED exposure (composes with the scene
+        # adaptation): the procsky's fixed presentation exposure grades a
+        # low polar sun as dusk — the summer snowfield reads bright THROUGH
+        # the ACES shoulder instead, which keeps the snow whites from
+        # clipping while the sky's blue gradient comes up with the ground.
+        tonemap       = {"exposure": float(os.environ.get("ORK_SCATTER_EXPOSURE", "2.0"))},
+        # frozen sun -> the cascade snapshot re-renders are pure waste past the
+        # first; a declared cadence also avoids the hot-rerender flicker of the
+        # undeclared one (the swest field report).
+        shadow_snapshot_interval = 10.0,
+        # broad gradients + a disc: nothing a 512x256 equirect resolves that a
+        # 256x128 one does not, and the refilter is linear in snapshot area.
+        ibl_snapshot_extent = (256, 128))
 
     ##########################
     # Assets — DECLARATION ORDER = DEPENDENCY ORDER: the terrain (which PLACES the
@@ -229,7 +298,7 @@ class ScatterScene(Scene):
         brake        = 10.0,   # release -> stop in ~0.3s; no drag while driving
         eye_height   = 0.85,   # eyes ~1.85m above ground (capsule center +0.85)
         cam_distance = 0.0,    # loc 0: first person — pure rotation at the pivot
-        cam_far      = 4000.0, # 2km sightlines
+        cam_far      = 16000.0, # 2km sightlines
         gravity      = vec3(0.0, -19.8, 0.0))
 
     ##########################

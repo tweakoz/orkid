@@ -63,9 +63,34 @@ void NoVrDevice::_updatePoses(RenderContextFrameData& RCFD) {
   fmtx4 lp, cp, rp, rotzL, rotzR;
 
   float aspect = float(_width) / float(_height);
-  lp.perspective(_fov, aspect, _near, _far);
-  cp.perspective(_fov, aspect, _near, _far);
-  rp.perspective(_fov, aspect, _near, _far);
+  if (_eyeFovInsetDegrees > 0.0f) {
+    // ASYMMETRIC per-eye frusta, the shape a real runtime reports: each eye's nose-side
+    //  half-FOV is inset, and the center view is the AVERAGE of the two (same construction
+    //  as the OpenXR device). Vertical stays symmetric — the inset is horizontal.
+    float tanv  = tanf(_fov * 0.5f);
+    float halfH = atanf(tanv * aspect);
+    float halfN = halfH - _eyeFovInsetDegrees * DTOR;
+    if (halfN < 0.01f)
+      halfN = 0.01f;
+    float halfC = 0.5f * (halfH + halfN);
+    auto build  = [&](float aleft, float aright) -> fmtx4 {
+      VrProjFrustumPar f;
+      f._left   = tanf(aleft);
+      f._right  = tanf(aright);
+      f._top    = -tanv; // composeProjection wants top NEGATIVE / bottom POSITIVE
+      f._bottom = tanv;
+      f._near   = _near;
+      f._far    = _far;
+      return f.composeProjection();
+    };
+    lp = build(-halfH, halfN);
+    rp = build(-halfN, halfH);
+    cp = build(-halfC, halfC);
+  } else {
+    lp.perspective(_fov, aspect, _near, _far);
+    cp.perspective(_fov, aspect, _near, _far);
+    rp.perspective(_fov, aspect, _near, _far);
+  }
 
   ////////////////////////////////////////
   // apply display panel rotation, if any..

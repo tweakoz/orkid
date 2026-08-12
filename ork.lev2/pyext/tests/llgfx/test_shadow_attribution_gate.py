@@ -8,7 +8,7 @@
 # image-based (env/IBL) contribution, intact and unattenuated.
 #
 # Static reading says this holds. In fwdtools.i2 the shadow factor is built once
-# (_sun_shadow_factor x _sun_cookie_factor) and multiplied into sun_lighting's
+# (_sun_shadow_factor x _sun_cookie_sample) and multiplied into sun_lighting's
 # diffuse and specular only; pbrEnvironmentLightingWithF0 never sees it, and the
 # final composite sums env_lighting + point + spot + sun with no shadow term of
 # its own. This gate is the NUMERIC confirmation of that reading, because a
@@ -204,7 +204,7 @@ class ShadowAttributionApp(ComponentizedApplication):
     sun = lev2.DynamicDirectionalLight()
     sun.data.color = vec3(1, 1, 1)
     sun.data.intensity = SUN_INTENSITY
-    sun.data.shadowBias = 2e-4
+    sun.data.shadowBias = 0.05  # metres
     sun.data.shadowMapSize = 2048
     sun.data.shadowCascadeCount = 3
     sun.data.shadowMaxDistance = 250.0

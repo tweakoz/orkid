@@ -1142,6 +1142,7 @@ drawable_ptr_t TerrainChunkDrawableData::createDrawable() const {
     //////////////////////////////////////////////////////////////////
     drawable->_passes          = cdd->_passes;
     drawable->_spvrFamily      = "terrain"; // names this producer in the [SPVR:CDSEL] bind-time line
+    drawable->_shadowFamily    = ShadowFamily::TERRAIN; // the sun-cullset caster family (drawable.h)
     drawable->_inlineComputePass = cdd->_inlineComputePass; // MODE 2: inline frame-CB compaction
     drawable->_camParamsSSBO   = cdd->_camParamsSSBO;
     drawable->_camParamsOffset = cdd->_camParamsOffset;

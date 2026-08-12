@@ -43,23 +43,52 @@
 // the host CONSUMES only what is listed here and forwards every other key transition
 // to the scene's PythonSystem, so a scene script's binding collides with a host key
 // silently unless it is checked against this list. Taken, in order of precedence:
-//   host        ` ~ (perf HUD)   P (walk pause)   Space (pause when not walking)
+//   host        ` ~ (perf HUD page ring: off/1 FRAME/2 GPU/3 PASSES/4 CULL/5 SYSTEMS,
+//                   then the registered EDITOR pages: 6 SKY / 7 POST)
+//               [ ] - = and \ — ONLY while an editor page is up ([ ] select the item,
+//                   - = decrement / increment it, \ opens / closes a COLOR row's H/S/V
+//                   sub-editor). MODAL: off an editor page they fall through to the scene
+//                   exactly as before (all five are sky-clock keys), and their KEY-UP is
+//                   never swallowed, so a scene script can't be left holding one. \ is
+//                   narrower still — it is consumed only ON a color row. THE CURSOR KEYS
+//                   ARE DELIBERATELY NOT USED: they stay the scene's rotation, so you can
+//                   steer while editing.
+//               P (walk pause)   Space (pause when not walking)
 //               Cmd+Right / Cmd+Down / Cmd+R
 //   EzUiCam     Z X C V (rotate / pan / dolly / zoom)
-//   --devkeys   E G T H M B R  (see below)
 //   PYTHON-SIDE (host forwards; owned by the scene's scripts, listed here so the
 //   next binding does not land on top of them):
-//     walk_input_system.py  W A S D · cursor keys · Space · / · Shift · CapsLock
+//     walk_input_system.py  W A S D · cursor keys · Space · Enter(shoot) · Shift · CapsLock
 //     sky_time_system.py    ] [ scrub time · \ pause sky clock · = - sky speed
 //                           ' ; step a day · 0 reset to the authored hour
 //
-// --devkeys (OPT-IN; default OFF): viewer-grade dev keys (the C++ lowering of
-//   ork.ecsplay.py's controls). Injects an ACES+HSVG postfx chain (the "viewer look" —
-//   the ACES curve changes the image even before any key), then:
-//     E  cycle envmap    G  gamma    T  ACES exposure    H  saturation
-//     M  terrain material (declared + scene debug looks)    R  reset post-fx
-//   plus an always-on upper-left key legend (deterministic; absent flagless).
-//   Flagless is byte-identical to the scene-authored look.
+// THE PAD REGISTRY. Same contract as the keys, for the gamepad: the host CONSUMES only
+// what is listed here and forwards every other button transition (plus the analog axes)
+// to the scene's PythonSystem as GamepadButton / GamepadAxes. Abstract button ids are
+// DS4-named but position-based, so an Xbox pad reports A/B/X/Y as CROSS/CIRCLE/SQUARE/
+// TRIANGLE. Taken, in order of precedence:
+//   host        R1  perf HUD page ring FORWARD, L1 the same ring BACKWARD (the pad
+//                   analogue of ` and SHIFT-`; desktop + VR). DEDICATED: the bumpers are
+//                   the host's, which is why walk's jump sits on TRIANGLE.
+//               R3  perf HUD page ring forward (the stick-click twin of R1)
+//               CROSS — ONLY while an editor page is up AND a COLOR row is selected
+//                   (the pad twin of X above); the scene keeps CROSS (fire) otherwise.
+//               DPAD UP/DOWN + L2/R2 — ONLY while an editor page is up (select item /
+//                   adjust value). Same modal rule as the cursor keys: the two dpad
+//                   bits are masked out of the python forward while editing (so the
+//                   scene sees a clean release edge, never a stuck hold) and L2/R2
+//                   are zeroed in the forwarded axes snapshot.
+//   PYTHON-SIDE (host forwards; owned by the scene's scripts):
+//     walk_input_system.py  left stick + dpad locomotion · TRIANGLE jump · CROSS fire
+//                           SQUARE / CIRCLE discrete camera YAW steps (no pitch step)
+//                           (right stick axes + both analog triggers unbound scene-side,
+//                            which is what leaves L2/R2 to the HUD editor pages)
+// Deadzone is a PYTHON concern (walk_input_system.py), never the C++ backend — the
+// backends deliver raw normalized axes so every scene can choose its own feel.
+//
+// POST CHAIN (no flag): the HUD's POST editor page IS the tone/grade surface, so the
+//   player attaches whichever of the reflected "aces" / "hsvg" nodes the scene left
+//   out, default-constructed, at bind. A scene's own nodes always win.
 //
 // AUDIO (OPT-IN; default OFF = no device opened, scenes play silent):
 //   --audio                  open the real audio device (sound emitters + global synth)
@@ -80,8 +109,11 @@
 #include <ork/lev2/gfx/camera/uicam.h>
 #include <ork/lev2/input/gamepaddevice.h> // S1 gamepad: digital day-1 remap (pad -> the same InputKey channel as the keyboard)
 #include <ork/lev2/vr/vr.h> // --vr: query the active XR device (orkidvr::device()) to select the VR render model
-#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h> // --devkeys viewer-look postfx (tonemap)
-#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h> // --devkeys viewer-look postfx (gamma/saturation)
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeACES.h> // HUD POST editor page: the tone stage
+#include <ork/lev2/gfx/renderer/NodeCompositor/PostFxNodeHSVG.h> // HUD POST editor page: the grade stage
+#include <ork/lev2/gfx/renderer/NodeCompositor/sky_atmosphere.h>  // HUD SKY editor page: the scene's live atmosphere
+#include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>      // HUD POST editor page: the direct diffuse lobe
+#include <ork/lev2/gfx/material_pbr.inl> // HUD CLOUDS editor page: rebinds the deck materials' band / radiance
 #include <ork/ecs/physics/CharacterController.h> // E.2-walk: input forwarding + camera yield
 #include <ork/ecs/physics/bullet.h> // --physics-debug: BulletSystemData detection + debug-wireframe notify target
 #include <ork/ecs/pysys/PythonComponent.h>          // E.2-walk: scene-declared input-script routing
@@ -89,6 +121,7 @@
 #include <ork/reflect/serialize/JsonDeserializer.h>
 #include <ork/reflect/serialize/JsonSerializer.h>
 #include <rapidjson/document.h> // pre-create manifest peek (--audio's scene-declared twin)
+#include <algorithm> // HUD FOLIAGE page: the declared visgroup set is sorted for a stable row ring
 #include <atomic>
 #include <mutex>
 
@@ -98,9 +131,11 @@
 #include <ork/ecs/simulation.h>
 #include <ork/ecs/controller.h>
 #include <ork/ecs/SceneGraphComponent.h>
+#include <ork/ecs/HypermeshComponent.h> // HUD FOLIAGE page: the scene's declared visgroups + SET_VISGROUP
 #include <ork/ecs/AssetSystem.h>
 
 #include <ork/ecs/scene.inl>
+#include <ork/ecs/entity.inl>  // SpawnData::typedComponent — the walker's spawn, found by archetype
 #include <ork/ecs/archetype.inl>
 #include <ork/ecs/controller.inl>
 
@@ -110,13 +145,39 @@
 #include <iostream>
 #include <boost/program_options.hpp>
 
-#include "perfhud.h" // on-screen perf HUD (~ key)
-#include "keyshud.h" // --devkeys on-screen key legend (always-on with --devkeys)
+#include "perfhud.h"      // on-screen perf HUD (~ key)
+#include "editor_state.h" // saved editor values, keyed to the scene source (3 tiers, per mode)
 
 using namespace std::string_literals;
 using namespace ork;
 using namespace ork::lev2;
 using namespace ork::ecs;
+using ork::ecs::player::HudEditProp;   // HUD editor page descriptors (perfhud_pages.h)
+using ork::ecs::player::hudColorProp;
+using ork::ecs::player::HudRGB;
+using ork::ecs::player::hudEnumProp;
+using ork::ecs::player::hudFloatProp;
+using ork::ecs::player::hudActionProp;         // SETTINGS: the command rows
+using ork::ecs::player::EditorStateIO;         // saved editor values (editor_state.h)
+using ork::ecs::player::EditorValueMap;
+using ork::ecs::player::EditorStateReport;
+using ork::ecs::player::editorStateModeKey;
+
+// GLFW cursor keycodes as the ezapp ui events carry them (walk_input_system.py names the
+// same four). The player only SENDS these (--autoyaw); the cursor keys belong to the
+// scene's rotation, and nothing here consumes them.
+static constexpr int KEY_CURSOR_RIGHT = 262;
+
+// HUD EDITOR keys, consumed MODALLY (only while an editor page is up) — see the key
+// registry above. ALL FIVE are the sky clock's ('[' ']' scrub, '-' '=' speed, '\' pause),
+// borrowed for the duration of an editor page — the page that supersedes them is the one
+// showing time of day. Their key-UP is still forwarded, and sky_time_system.py pops an
+// unheld key safely.
+static constexpr int KEY_EDIT_PREV  = 91; // [
+static constexpr int KEY_EDIT_NEXT  = 93; // ]
+static constexpr int KEY_EDIT_DEC   = 45; // -
+static constexpr int KEY_EDIT_INC   = 61; // =
+static constexpr int KEY_EDIT_COLOR = 92; // backslash
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -157,11 +218,7 @@ int main(int argc, char** argv, char** envp) {
                                   // registry is non-empty the drain keeps PUMPING (a bake makes real
                                   // progress each frame); this ceiling is the ONLY thing that ends a
                                   // still-pending drain — and it ends it as a LOUD FAIL, never a black frame.
-  // --devkeys: OPT-IN interactive viewer-grade dev keys (mirror ork.ecsplay.py). DEFAULT OFF
-  // so a flagless run is byte-identical to the scene-authored look. When ON the player injects
-  // an ACES+HSVG postfx chain (the "viewer look" — ACES changes the image even before any key).
-  bool  devkeys          = false;
-  std::string devkeys_script;     // TEST HOOK: comma list LABEL:FRAME firing dev keys through the same handler
+  std::string editor_script;      // TEST HOOK: comma list LABEL:FRAME driving the HUD editor pages
   // --pysysnotify: TEST HOOK for the SCENE SCRIPTS' own message vocabulary (sky-clock controls,
   // walk actions, ...). Scripted controller messages to the PythonSystem on the same channel the
   // keyboard uses — so an offscreen gate or a scripted movie drives exactly what a key drives.
@@ -169,11 +226,12 @@ int main(int argc, char** argv, char** envp) {
   std::string pysys_notify_script;
   // --physics-debug: Bullet debug wireframe ON from startup (TOGGLE_DEBUG_DRAW to the
   // BulletSystem). Flag-driven so it works where no keyboard surface exists (VR windowless,
-  // offscreen gates); [B] under --devkeys toggles the same state live.
+  // offscreen gates).
   bool  physics_debug    = false;
-  // --vr: play the scene on the HMD through the active XR runtime (the FWDPBRVRDM render model).
-  // Opt-in. With no runtime the SAME render model runs against a NoVr device — stereo on the
-  // desktop (the mirror blit is the presentation), never a silent demotion to desktop mono.
+  // --vr: play the scene on the HMD through the active XR runtime (preset FWDPBRVRDM, which
+  // resolves to the single-pass stereo output node). Opt-in. With no runtime the SAME render
+  // model runs against a NoVr device — stereo on the desktop (the mirror blit is the
+  // presentation), never a silent demotion to desktop mono.
   bool  want_vr          = false;
   // --audio: bring up the real audio device (scene-declared sound emitters / synth), the
   // C++ equivalent of ork.ecsplay.py's enable_audio/_output/_synth. Independent of --movie,
@@ -206,11 +264,10 @@ int main(int argc, char** argv, char** envp) {
       ("snapshot,S", po::value<std::string>(&snapshot_path), "write the settled offscreen frame to PATH (png; implies --offscreen; agent/CI eyeball)")
       ("snapshot-frame,F", po::value<int>(&snapshot_frame)->default_value(0), "capture --snapshot N frames AFTER the composite first goes lit (deterministic; 0=at first-lit)")
       ("settle-timeout", po::value<float>(&settle_timeout)->default_value(0.0f), "offscreen settle/snapshot wall-clock HANG ceiling in seconds (0=auto 180). While async work is still pending the drain keeps pumping until this ceiling; on expiry (or a settled-black scene) it FAILS loud (SNAPSHOT_RESULT=FAIL) and exits NONZERO — never a black+rc=0 snapshot")
-      ("devkeys", po::bool_switch(&devkeys), "enable interactive viewer-grade dev keys [E cycle envmap, G gamma, T ACES exposure, H saturation, M terrain material (declared + scene-declared debug looks), B physics debug wireframe, R reset] + an always-on on-screen key legend. INJECTS an ACES+HSVG postfx chain, so the look changes (the 'viewer look') even before any keypress. Default OFF = scene-authored look, byte-identical to today.")
-      ("devkeys-script", po::value<std::string>(&devkeys_script)->default_value(""), "TEST HOOK (implies --devkeys): comma list LABEL:FRAME (e.g. \"E:120,G:180,CMDR:60\") firing dev keys through the SAME handler at update-tick FRAME; LABEL is E/G/T/H/M/B/R or CMDR (the live round-trip)")
+      ("editscript", po::value<std::string>(&editor_script)->default_value(""), "TEST HOOK: comma list LABEL:FRAME (e.g. \"DOWN:60,RIGHT:90,RIGHT:91\") driving the HUD EDITOR pages through the SAME handler a key/pad press uses, at update-tick FRAME. LABEL is PAGE (step the page ring), UP/DOWN (move the selection, or the H/S/V channel of an open color -- the '[' / ']' keys), LEFT/RIGHT (adjust one step -- the '-' / '=' keys) or COLOR (open/close the selected color row's sub-editor). Pair with ORKID_PERFHUD=<page name> to open on an editor page.")
       ("pysysnotify", po::value<std::string>(&pysys_notify_script)->default_value(""), "TEST HOOK: scripted controller messages to the scene's PythonSystem, on the SAME channel a keyboard/host uses. Semicolon list TIME:EVENT:field=value,... with TIME in seconds of sim abstime (e.g. \"2:SkyTimeSet:hour=18.5;5:InputKey:key=93,down=1;8:InputKey:key=93,down=0\" — a scripted hour, then the ']' key held for 3s). Values are floats; the scene's python script owns the vocabulary. No-op (with a notice) on a scene that declares no PythonSystem.")
-      ("physics-debug", po::bool_switch(&physics_debug), "Bullet physics debug wireframe ON from startup (collision shapes + contacts over the visual scene). Works without --devkeys and with no keyboard surface (VR/offscreen); [B] under --devkeys toggles the same state live. Scenes with no BulletSystem log a notice and play normally.")
-      ("vr", po::bool_switch(&want_vr), "VR: present the scene on the HMD through the active XR runtime (selects the FWDPBRVRDM render model). Requires ORKID_VR_DRIVER=openxr + a live runtime; with no runtime the same render model runs on a NoVr device — side-by-side stereo on the desktop, mode named in a one-line notice.")
+      ("physics-debug", po::bool_switch(&physics_debug), "Bullet physics debug wireframe ON from startup (collision shapes + contacts over the visual scene). Works with no keyboard surface (VR/offscreen). Scenes with no BulletSystem log a notice and play normally.")
+      ("vr", po::bool_switch(&want_vr), "VR: present the scene on the HMD through the active XR runtime (selects preset FWDPBRVRDM, which resolves to the single-pass stereo output node). Requires ORKID_VR_DRIVER=openxr + a live runtime; with no runtime the same render model runs on a NoVr device — side-by-side stereo on the desktop, mode named in a one-line notice.")
       ("audio", po::bool_switch(&want_audio), "AUDIO: open the real audio device so scene-declared sound emitters / the global synth are audible (the C++ lowering of ork.ecsplay.py's enable_audio). Default OFF = no device opened, scene plays silent. A scene enables itself by declaring a top-level \"audio\": true beside \"root\" in its .ecs manifest.");
 
   po::positional_options_description pos;
@@ -230,8 +287,6 @@ int main(int argc, char** argv, char** envp) {
     std::cout << desc << std::endl;
     return 1;
   }
-  if (not devkeys_script.empty())
-    devkeys = true; // the test hook drives the dev-key handler, so the chain must be present
 
   //////////////////////////////////////////////////////////
   // SHORT-NAME resolution + discovery (mirrors the python viewers): a bare name
@@ -350,6 +405,12 @@ int main(int argc, char** argv, char** envp) {
   // _mainWindow + render thread, so mainThreadLoop renders frames headless. The
   // onDraw frame-budget below drives capture + signalExit. --movie implies offscreen.
   //////////////////////////////////////////////////////////
+  // A SCRIPTED OR HEADLESS RUN MUST NOT REWRITE A SCENE'S SAVED LOOK: --editscript exists
+  // to drive the editor from a test, and an offscreen/movie run is a gate, not a grading
+  // session. The SETTINGS row still exists in both — it reports the refusal rather than
+  // going quiet, so a scripted run can PROVE the refusal happened.
+  const bool save_allowed = movie_path.empty() and snapshot_path.empty() and editor_script.empty() and
+                            not offscreen and not offscreen_forever;
   if (not movie_path.empty())
     offscreen = true;
   if (not snapshot_path.empty())
@@ -418,33 +479,25 @@ int main(int argc, char** argv, char** envp) {
   bool alpha_oracle = getenv("ORKID_PERFHUD_ALPHA_ORACLE") != nullptr;
   if (alpha_oracle) {
     perfhud._vrmode = true; // frameEndAndDraw -> _renderPanelRT (populates perfhud._hudRTG)
-    perfhud._mode   = ork::ecs::player::PerfHud::TEXT;
+    perfhud._page   = ork::ecs::player::PerfHud::PAGE_FRAME;
   }
-  // ORKID_FORCE_DMVR: run the REAL DualMonoVr path on the desktop (NoVr preview) so the
-  //  actual _drawHudPanel eye-pass executes headless on mac — the panel lands in both down
-  //  buffers and the desktop mirror. Pair with --snapshot to eyeball a see-through panel.
-  bool force_dmvr = getenv("ORKID_FORCE_DMVR") != nullptr;
-
-  // --devkeys key legend HUD (always-on when --devkeys; upper-left). Deterministic content.
-  ork::ecs::player::KeysHud keyshud;
-  keyshud._enabled = devkeys;
-
-  deco::printf(
-      fvec3::Yellow(),
-      "ork.ecs.player: SUBSYSTEM (HFSM) startup, scene<%s> (%zu bytes)\n",
-      scene_path.c_str(),
-      scene_json.size());
 
   //////////////////////////////////////////////////////////
   // host state
   //////////////////////////////////////////////////////////
 
   scenedata_ptr_t scenedata;
+  // The materialized {asset_name -> artifact} map from the wire step. Held past that step
+  // because the HUD editor pages resolve LIVE MATERIALS out of it by asset name (the CLOUDS
+  // page rebinds the deck materials' band + radiance) — the artifacts are the only handle a
+  // host has on a scene's materials, and nothing else in the process can hand them over.
+  varmap::varmap_ptr_t scene_artifacts;
   controller_ptr_t controller;
   std::vector<controller_ptr_t> dead_controllers; // stopped controllers are parked, not reused
                                                   // (the Python runtime does the same)
   sys_ref_t sgsystem; // opaque handle for systemNotify
   sys_ref_t bulletsystem; // physics-debug toggle target (resolved only when the scene declares one)
+  sys_ref_t hypermeshsystem; // FOLIAGE page target (resolved only when the scene declares visgroups)
   bool bullet_mode = false; // scene declares a BulletSystemData
   float abstime = 0.0f;
   Timer fps_timer;
@@ -492,11 +545,24 @@ int main(int argc, char** argv, char** envp) {
   constexpr int kSnapQuiesce = 600; // sky-ready + still black this many frames => settled-black FAIL
   constexpr int kFutureStale = 30;  // a capture future un-ready this long => drop it + re-issue
 
+  // A pixel counts toward the lit population only at or above this 8-bit LEVEL.
+  // The probe used to accept ANY non-zero channel, and the frame that taught us
+  // why was not the black frame it looked like at all — it was a real render
+  // driven through a mis-ordered post chain, arriving at rgbmax 1: the output
+  // dither's own least-significant bit, on 13% of the pixels, which cleared the
+  // population rule while the PNG was black to any eye and to every image
+  // oracle. Anything a display can resolve clears 4 by orders of magnitude,
+  // including the darkest content this engine grades for — a calibrated
+  // moonless night reads its sky at 4.5 and its stars far above that
+  // (PostFxNodeACES.h), so the settled-lit semantics are unchanged and only the
+  // dither floor is now excluded.
+  constexpr uint8_t kLitLevel = 4;
+
   // Settled-lit color probe — shared by the snapshot capture drain (phase 4) and the
   // movie pre-roll drain (phase 5), so both gate on identical criteria. "Lit" = >=0.1%
-  // of pixels carry a non-zero RGB channel; alpha is skipped (main_rtg clears to opaque
-  // black (0,0,0,255), so counting alpha would read a black frame as lit). tot/lit/rgbmax
-  // are returned for the diagnostic line.
+  // of pixels carry an RGB channel at kLitLevel or above; alpha is skipped (main_rtg
+  // clears to opaque black (0,0,0,255), so counting alpha would read a black frame as
+  // lit). tot/lit/rgbmax are returned for the diagnostic line.
   auto probeCaptureColor = [](image_ptr_t img, size_t& tot_px, size_t& lit_px, uint8_t& rgbmax) -> bool {
     tot_px = 0; lit_px = 0; rgbmax = 0;
     if (img and img->_data) {
@@ -507,10 +573,10 @@ int main(int argc, char** argv, char** envp) {
         uint8_t r = p[i], g = p[i + 1], b = p[i + 2];
         uint8_t m = std::max(r, std::max(g, b));
         if (m > rgbmax) rgbmax = m;
-        if (r or g or b) lit_px++;
+        if (m >= kLitLevel) lit_px++;
       }
     }
-    return (tot_px > 0) and (lit_px * 1000 >= tot_px); // >=0.1% pixels colored
+    return (tot_px > 0) and (lit_px * 1000 >= tot_px); // >=0.1% pixels at/above the lit level
   };
 
   // controller swaps (Cmd+Right restart) happen on the update thread while the render
@@ -576,237 +642,865 @@ int main(int argc, char** argv, char** envp) {
   uicam->updateMatrices();
 
   //////////////////////////////////////////////////////////
-  // --devkeys — OPT-IN viewer-grade dev keys (the C++ lowering of ork.ecsplay.py's
-  // E/S/G/T/R controls). The player OWNS the ACES+HSVG postfx nodes: injected into
-  // the scene's SceneGraphSystemData before bind, then poked per-frame from the UI
-  // thread (DoRender re-reads _exposure/_gamma/_saturation — the same benign race the
-  // python viewer accepts, no camera writes so no VR gating needed). Envmap [E] routes
-  // through the SG system's SetEnvmap notify (host owns the cycle list). Everything here
-  // is inert unless `devkeys` — a flagless run never creates a node or touches the scene.
-  // KEY MAP (bare, no super): E=envmap  G=gamma  T=ACES exposure  H=saturation  M=terrain mat  B=physics wireframe  R=reset.
-  // Saturation is 'H': python's 'S' is a walk-move key, and 'C' is an EzUiCam dolly modifier
-  // (X/C/V = pan/dolly/zoom) — the devkeys block owns ONLY E/G/T/H/M/R and falls through for the rest.
-  // The scene-script keys (walk W/A/S/D..., sky-clock ] [ \ = - ' ; 0) are deliberately NOT here:
-  // they are forwarded to the PythonSystem below. See the key registry in this file's header.
+  // The live objects the HUD editor pages poke, resolved once at bind (see
+  // register_editor_pages). Held here so the Cmd+R round-trip can re-point the CLONE at
+  // them — the clone deserializes fresh instances, which would leave every editor row
+  // driving an object no longer in the frame.
   //////////////////////////////////////////////////////////
-  const std::vector<float> satset = {0.0f, 0.2f, 0.5f, 0.6, 0.75f, 0.8f, 1.0f, 1.25f, 1.5f};
-  const std::vector<float> gamset = {0.8f, 1.0f, 1.2f, 1.4f, 1.6f, 1.8f, 2.2f};
-  const std::vector<float> expset = {0.0f, 0.5f, 0.75f, 0.9f, 1.0f, 1.25f, 1.5f};
-  auto idx_of = [](const std::vector<float>& v, float x) {
-    return int(std::find(v.begin(), v.end(), x) - v.begin());
+  pbr::skyatmospheredata_ptr_t    hud_atmosphere;
+  std::shared_ptr<PostFxNodeACES> hud_aces;
+  std::shared_ptr<PostFxNodeHSVG> hud_hsvg;
+
+  //////////////////////////////////////////////////////////
+  // HUD EDITOR PAGES (SKY / POST) — live properties on the perf HUD's page ring.
+  //
+  // The mechanism is perfhud.h's; this is only the WIRING, and every row here points at
+  // an object the SCENE declared, reached once at bind and poked thereafter:
+  //
+  //   SKY   the SkyAtmosphereData the scene handed the scenegraph under the author param
+  //         "SkyAtmosphere". Scene::applyRuntimeParams stores THAT instance on the pbr
+  //         common block, so a write here IS the engine's live-edit path: every knob
+  //         below is presentation-tier (deliberately outside mediumHash()), so it lands
+  //         on the next frame and triggers a refilter cycle rather than a LUT re-bake.
+  //         TIME OF DAY is the exception — the clock is the scene's (sky_time_system.py,
+  //         the ']' '[' scrub keys), so this row drives the SAME SkyTimeSet message those
+  //         keys do rather than opening a second path to the sun.
+  //   POST  the reflected postfx nodes under "aces" / "hsvg" — the scene's own where it
+  //         declared them, else the engine defaults the player attached at bind (see the
+  //         POST CHAIN SELF-DEFENSE block in gpuInit), so the page is whole either way.
+  //
+  // NOT REGISTERED, and deliberately: a row that cannot bite is worse than an absent one.
+  // A scene with no atmosphere gets no SKY page, one with no SceneGraphSystem at all gets
+  // no POST page, and time-of-day appears only when the scene declares a PythonSystem.
+  //
+  // PLAIN CLOSURES, not reflection: the descriptors need a curated subset with per-knob
+  // ranges either way, and one of them (time of day) is a MESSAGE, not a property — so
+  // reflection would buy nothing here but a layer.
+  //////////////////////////////////////////////////////////
+
+  // Last hour COMMANDED from the SKY page. The sky clock lives in the sim's python
+  // subinterpreter and has no host-readable channel, so this is a write-side mirror: it
+  // reads back what the page last SET, not what the free-running clock has reached.
+  float sky_hour_cmd = 12.0f;
+
+  // The DIRECT DIFFUSE LOBE the analytic lights shade with, as its ordinal (which is
+  // also the POST row's index into its own label list). Write-side mirror of a notify,
+  // like the hour — but re-seeded at bind from the scene's own diffuse_brdf param when
+  // it declares one, so what the row shows at launch is what the scene actually asked
+  // for rather than the engine default.
+  int diffuse_brdf_cmd = int(pbr::DiffuseBrdfModel::OREN_NAYAR);
+
+  // The CLOUD DECKS' state. Write-side mirrors like the hour — the deck applier lives in
+  // the scene's python system and answers no reads — but NOT invented ones: both are
+  // re-seeded at bind from the launch state the deck library publishes on the scenegraph
+  // params (CloudCover / CloudTile), so the baseline these rows are saved against is the
+  // scene's own declaration. The values below are only what a scene that publishes
+  // nothing would have had anyway (the deck library's ORK_CLOUDGAUGE defaults).
+  float cloud_cover_cmd = 0.45f;
+  float cloud_tile_cmd  = 1.0f;
+  // The decks' ASL LIFT ("cloud base", metres) and RADIANCE GAIN. Unlike cover/tile these
+  // two have a MATERIAL half as well as a script half, and both halves are read from here
+  // every draw by generators bound onto the deck materials at bind (see the CLOUDS page) —
+  // which is why they are plain floats in the host's own frame rather than anything the
+  // render thread has to be handed. Base is re-seeded from the scene's CloudAltOffset; gain
+  // is a MULTIPLIER on whatever radiance colors the scene baked, so 1.0 is "as authored"
+  // for every scene and there is no default to get wrong.
+  float cloud_base_cmd = 0.0f;
+  float cloud_gain_cmd = 1.0f;
+  // Sends the deck state ONCE at startup, so the scene's own launch state (or the saved
+  // one over it) is what the deck script holds from the first tick — its own numbers come
+  // from env knobs and would otherwise disagree with the sky until the first nudge, which
+  // is a jump waiting to happen. Assigned only when the scene actually has decks.
+  std::function<void()> push_cloud_state;
+  // Binds the deck MATERIALS' live band + radiance for a given scene and its materialized
+  // artifact set — the material half of the base/gain rows (the script half is CloudSet).
+  // Re-callable because the Cmd+R round-trip materializes a whole new set of materials:
+  // the generators bound here would otherwise be driving discarded ones, which is the same
+  // staleness the atmosphere/postfx instances are carried across for.
+  std::function<void(scenedata_ptr_t, varmap::varmap_ptr_t)> bind_cloud_materials;
+
+  // FOLIAGE — the selected member of the scene's "foliage:" visgroup set (an index into
+  // foliage_states below). Same shape as push_cloud_state: the set has to be re-asserted
+  // on every simulation, because a fresh simulation stages every member at its DECLARED
+  // launch visibility and would otherwise show the scene's default while the row reads
+  // whatever the user (or the saved editor state) last chose.
+  std::vector<std::string> foliage_states; // group suffixes, sorted; row labels
+  int foliage_mode_cmd = 0;
+  std::function<void()> push_foliage_state;
+
+  //////////////////////////////////////////////////////////
+  // SAVED EDITOR VALUES (editor_state.h). The scene's SOURCE .py — reflected on SceneData
+  // as "ScriptFile", written by whoever composed the .ecs in PATH-TOKEN form — is the
+  // identity everything here keys on. It is expanded against the LIVE workspace, because
+  // the token is exactly what lets one .ecs be correct on a mac checkout and a linux one.
+  //
+  // No source (a hand-composed .ecs, a scene from before composers set it) is not an
+  // error: it means this run has nothing to key state to, and the SETTINGS row says so
+  // rather than pretending to save.
+  //////////////////////////////////////////////////////////
+  std::string      editor_state_path;   // the sidecar, or empty when there is no source
+  std::string      editor_state_scene;  // basename of the source .py, for the file's own record
+  EditorValueMap   editor_baselines;    // tier 2, captured at bind
+  std::atomic<int> save_row_state{0};   // indexes the SETTINGS row's state vocabulary
+  bool             vr_presentation = false; // the MODE a save/load is keyed to
+  enum { SAVE_READY = 0, SAVE_SAVED = 1, SAVE_REFUSED = 2, SAVE_NOSCENE = 3, SAVE_FAILED = 4 };
+  std::function<void()> do_save_editor_state;
+
+  //////////////////////////////////////////////////////////
+  // WHERE THE WALKER STARTS, as four saved editor values. The spawn is SCENE DATA — the
+  // SpawnData transform in the .ecs — so restoring it is not a mid-run teleport: the saved
+  // position is written into that transform in gpuInit, BEFORE the simulation is created,
+  // and the character is simply BORN there. Nothing fights physics, and the controller
+  // needs no teleport vocabulary it does not already have.
+  //
+  // The four rows are ordinary FLOATs and ride the ordinary save/restore: their tier-2
+  // baseline is the spawn the scene authored, so moving the scene's spawn wins over a
+  // stale saved one exactly as it does for any other row.
+  //
+  // HEADING IS NOT PART OF THAT TRANSFORM. A walker's capsule is rotation-locked
+  // (angularFactor 0,0,0) and its facing is CONTROLLER state (_heading), which starts at
+  // zero for a fresh character and never reads the spawn rotation — so a yaw written into
+  // the transform would be a value that looks saved and does nothing. The restored yaw is
+  // re-issued instead as the TurnStep the input scripts already use, once, at start,
+  // before any input can have moved the heading off zero.
+  //////////////////////////////////////////////////////////
+  spawndata_ptr_t walker_spawn;      // the character's SpawnData, or null when there is no walker
+  float spawn_x = 0.0f, spawn_y = 0.0f, spawn_z = 0.0f; // the rows: WORLD position, capsule centre
+  float spawn_yaw          = 0.0f;   // the row: heading in radians (0 = -Z, the walker's own zero)
+  float spawn_eye_height   = 1.7f;   // read off the character data — the ray starts at the EYE
+  float spawn_cam_distance = 0.0f;   // ... and, in follow mode, that many metres behind
+  float spawn_half_capsule = 0.0f;   // feet -> the transform's own currency (the capsule centre)
+  float spawn_heading_send = 0.0f;   // nonzero: a restored heading still owed to the character
+  std::atomic<int>  spawn_row_state{0}; // the ACTION row's state vocabulary
+  std::atomic<bool> spawn_probe_want{false}; // the row fires on any thread; the update thread asks
+  enum { SPAWN_READY = 0, SPAWN_SAMPLING = 1, SPAWN_SET = 2, SPAWN_NOWALKER = 3, SPAWN_NOANSWER = 4 };
+  // A world coordinate is what these rows hold, so the range is a world, not a knob. The
+  // step is 1m: hand-editing a spawn is a nudge, the ACTION row does the real placing.
+  static constexpr float kSpawnXZLimit  = 65536.0f;
+  static constexpr float kSpawnYLimit   = 65536.0f;
+  static constexpr float kSpawnYawLimit = 3.14159265f; // heading wraps at ±pi
+
+  // Applied spawns are lifted this far and fall the last stretch. The character's own
+  // ground-snap normally owns Y outright (it raycasts down at spawn XZ and places the feet
+  // SpawnAboveGround above the hit), but a scene with no terrain floor has no snap — there
+  // the lift is what keeps a re-baked, slightly higher landscape from swallowing the spawn.
+  static constexpr float kSpawnApplyLift = 2.0f;
+  // How long the ACTION row waits for the character's answer before saying it never came.
+  // The update thread ticks at ~480Hz and the request drains on the very next one, so this
+  // is a second of grace, not a budget.
+  static constexpr int kSpawnProbeTicks = 480;
+
+  // Hand the character its restored facing. Called once per simulation START (a restart
+  // builds a fresh character, whose heading is zero again), and a no-op when nothing was
+  // restored — this must not touch a scene that saved no spawn.
+  auto send_spawn_heading = [&](controller_ptr_t c, sys_ref_t chsys) {
+    if (not c or spawn_heading_send == 0.0f)
+      return;
+    auto tab               = std::make_shared<DataTable>();
+    (*tab)["radians"_tok]  = float(spawn_heading_send);
+    c->systemNotify(chsys, CharacterControllerSystem::TurnStep._token, tab);
+    deco::printf(fvec3::Green(), "ork.ecs.player: walker heading restored to %.3f rad\n",
+                 double(spawn_heading_send));
   };
-  // defaults: saturation 0.8 / exposure 0.75 (owner-tuned 07-23); gamma 1.0
-  const int sat_def = idx_of(satset, 0.6f), gam_def = idx_of(gamset, 1.0f), exp_def = idx_of(expset, 0.9f);
-  int sat_idx = sat_def, gam_idx = gam_def, exp_idx = exp_def;
-  std::vector<std::string> envmap_paths; // "<assetcache>/envmaps2/<name>.xir"
-  std::vector<std::string> envmap_names;
-  int envmap_index = -1;
-  std::shared_ptr<PostFxNodeACES> aces_node;
-  std::shared_ptr<PostFxNodeHSVG> hsvg_node;
-  if (devkeys) {
-    aces_node              = std::make_shared<PostFxNodeACES>();
-    hsvg_node              = std::make_shared<PostFxNodeHSVG>();
-    aces_node->_exposure   = expset[exp_idx];
-    hsvg_node->_hue        = 0.0f;
-    hsvg_node->_saturation = satset[sat_idx];
-    hsvg_node->_value      = 1.0f;
-    hsvg_node->_gamma      = gamset[gam_idx];
-    // Envmap cycle list — filesystem-driven (mirrors ecsplay.py): only files present.
-    if (const char* stg = getenv("OBT_STAGE")) {
-      auto dir = std::string(stg) + "/assetcache/envmaps2";
-      if (std::filesystem::is_directory(dir)) {
-        std::vector<std::string> names;
-        for (const auto& e : std::filesystem::directory_iterator(dir))
-          if (e.path().extension() == ".xir")
-            names.push_back(e.path().stem().string());
-        std::sort(names.begin(), names.end());
-        for (const auto& n : names) {
-          envmap_names.push_back(n);
-          envmap_paths.push_back("<assetcache>/envmaps2/" + n + ".xir");
+
+  // The SETTINGS row's command. Every refusal is a STATE the row shows, never a silent
+  // no-op: the owner presses the button and the row says what happened.
+  do_save_editor_state = [&]() {
+    if (editor_state_path.empty()) {
+      save_row_state.store(SAVE_NOSCENE);
+      deco::printf(fvec3::Yellow(),
+                   "ork.ecs.player: no scene source on this .ecs — nowhere to save editor values\n");
+      return;
+    }
+    if (not save_allowed) {
+      save_row_state.store(SAVE_REFUSED);
+      deco::printf(fvec3::Yellow(),
+                   "ork.ecs.player: save REFUSED — a scripted/offscreen run must not rewrite a scene's saved look\n");
+      return;
+    }
+    auto rep = EditorStateIO::save(
+        editor_state_path, vr_presentation, editor_state_scene, perfhud._pages, editor_baselines);
+    for (const auto& l : rep._lines)
+      deco::printf(fvec3::Yellow(), "ork.ecs.player: %s\n", l.c_str());
+    save_row_state.store(rep._ok ? SAVE_SAVED : SAVE_FAILED);
+    deco::printf(rep._ok ? fvec3::Green() : fvec3::Red(),
+                 "ork.ecs.player: editor values %s (%s)\n",
+                 rep._ok ? "SAVED" : "NOT saved", rep._summary.c_str());
+  };
+
+  auto register_editor_pages = [&]() {
+    pbr::skyatmospheredata_ptr_t    atmo;
+    std::shared_ptr<PostFxNodeACES> aces;
+    std::shared_ptr<PostFxNodeHSVG> hsvg;
+    bool has_pysys = false;
+    bool has_sgsys = false;
+    for (const auto& it : scenedata->getSystemDatas()) {
+      if (std::dynamic_pointer_cast<PythonSystemData>(it.second))
+        has_pysys = true;
+      auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second);
+      if (not sgd)
+        continue;
+      has_sgsys = true;
+      const auto& uparams = sgd->userSceneParams();
+      // The scene's own diffuse lobe, if it declared one — same resolver the
+      // engine uses, so an unknown spelling is refused here too rather than
+      // showing a row that disagrees with the render.
+      auto di = uparams.find("diffuse_brdf");
+      if (di != uparams.end() and di->second.isA<std::string>()) {
+        const auto& given = di->second.get<std::string>();
+        pbr::DiffuseBrdfModel model;
+        if (pbr::diffuseBrdfModelFromName(given, model))
+          diffuse_brdf_cmd = int(model);
+        else
+          deco::printf(fvec3::Red(),
+                       "ork.ecs.player: scene declares diffuse_brdf<%s> - unknown; valid: %s\n",
+                       given.c_str(), pbr::diffuseBrdfModelValidSet().c_str());
+      }
+      auto        ai      = uparams.find("SkyAtmosphere");
+      if (ai != uparams.end() and ai->second.isA<pbr::skyatmospheredata_ptr_t>())
+        atmo = ai->second.get<pbr::skyatmospheredata_ptr_t>();
+      // SELF-DEFEND. A scene that selects the procedural sky but authors no medium knob
+      // publishes NO SkyAtmosphereData (the sky library only emits one when something is
+      // declared) — yet it still renders a sky, because the forward prologue fabricates a
+      // default one at first frame (fwdnode_impl_sub.cpp, "procedural sky source with no
+      // SkyAtmosphereData attached"). That object is born AFTER this bind-time read, so
+      // the SKY page would come up with only its time-of-day row and no way to say why.
+      // Attach the very same default HERE instead: identical construction, so the frame
+      // is unchanged and the prologue's fallback simply never fires — it finds ours.
+      // Gated on the PROCEDURAL source, exactly like the prologue's own fallback, so a
+      // baked-sky scene is never silently armed with an atmosphere it did not ask for.
+      if (not atmo) {
+        auto si = uparams.find("SkySource");
+        bool procedural = (si != uparams.end()) and si->second.isA<std::string>() and
+                          (si->second.get<std::string>() == "procedural");
+        if (procedural) {
+          atmo = std::make_shared<pbr::SkyAtmosphereData>();
+          sgd->setUserSceneParam("SkyAtmosphere", atmo);
+          deco::printf(fvec3::Yellow(),
+                       "ork.ecs.player: scene declares a procedural sky with no SkyAtmosphere — "
+                       "attached the engine default so the HUD SKY page can edit it\n");
         }
       }
+      auto pi = sgd->_postfx_nodes.find("aces");
+      if (pi != sgd->_postfx_nodes.end())
+        aces = std::dynamic_pointer_cast<PostFxNodeACES>(pi->second);
+      pi = sgd->_postfx_nodes.find("hsvg");
+      if (pi != sgd->_postfx_nodes.end())
+        hsvg = std::dynamic_pointer_cast<PostFxNodeHSVG>(pi->second);
     }
-    deco::printf(fvec3::Yellow(),
-                 "ork.ecs.player: --devkeys ON (viewer look: ACES+HSVG) envmaps<%zu> keys[E/G/T/H/M/B/R]\n",
-                 envmap_paths.size());
-  }
+    hud_atmosphere = atmo; // held for the round-trip re-point (see the Cmd+R clone below)
+    hud_aces       = aces;
+    hud_hsvg       = hsvg;
 
-  // [M] TERRAIN MATERIAL-OVERRIDE cycle: mode 0 = declared (EXACTLY today's path, no override);
-  // modes 1..N are the scene-declared debug materials. The label list + cycle LENGTH are DATA,
-  // derived at load from the terrain drawable's reflected debug_material_assets — so adding a
-  // debug look needs no player edit. Mode 0 stays byte-identical. The mode rides a systemNotify
-  // to the SG system (SetEnvmap pattern); the SG system routes it to the terrain drawable(s).
-  int mat_mode = 0;
-  std::vector<std::string> matmode_labels = {"declared"}; // [0]=declared; [1..] filled from scene at load
-  auto matmode_label = [&](int m) -> const char* {
-    return (m >= 0 and m < int(matmode_labels.size())) ? matmode_labels[m].c_str() : "declared";
-  };
+    ////////////////////////////////////////////////////////
+    // SKY
+    ////////////////////////////////////////////////////////
+    std::vector<HudEditProp> sky;   // SKY-MAIN: the sky itself + the celestial bodies
+    std::vector<HudEditProp> haze;  // SKY-HAZE: the artist layer stacked on the medium
+    if (has_pysys) {
+      sky.push_back(hudFloatProp(
+          "time of day", 0.0f, 24.0f, 0.05f,
+          [&sky_hour_cmd]() { return sky_hour_cmd; },
+          [&](float h) {
+            sky_hour_cmd = h;
+            controller_ptr_t c;
+            sys_ref_t        pys;
+            {
+              std::lock_guard<std::mutex> lock(ctl_mutex);
+              c   = controller;
+              pys = pysystem;
+            }
+            if (c) {
+              auto tab           = std::make_shared<DataTable>();
+              (*tab)["hour"_tok] = float(h);
+              c->systemNotify(pys, "SkyTimeSet"_tok, tab);
+            }
+          }));
+    }
+    if (atmo) {
+      // Ranges are the knob's own working span (sky_atmosphere.h documents each); the
+      // step is ~1/60th of it, so a held trigger crosses the range in about a second.
+      sky.push_back(hudFloatProp("sky exposure", 0.0f, 16.0f, 0.25f,
+                                 [atmo]() { return atmo->_skyExposure; },
+                                 [atmo](float v) { atmo->_skyExposure = v; }));
+      sky.push_back(hudFloatProp("sun disc", 0.0f, 400.0f, 5.0f,
+                                 [atmo]() { return atmo->_sunDiscIntensity; },
+                                 [atmo](float v) { atmo->_sunDiscIntensity = v; }));
+      sky.push_back(hudFloatProp("moon disc", 0.0f, 2.0f, 0.02f,
+                                 [atmo]() { return atmo->_moonDiscIntensity; },
+                                 [atmo](float v) { atmo->_moonDiscIntensity = v; }));
+      // the moon's whole-dome scatter — what "moonlight" actually means for the night sky
+      sky.push_back(hudFloatProp("moonlight", 0.0f, 0.04f, 5.0e-4f,
+                                 [atmo]() { return atmo->_moonRayleighStrength; },
+                                 [atmo](float v) { atmo->_moonRayleighStrength = v; }));
+      sky.push_back(hudFloatProp("starlight", 0.0f, 5.0e-6f, 5.0e-8f,
+                                 [atmo]() { return atmo->_starlightIntensity; },
+                                 [atmo](float v) { atmo->_starlightIntensity = v; }));
+      sky.push_back(hudFloatProp("airglow", 0.0f, 5.0e-5f, 5.0e-7f,
+                                 [atmo]() { return atmo->_airglowIntensity; },
+                                 [atmo](float v) { atmo->_airglowIntensity = v; }));
+      // THE HAZE BLOCK — the artist layer stacked on the physical medium. All of it is
+      // presentation tier (nothing joins mediumHash), which is what makes it live-editable
+      // here. The two TINTS are fvec3 and have no descriptor kind yet, so they are not on
+      // the page; every scalar knob is.
+      sky.push_back(hudColorProp("moon albedo", [atmo]() {
+        return HudRGB{atmo->_moonAlbedoColor.x, atmo->_moonAlbedoColor.y, atmo->_moonAlbedoColor.z};
+      }, [atmo](const HudRGB& c) { atmo->_moonAlbedoColor = fvec3(c[0], c[1], c[2]); }));
+      haze.push_back(hudEnumProp("aerial persp", {"off", "on"},
+                                [atmo]() { return atmo->_aerialPerspectiveEnable ? 1.0f : 0.0f; },
+                                [atmo](float v) { atmo->_aerialPerspectiveEnable = (v >= 0.5f); }));
+      haze.push_back(hudFloatProp("haze density", 0.0f, 1.0f, 0.01f,
+                                 [atmo]() { return atmo->_hazeDensity; },
+                                 [atmo](float v) { atmo->_hazeDensity = v; }));
+      haze.push_back(hudFloatProp("haze height km", 0.0f, 4.0f, 0.05f,
+                                 [atmo]() { return atmo->_hazeScaleHeight; },
+                                 [atmo](float v) { atmo->_hazeScaleHeight = v; }));
+      // HG asymmetry: -1 back-scatter .. +1 forward-scatter, 0 = isotropic
+      haze.push_back(hudFloatProp("haze phase g", -0.95f, 0.95f, 0.02f,
+                                 [atmo]() { return atmo->_hazePhaseG; },
+                                 [atmo](float v) { atmo->_hazePhaseG = v; }));
+      haze.push_back(hudFloatProp("haze max km", 1.0f, 320.0f, 4.0f,
+                                 [atmo]() { return atmo->_hazeMaxDistanceKm; },
+                                 [atmo](float v) { atmo->_hazeMaxDistanceKm = v; }));
+      // COLOR rows — one line each, H/S/V edited in place once opened. fvec3 <-> HudRGB
+      // is the whole adapter, which is what makes the sub-editor reusable for any future
+      // color on any page. Only PRESENTATION-tier colors are here: _sunIlluminance and
+      // _groundAlbedo are medium terms (mediumHash), so editing them would force a LUT
+      // re-bake rather than a refilter — a different tier of edit, not this page's.
+      haze.push_back(hudColorProp("haze scatter", [atmo]() {
+        return HudRGB{atmo->_hazeScatterTint.x, atmo->_hazeScatterTint.y, atmo->_hazeScatterTint.z};
+      }, [atmo](const HudRGB& c) { atmo->_hazeScatterTint = fvec3(c[0], c[1], c[2]); }));
+      haze.push_back(hudColorProp("haze inscatter", [atmo]() {
+        return HudRGB{atmo->_hazeInscatterTint.x, atmo->_hazeInscatterTint.y, atmo->_hazeInscatterTint.z};
+      }, [atmo](const HudRGB& c) { atmo->_hazeInscatterTint = fvec3(c[0], c[1], c[2]); }));
+      // WHERE the shadowed aerial-perspective march samples the cascades — three
+      // discrete modes (off / per-fragment inline / quarter-res + composite), so an
+      // ENUM row. The value IS the mode (SkyAtmosphereData::_hazeSunShadow), snapped
+      // on both sides so a partial editor value can never land between two modes.
+      haze.push_back(hudEnumProp("haze in shadow", {"off", "on", "1/4res"},
+                                [atmo]() { return float(int(atmo->_hazeSunShadow + 0.5f)); },
+                                [atmo](float v) {
+                                  int m = int(v + 0.5f);
+                                  m     = (m < 0) ? 0 : ((m > 2) ? 2 : m);
+                                  atmo->_hazeSunShadow = float(m);
+                                }));
+      // ACCENTUATION of the shafts, honoured identically by both shaft modes (the
+      // remap lives in the shared per-step tap), so switching the row above with
+      // this one held is a fair A/B. 1.0 = physical.
+      haze.push_back(hudFloatProp("shaft gain", 0.0f, 4.0f, 0.1f,
+                                 [atmo]() { return atmo->_hazeSunShadowGain; },
+                                 [atmo](float v) { atmo->_hazeSunShadowGain = v; }));
+      // THE MEDIUM COLORS — the other tier of sky color, and the reason they are here
+      // rather than deliberately absent: an edit to any of them moves mediumHash(), and
+      // BOTH consumers already watch that hash (HillaireSky::bakeStaticLuts re-bakes the
+      // transmittance/multi-scatter chain, the forward prologue's IBL feed starts a
+      // refilter cycle). So these rows land on screen exactly like the presentation ones,
+      // paying a LUT re-bake per edit instead of nothing — the cost of editing the medium.
+      //
+      // THE TWO COEFFICIENT COLORS are edited in SCALED units, named in the label. They
+      // are per-channel extinction in 1/km — rayleigh runs 5.8e-3..3.3e-2, ozone ~1e-3 —
+      // and the color sub-editor's value channel steps in hundredths, so an unscaled row
+      // could not express them at all. A row that cannot reach its own value is a row that
+      // lies, so the scale is part of the row.
+      sky.push_back(hudColorProp("ground albedo", [atmo]() {
+        return HudRGB{atmo->_groundAlbedo.x, atmo->_groundAlbedo.y, atmo->_groundAlbedo.z};
+      }, [atmo](const HudRGB& c) { atmo->_groundAlbedo = fvec3(c[0], c[1], c[2]); }));
+      sky.push_back(hudColorProp("sun illuminance", [atmo]() {
+        return HudRGB{atmo->_sunIlluminance.x, atmo->_sunIlluminance.y, atmo->_sunIlluminance.z};
+      }, [atmo](const HudRGB& c) { atmo->_sunIlluminance = fvec3(c[0], c[1], c[2]); }));
+      constexpr float kRayleighUnit = 1.0e-2f; // 1/km
+      sky.push_back(hudColorProp("rayleigh e-2", [atmo]() {
+        return HudRGB{atmo->_rayleighScattering.x / kRayleighUnit,
+                      atmo->_rayleighScattering.y / kRayleighUnit,
+                      atmo->_rayleighScattering.z / kRayleighUnit};
+      }, [atmo](const HudRGB& c) {
+        atmo->_rayleighScattering = fvec3(c[0], c[1], c[2]) * kRayleighUnit;
+      }));
+      constexpr float kOzoneUnit = 1.0e-3f; // 1/km
+      sky.push_back(hudColorProp("ozone abs e-3", [atmo]() {
+        return HudRGB{atmo->_ozoneAbsorption.x / kOzoneUnit,
+                      atmo->_ozoneAbsorption.y / kOzoneUnit,
+                      atmo->_ozoneAbsorption.z / kOzoneUnit};
+      }, [atmo](const HudRGB& c) {
+        atmo->_ozoneAbsorption = fvec3(c[0], c[1], c[2]) * kOzoneUnit;
+      }));
+    }
+    // ONE SUBJECT PER PAGE. The sky outgrew a single page the moment the medium colors
+    // joined it, and a page taller than the panel is a page you scroll in your head. The
+    // split is presentation only: saved values are keyed by row id, not by page, so rows
+    // can be re-homed without touching a scene's state file.
+    if (not sky.empty())
+      perfhud.registerEditorPage("SKY-MAIN", sky);
+    else
+      deco::printf(fvec3::Yellow(),
+                   "ork.ecs.player: no SkyAtmosphere / PythonSystem declared — no HUD SKY pages\n");
+    if (not haze.empty())
+      perfhud.registerEditorPage("SKY-HAZE", haze);
 
-  // [B] physics-debug HUD state: player-side TOGGLE PARITY (the truth lives system-side as
-  // Debug ^ _debugToggle; scenes today never declare Debug=true, so parity == effective state).
-  // Starts true when --physics-debug fires the startup toggle; flips on every [B].
-  bool phys_dbg_on = false;
-  auto physdbg_label = [&]() -> std::string {
-    if (not bullet_mode)
-      return "n/a";
-    return phys_dbg_on ? "ON" : "OFF";
-  };
-
-  // Rebuild the always-on --devkeys legend from the CURRENT cycle state. DETERMINISTIC —
-  // key names + values only (no fps/clock/frame counters) so the snapshot byte-identity
-  // gates hold. Called at the end of every fire_devkey and once at startup.
-  auto update_keys_hud = [&]() {
-    std::string env = (envmap_index >= 0 and envmap_index < int(envmap_names.size()))
-                          ? envmap_names[envmap_index]
-                          : "(scene default)";
-    keyshud.setState(env, gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode), physdbg_label());
-    // Deterministic, timing-independent observable of the on-screen legend's CURRENT content
-    // (the HUD gate keys on this to distinguish a stale legend from an updated one).
-    deco::printf(fvec3::Cyan(),
-                 "ork.ecs.player: keyshud [E]%s [G]%.2f [T]%.2f [H]%.2f [M]%s [B]%s\n",
-                 env.c_str(), gamset[gam_idx], expset[exp_idx], satset[sat_idx], matmode_label(mat_mode),
-                 physdbg_label().c_str());
-  };
-
-  // The dev-key action, factored so the real key handler (onUiEvent) and the scripted
-  // test hook (onUpdate) drive the IDENTICAL path. Safe to call from either thread — the
-  // envmap notify mirrors the autowalk send-key pattern; the postfx pokes are plain float
-  // writes the render thread re-reads (the accepted benign race).
-  auto fire_devkey = [&](int keycode) {
-    switch (keycode) {
-      case 'E': {
-        if (envmap_paths.empty()) {
-          deco::printf(fvec3::Yellow(), "ork.ecs.player: [E] no envmaps in <stage>/assetcache/envmaps2\n");
-          break;
-        }
-        envmap_index = (envmap_index + 1) % int(envmap_paths.size());
+    ////////////////////////////////////////////////////////
+    // CLOUDS — the deck state, driven the way the deck state is ACTUALLY driven: the
+    // decks' runtime control bus is the plane ENTITY TRANSFORMS (coverage is encoded in
+    // deck altitude, tile size in uniform scale — _cloud_deck.py's "CONTROL BUS" note),
+    // and the one writer of those transforms is the scene's own deck script. So these rows
+    // send the script the same state its sticks move, through the CloudSet message, rather
+    // than opening a second path to the transforms and racing it.
+    //
+    // REGISTERED WHENEVER THE SCENE HAS DECKS, detected from the deck entity names the
+    // library declares — which, since every procedural sky now carries them, is every
+    // procedural-sky scene. They start EMPTY (cover 0 parks every plane), so the page is
+    // how weather is raised at all, not merely how it is tuned.
+    //
+    // THE ROWS COME UP HOLDING WHAT THE SCENE DECLARED. The decks' runtime currency is the
+    // deck TRANSFORM (coverage encoded as altitude), which no reader can invert back into
+    // a cover — so the launch state rides the scenegraph params next to SkyAtmosphere, and
+    // these rows read it there. That is what makes a saved cover a diff against the SCENE
+    // (and so re-authoring-proof) rather than against a constant the player made up.
+    ////////////////////////////////////////////////////////
+    int  num_cloud_rows = 0;
+    bool has_decks = false;
+    for (const auto& kv : scenedata->GetSceneObjects()) {
+      std::string n = kv.first.c_str();
+      if (n.rfind("cloud_", 0) == 0)
+        has_decks = true;
+    }
+    float cloud_alt_offset  = 0.0f;
+    bool  cloud_state_known = false;
+    for (const auto& it : scenedata->getSystemDatas()) {
+      auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second);
+      if (not sgd)
+        continue;
+      const auto& up = sgd->userSceneParams();
+      auto        rd = [&up](const char* key, float& out) -> bool {
+        auto i = up.find(key);
+        if (i == up.end() or not i->second.isA<float>())
+          return false;
+        out = i->second.get<float>();
+        return true;
+      };
+      if (rd("CloudCover", cloud_cover_cmd))
+        cloud_state_known = true;
+      rd("CloudTile", cloud_tile_cmd);
+      rd("CloudAltOffset", cloud_alt_offset);
+    }
+    if (has_decks and has_pysys) {
+      // the base row comes up holding the lift the SCENE declared, so moving it is a diff
+      // against the scene and the launch frame is the authored one.
+      cloud_base_cmd = cloud_alt_offset;
+      const float cloud_base_launch = cloud_alt_offset;
+      auto send_clouds = [&](float cover, float tile) {
         controller_ptr_t c;
-        sys_ref_t sgs;
+        sys_ref_t        pys;
         {
           std::lock_guard<std::mutex> lock(ctl_mutex);
           c   = controller;
-          sgs = sgsystem;
+          pys = pysystem;
         }
-        if (c) {
-          auto tab           = std::make_shared<DataTable>();
-          (*tab)["path"_tok] = envmap_paths[envmap_index];
-          c->systemNotify(sgs, "SetEnvmap"_tok, tab);
-          deco::printf(fvec3::Green(), "ork.ecs.player: [E] envmap -> %s\n", envmap_names[envmap_index].c_str());
+        if (not c)
+          return;
+        auto tab            = std::make_shared<DataTable>();
+        (*tab)["cover"_tok] = float(cover);
+        (*tab)["tile"_tok]  = float(tile);
+        // The decks' lift travels with every command: the script cannot read scene params,
+        // and without it a live cover change would place the shells off the very band their
+        // material builds (the author-time transform adds it, the applier had no way to know
+        // it). LIVE, not the launch value — this is the "cloud base" row's channel, and the
+        // transform is the half of it the script owns.
+        (*tab)["alt_offset"_tok] = float(cloud_base_cmd);
+        c->systemNotify(pys, "CloudSet"_tok, tab);
+      };
+      ////////////////////////////////////////////////////////
+      // THE MATERIAL HALF OF THE BASE. Deck altitude IS the coverage encoding: the shader
+      // decodes t = (apex_y - CgAltLo) * CgInvSweep, and CgAltLo was baked at author time
+      // from the deck's spec altitude plus the scene's lift. Move the shells without moving
+      // that band and t shifts by (metres / sweep) — the sweep is 600 m, so a 300 m nudge
+      // alone would swing coverage across half the band and a kilometre would peg it. The
+      // two halves therefore move TOGETHER: the transform through CloudSet above, the band
+      // by rebinding CgAltLo here.
+      //
+      // WHY THE HOST OWNS THIS HALF: the deck script runs in the sim sub-interpreter, whose
+      // whole surface is entities / components / datatables — there is no lev2 in it at all,
+      // by design, so a material is not reachable from the one place that writes the
+      // transforms. The host holds the materialized artifacts, so the host closes the loop.
+      //
+      // BOUND AS A GENERATOR, once, on this thread: the rows are moved on the UPDATE thread,
+      // and a bindParam there would mutate the material's _bound_params map while the render
+      // thread is overlaying it into pipelines. A generator bound now means the update thread
+      // only ever writes a float, and the draw reads it — including the sun-cookie pass, so
+      // the cloud shadows track the same band as the sky.
+      ////////////////////////////////////////////////////////
+      bind_cloud_materials = [&, cloud_base_launch](scenedata_ptr_t scn, varmap::varmap_ptr_t artifacts) {
+        if (not scn or not artifacts)
+          return;
+        int n_band = 0, n_rad = 0;
+        for (const auto& it : scn->getSystemDatas()) {
+          auto asd = std::dynamic_pointer_cast<AssetSystemData>(it.second);
+          if (not asd)
+            continue;
+          for (auto gen : asd->_gens) {
+            auto mgen = std::dynamic_pointer_cast<lev2::PbrMaterialGenData>(gen);
+            if (not mgen or not mgen->_shader_params)
+              continue;
+            if (mgen->_asset_name.rfind("cloud_", 0) != 0)
+              continue;
+            lev2::pbrmaterial_ptr_t mtl;
+            if (auto m = artifacts->typedValueForKey<lev2::pbrmaterial_ptr_t>(mgen->_asset_name))
+              mtl = m.value();
+            if (not mtl or not mtl->_as_freestyle)
+              continue;
+            auto fs = mtl->_as_freestyle;
+            // the BAKED values are read back off the gen, never recomputed: the per-deck
+            // altitude table and the scene's radiance colors live on the scene side, and a
+            // second copy of either here is a copy that goes stale on the next re-author.
+            if (auto baked = mgen->_shader_params->typedValueForKey<float>("CgAltLo")) {
+              float band = baked.value();
+              if (auto par = fs->param("CgAltLo")) {
+                mtl->bindParam(par, FxPipeline::varval_t(FxPipeline::varval_generator_t(
+                    [&cloud_base_cmd, band, cloud_base_launch]() -> FxPipeline::varval_t {
+                      return FxPipeline::varval_t(band + (cloud_base_cmd - cloud_base_launch));
+                    })));
+                n_band++;
+              }
+            }
+            // RADIANCE: one gain over the pair of colors the deck material lights with, so
+            // the decks can be re-exposed against a frame without re-tuning either color.
+            for (const char* colname : {"CgLitCol", "CgShadCol"}) {
+              auto baked = mgen->_shader_params->typedValueForKey<fvec3>(colname);
+              if (not baked)
+                continue;
+              auto par = fs->param(colname);
+              if (not par)
+                continue;
+              fvec3 color = baked.value();
+              mtl->bindParam(par, FxPipeline::varval_t(FxPipeline::varval_generator_t(
+                  [&cloud_gain_cmd, color]() -> FxPipeline::varval_t {
+                    return FxPipeline::varval_t(color * cloud_gain_cmd);
+                  })));
+              n_rad++;
+            }
+          }
         }
-        break;
-      }
-      case 'G':
-        gam_idx = (gam_idx + 1) % int(gamset.size());
-        if (hsvg_node)
-          hsvg_node->_gamma = gamset[gam_idx];
-        deco::printf(fvec3::Green(), "ork.ecs.player: [G] gamma -> %g\n", gamset[gam_idx]);
-        break;
-      case 'T':
-        exp_idx = (exp_idx + 1) % int(expset.size());
-        if (aces_node)
-          aces_node->_exposure = expset[exp_idx];
-        deco::printf(fvec3::Green(), "ork.ecs.player: [T] ACES exposure -> %g\n", expset[exp_idx]);
-        break;
-      case 'H': // saturation — NOT 'C' (EzUiCam reserves X/C/V for pan/dolly/zoom)
-        sat_idx = (sat_idx + 1) % int(satset.size());
-        if (hsvg_node)
-          hsvg_node->_saturation = satset[sat_idx];
-        deco::printf(fvec3::Green(), "ork.ecs.player: [H] saturation -> %g\n", satset[sat_idx]);
-        break;
-      case 'M': {
-        // cycle over the DATA-derived label list (declared + scene debug materials). A scene with
-        // no debug materials => size 1 => M stays at mode 0 (a no-op, already logged at load).
-        mat_mode = (mat_mode + 1) % int(matmode_labels.size());
-        controller_ptr_t c;
-        sys_ref_t sgs;
-        {
-          std::lock_guard<std::mutex> lock(ctl_mutex);
-          c   = controller;
-          sgs = sgsystem;
-        }
-        if (c) {
-          auto tab           = std::make_shared<DataTable>();
-          (*tab)["mode"_tok] = mat_mode;
-          c->systemNotify(sgs, "SetTerrainMaterialMode"_tok, tab);
-          deco::printf(fvec3::Green(), "ork.ecs.player: [M] terrain material -> %s (mode %d)\n",
-                       matmode_label(mat_mode), mat_mode);
-        }
-        break;
-      }
-      case 'B': {
-        // physics debug wireframe toggle — same TOGGLE_DEBUG_DRAW path as --physics-debug.
-        // State lives system-side (_debugToggle XOR reflected Debug); the system prints ON/OFF.
-        controller_ptr_t c;
-        sys_ref_t bsys;
-        bool have_bullet;
-        {
-          std::lock_guard<std::mutex> lock(ctl_mutex);
-          c           = controller;
-          bsys        = bulletsystem;
-          have_bullet = bullet_mode;
-        }
-        if (c and have_bullet) {
-          c->systemNotify(bsys, "TOGGLE_DEBUG_DRAW"_tok, std::make_shared<DataTable>());
-          phys_dbg_on = not phys_dbg_on;
-          deco::printf(fvec3::Green(), "ork.ecs.player: [B] physics debug wireframe -> %s\n",
-                       phys_dbg_on ? "ON" : "OFF");
-        } else {
-          deco::printf(fvec3::Yellow(), "ork.ecs.player: [B] scene declares no BulletSystem\n");
-        }
-        break;
-      }
-      case 'R':
-        sat_idx = sat_def;
-        gam_idx = gam_def;
-        exp_idx = exp_def;
-        if (hsvg_node) {
-          hsvg_node->_saturation = satset[sat_idx];
-          hsvg_node->_gamma      = gamset[gam_idx];
-        }
-        if (aces_node)
-          aces_node->_exposure = expset[exp_idx];
-        deco::printf(fvec3::Green(), "ork.ecs.player: [R] reset post-fx\n");
-        break;
-      default:
-        break;
+        // LOUD EITHER WAY. A base row whose material half did not bind is a row that
+        // corrupts coverage as it moves, so it says which half is missing rather than
+        // waiting to be discovered as a coverage bug.
+        deco::printf(n_band ? fvec3::Green() : fvec3::Red(),
+                     "ork.ecs.player: cloud deck materials: band rebind on %d, radiance rebind on %d%s\n",
+                     n_band, n_rad,
+                     n_band ? "" : " — the CLOUDS base row would move the shells OFF their own "
+                                   "coverage band (no CgAltLo found on any cloud_* material)");
+      };
+      bind_cloud_materials(scenedata, scene_artifacts);
+      std::vector<HudEditProp> clouds;
+      // sky-cover fraction, the currency a scene author declares in (Scene.cloud_decks)
+      clouds.push_back(hudFloatProp(
+          "cloud cover", 0.0f, 1.0f, 0.01f,
+          [&cloud_cover_cmd]() { return cloud_cover_cmd; },
+          [&, send_clouds](float v) {
+            cloud_cover_cmd = v;
+            send_clouds(cloud_cover_cmd, cloud_tile_cmd);
+          }));
+      // tile-size multiplier; the script clamps to the gauge's own 0.35..2.8 band
+      clouds.push_back(hudFloatProp(
+          "cloud tile", 0.35f, 2.8f, 0.02f,
+          [&cloud_tile_cmd]() { return cloud_tile_cmd; },
+          [&, send_clouds](float v) {
+            cloud_tile_cmd = v;
+            send_clouds(cloud_cover_cmd, cloud_tile_cmd);
+          }));
+      // DECK BASE in metres ASL — the AGL spec altitudes' lift, the number a scene declares
+      // as cloud_decks(alt_offset_m=). The band range covers every scene the deck library
+      // serves (sea-level gauges through the alpine terrain's 3 km lift) and the 50 m step
+      // is a twelfth of the coverage sweep, so a single press is a visible move and not a
+      // coverage jump. The transform goes out with the message; the material band is already
+      // reading this same float per draw (see the generator above), so the two never part.
+      clouds.push_back(hudFloatProp(
+          "cloud base", 0.0f, 6000.0f, 50.0f,
+          [&cloud_base_cmd]() { return cloud_base_cmd; },
+          [&, send_clouds](float v) {
+            cloud_base_cmd = v;
+            send_clouds(cloud_cover_cmd, cloud_tile_cmd);
+          }));
+      // DECK RADIANCE GAIN over the scene's own lit/shadow colors — 1.0 is exactly as
+      // authored, which is why this row needs no scene param to come up honest. Pure
+      // material side: no message, the generators re-read it every draw.
+      clouds.push_back(hudFloatProp(
+          "cloud gain", 0.0f, 3.0f, 0.05f,
+          [&cloud_gain_cmd]() { return cloud_gain_cmd; },
+          [&cloud_gain_cmd](float v) { cloud_gain_cmd = v; }));
+      num_cloud_rows = int(clouds.size());
+      perfhud.registerEditorPage("CLOUDS", clouds);
+      // ONLY WHEN THE SCENE SAID SO. An .ecs composed before the deck library published
+      // its launch state carries none, and the rows above are then the library's generic
+      // defaults — pushing those would move decks the scene placed deliberately (and with
+      // no CloudAltOffset to go with them, place them off their own band). Silent there:
+      // the script keeps the author-time transforms, exactly as it does with no host.
+      if (cloud_state_known)
+        push_cloud_state = [&, send_clouds]() { send_clouds(cloud_cover_cmd, cloud_tile_cmd); };
+      else
+        deco::printf(fvec3::Yellow(),
+                     "ork.ecs.player: scene publishes no cloud launch state (composed before the "
+                     "decks published one) — CLOUDS rows start from library defaults and the decks "
+                     "are left exactly as authored until a row is moved\n");
     }
-    update_keys_hud(); // reflect the new state in the always-on legend
+
+    ////////////////////////////////////////////////////////
+    // FOLIAGE — the scene's mutually-exclusive hypermesh presentation sets, one row.
+    //
+    // A scene declares alternative treatments of the same scatter as co-resident entity
+    // sets tagged with a visgroup ("foliage:<state>"; HypermeshComponentData::_visgroup),
+    // exactly one of which launches visible. Switching is therefore a VISIBILITY message
+    // to the hosting HypermeshSystem, not a material edit on the render thread — the
+    // sets do not share a drawable, so nothing here can race a draw.
+    //
+    // The STATES ARE THE SCENE'S, not this player's: the row's choices are whatever
+    // suffixes the .ecs declares, sorted so the ring is stable across runs, and the row
+    // comes up on the one the scene launched. A player with a name table here would have
+    // to be edited every time a scene grew a treatment.
+    //
+    // COST OF THE UNSELECTED SETS IS ZERO until they are asked for: a member that stages
+    // with its node disabled is skipped by both the per-frame gpu update and the per-view
+    // pre-render, so it never materializes a mesh, never allocates an impostor atlas and
+    // never starts a section bake. The first switch to a set pays that build in one hitch.
+    ////////////////////////////////////////////////////////
+    {
+      static const char* kFoliagePrefix = "foliage:";
+      std::string foliage_launch;
+      for (const auto& kv : scenedata->GetSceneObjects()) {
+        auto sd = std::dynamic_pointer_cast<SpawnData>(kv.second);
+        if (not sd)
+          continue;
+        auto hcd = sd->typedComponent<HypermeshComponentData>();
+        if (not hcd or hcd->_visgroup.rfind(kFoliagePrefix, 0) != 0)
+          continue;
+        auto state = hcd->_visgroup.substr(strlen(kFoliagePrefix));
+        if (std::find(foliage_states.begin(), foliage_states.end(), state) == foliage_states.end())
+          foliage_states.push_back(state);
+        if (hcd->_visible)
+          foliage_launch = state;
+      }
+      std::sort(foliage_states.begin(), foliage_states.end());
+      if (foliage_states.size() > 1) {
+        auto it = std::find(foliage_states.begin(), foliage_states.end(), foliage_launch);
+        foliage_mode_cmd = (it == foliage_states.end()) ? 0 : int(it - foliage_states.begin());
+        auto send_foliage = [&]() {
+          controller_ptr_t c;
+          sys_ref_t        hms;
+          {
+            std::lock_guard<std::mutex> lock(ctl_mutex);
+            c   = controller;
+            hms = hypermeshsystem;
+          }
+          if (not c)
+            return;
+          // EVERY group every time, the losers explicitly off. A message that only turned
+          // the winner on would leave the previous set drawn as well — two barks on one
+          // trunk — and the receiving system has no idea which sets are peers.
+          for (size_t i = 0; i < foliage_states.size(); i++) {
+            auto tab             = std::make_shared<DataTable>();
+            (*tab)["group"_tok]  = std::string(kFoliagePrefix) + foliage_states[i];
+            (*tab)["enable"_tok] = int(i == size_t(foliage_mode_cmd) ? 1 : 0);
+            c->systemNotify(hms, HypermeshSystem::SET_VISGROUP, tab);
+          }
+        };
+        std::vector<HudEditProp> foliage;
+        foliage.push_back(hudEnumProp(
+            "bark", foliage_states,
+            [&foliage_mode_cmd]() { return float(foliage_mode_cmd); },
+            [&, send_foliage](float v) {
+              foliage_mode_cmd = int(std::lround(v));
+              send_foliage();
+            }));
+        perfhud.registerEditorPage("FOLIAGE", foliage);
+        push_foliage_state = [send_foliage]() { send_foliage(); };
+        deco::printf(fvec3::Green(),
+                     "ork.ecs.player: foliage visgroups: %zu states, scene launches <%s>\n",
+                     foliage_states.size(),
+                     foliage_launch.empty() ? "none visible" : foliage_launch.c_str());
+      }
+    }
+
+    ////////////////////////////////////////////////////////
+    // POST
+    ////////////////////////////////////////////////////////
+    std::vector<HudEditProp> post;
+    if (hsvg) {
+      post.push_back(hudFloatProp("hue", -1.0f, 1.0f, 0.02f,
+                                  [hsvg]() { return hsvg->_hue; },
+                                  [hsvg](float v) { hsvg->_hue = v; }));
+      post.push_back(hudFloatProp("saturation", 0.0f, 2.0f, 0.02f,
+                                  [hsvg]() { return hsvg->_saturation; },
+                                  [hsvg](float v) { hsvg->_saturation = v; }));
+      post.push_back(hudFloatProp("value", 0.0f, 2.0f, 0.02f,
+                                  [hsvg]() { return hsvg->_value; },
+                                  [hsvg](float v) { hsvg->_value = v; }));
+      post.push_back(hudFloatProp("gamma", 0.25f, 3.0f, 0.02f,
+                                  [hsvg]() { return hsvg->_gamma; },
+                                  [hsvg](float v) { hsvg->_gamma = v; }));
+    }
+    if (aces) {
+      post.push_back(hudFloatProp("exposure", 0.0f, 4.0f, 0.02f,
+                                  [aces]() { return aces->_exposure; },
+                                  [aces](float v) { aces->_exposure = v; }));
+      // the three scene-adaptation gains (PostFxNodeACES documents the anchor ladder);
+      // the floor is the dead-of-night display gain, hence the wide range.
+      post.push_back(hudFloatProp("adapt day", 0.0f, 4.0f, 0.02f,
+                                  [aces]() { return aces->_adaptDay; },
+                                  [aces](float v) { aces->_adaptDay = v; }));
+      post.push_back(hudFloatProp("adapt twilight", 0.0f, 4.0f, 0.02f,
+                                  [aces]() { return aces->_adaptTwilight; },
+                                  [aces](float v) { aces->_adaptTwilight = v; }));
+      post.push_back(hudFloatProp("adapt floor", 0.0f, 1024.0f, 8.0f,
+                                  [aces]() { return aces->_adaptFloor; },
+                                  [aces](float v) { aces->_adaptFloor = v; }));
+    }
+    // WHICH DIFFUSE LOBE the analytic lights use. Label order is the ordinal order of
+    // pbr::DiffuseBrdfModel, so the row's index IS the model — one less mapping to get
+    // wrong — while what crosses the wire is the model's crc (SceneGraphSystem's
+    // UpdatePbrCommon), because a saved state must survive a renumbering. Unlike the
+    // sky/postfx rows this one has no host-side object to poke: the pbr common block is
+    // built by the compositor, so it is reached the way time-of-day is, by notify.
+    if (has_sgsys) {
+      post.push_back(hudEnumProp(
+          "diffuse brdf", {"lambert", "oren-nayar", "burley"},
+          [&diffuse_brdf_cmd]() { return float(diffuse_brdf_cmd); },
+          [&](float v) {
+            diffuse_brdf_cmd = int(v);
+            controller_ptr_t c;
+            sys_ref_t        sgs;
+            {
+              std::lock_guard<std::mutex> lock(ctl_mutex);
+              c   = controller;
+              sgs = sgsystem;
+            }
+            if (c) {
+              auto model = pbr::DiffuseBrdfModel(diffuse_brdf_cmd);
+              auto tab   = std::make_shared<DataTable>();
+              (*tab)["DiffuseBrdfModel"_tok] =
+                  uint64_t(CrcString(pbr::diffuseBrdfModelName(model)).hashed());
+              c->systemNotify(sgs, "UpdatePbrCommon"_tok, tab);
+            }
+          }));
+    }
+    if (not post.empty())
+      perfhud.registerEditorPage("POST", post);
+    else
+      deco::printf(fvec3::Yellow(),
+                   "ork.ecs.player: scene declares no aces/hsvg postfx node — no HUD POST page\n");
+
+    ////////////////////////////////////////////////////////
+    // SETTINGS — the page of COMMANDS, registered last so the value pages keep their
+    // places in the ring. The two commands first: write every edited value on every page
+    // to the scene's sidecar (see editor_state.h) for THIS presentation mode, and take the
+    // spawn from where the character is standing right now. Then the spawn itself, as four
+    // ordinary value rows the same save carries.
+    //
+    // They are rows and not keys because the pad has to reach them: a headset has no
+    // keyboard, and a control that only exists on the desktop is a control the owner
+    // cannot use where the grading actually happens.
+    ////////////////////////////////////////////////////////
+    std::vector<HudEditProp> settings;
+    settings.push_back(hudActionProp(
+        "save all",
+        {"ready", "saved", "refused", "no scene", "failed"},
+        [&save_row_state]() { return float(save_row_state.load()); },
+        [&]() { do_save_editor_state(); }));
+    // ONLY WHEN THERE IS A WALKER. On a scene with no character these rows would have
+    // nothing to place and nowhere to read a vantage from — a row that cannot bite.
+    if (walker_spawn) {
+      settings.push_back(hudActionProp(
+          "set spawn here",
+          {"ready", "sampling", "set", "no walker", "no answer"},
+          [&spawn_row_state]() { return float(spawn_row_state.load()); },
+          [&]() {
+            // The update thread owns the conversation with the character (it is the thread
+            // the request drains on); this only raises the flag, so the row fires the same
+            // from the '\' key and from CROSS.
+            spawn_row_state.store(SPAWN_SAMPLING);
+            spawn_probe_want.store(true);
+          }));
+      settings.push_back(hudFloatProp("spawn x", -kSpawnXZLimit, kSpawnXZLimit, 1.0f,
+                                      [&spawn_x]() { return spawn_x; },
+                                      [&spawn_x](float v) { spawn_x = v; }));
+      settings.push_back(hudFloatProp("spawn y", -kSpawnYLimit, kSpawnYLimit, 1.0f,
+                                      [&spawn_y]() { return spawn_y; },
+                                      [&spawn_y](float v) { spawn_y = v; }));
+      settings.push_back(hudFloatProp("spawn z", -kSpawnXZLimit, kSpawnXZLimit, 1.0f,
+                                      [&spawn_z]() { return spawn_z; },
+                                      [&spawn_z](float v) { spawn_z = v; }));
+      settings.push_back(hudFloatProp("spawn yaw", -kSpawnYawLimit, kSpawnYawLimit, 0.05f,
+                                      [&spawn_yaw]() { return spawn_yaw; },
+                                      [&spawn_yaw](float v) { spawn_yaw = v; }));
+    }
+    perfhud.registerEditorPage("SETTINGS", settings);
+
+    deco::printf(fvec3::Green(),
+                 "ork.ecs.player: HUD editor pages: SKY-MAIN<%zu rows> SKY-HAZE<%zu rows> "
+                 "CLOUDS<%d rows> POST<%zu rows> SETTINGS<%zu rows> (page ring is now %d long)\n",
+                 sky.size(), haze.size(), num_cloud_rows, post.size(), settings.size(),
+                 perfhud._pages.numPages());
+
+    // TIER-2 BASELINE, captured the moment every page exists and BEFORE a saved value is
+    // applied: this is the scene-authored truth a save measures its diffs against and a
+    // load checks for re-authoring.
+    //
+    // THE COMMAND-MIRROR ROWS (time of day, cloud cover / tile / base) ARE INCLUDED, and the
+    // baseline is what makes that safe. Their getters mirror the last command rather than
+    // reading the system that owns the value, so the baseline is a fixed, deterministic
+    // starting number — which means a row only ever DIFFERS from it after the user moved
+    // it, and only a moved row is written. What is saved is therefore always a value the
+    // owner actually set, and replaying it is re-issuing that same command. The one thing
+    // this cannot do is notice that the SCENE's authored hour changed since the save: with
+    // no readback there is nothing to compare, so a saved time of day wins until the row
+    // can read the clock instead of remembering it.
+    std::vector<std::string> baseline_anomalies;
+    editor_baselines = EditorStateIO::capture(perfhud._pages, {}, &baseline_anomalies);
+    for (const auto& l : baseline_anomalies)
+      deco::printf(fvec3::Red(), "ork.ecs.player: %s\n", l.c_str());
   };
 
-  // --devkeys-script: parse "LABEL:FRAME,..." into scripted key events fired on the
-  // update thread when the tick reaches FRAME. CMDR fires the live round-trip (Cmd+R).
-  struct DevKeyEvent {
-    int  keycode = 0;
-    bool cmdr    = false;
-    int  frame   = 0;
-    bool fired   = false;
+  // --editscript: parse "LABEL:FRAME,..." into scripted HUD EDITOR input fired on the
+  // update thread when the tick reaches FRAME. Drives the very calls the cursor keys and
+  // the pad make, so a scripted edit and a hand-made one cannot diverge.
+  struct EditorScriptEvent {
+    enum Action { PAGE, SELECT, ADJUST, COLOR };
+    Action      action = PAGE;
+    int         arg    = 0; // SELECT/ADJUST: -1 or +1
+    int         frame  = 0;
+    bool        fired  = false;
+    std::string label;
   };
-  std::vector<DevKeyEvent> devkey_events;
-  if (not devkeys_script.empty()) {
-    std::stringstream ss(devkeys_script);
+  std::vector<EditorScriptEvent> editor_events;
+  if (not editor_script.empty()) {
+    std::stringstream ss(editor_script);
     std::string item;
     while (std::getline(ss, item, ',')) {
       auto colon = item.find(':');
       if (colon == std::string::npos)
         continue;
-      std::string label = item.substr(0, colon);
-      DevKeyEvent dke;
-      dke.frame = atoi(item.substr(colon + 1).c_str());
-      if (label == "CMDR")
-        dke.cmdr = true;
-      else if (not label.empty()) {
-        char c0 = label[0];
-        if (c0 >= 'a' and c0 <= 'z')
-          c0 = char(c0 - 'a' + 'A');
-        dke.keycode = (unsigned char)c0;
+      EditorScriptEvent ese;
+      ese.label = item.substr(0, colon);
+      ese.frame = atoi(item.substr(colon + 1).c_str());
+      for (auto& c : ese.label)
+        c = char(std::toupper((unsigned char)c));
+      if (ese.label == "PAGE")
+        ese.action = EditorScriptEvent::PAGE;
+      else if (ese.label == "UP" or ese.label == "DOWN") {
+        ese.action = EditorScriptEvent::SELECT;
+        ese.arg    = (ese.label == "UP") ? -1 : +1;
+      } else if (ese.label == "COLOR") {
+        ese.action = EditorScriptEvent::COLOR;
+      } else if (ese.label == "LEFT" or ese.label == "RIGHT") {
+        ese.action = EditorScriptEvent::ADJUST;
+        ese.arg    = (ese.label == "RIGHT") ? +1 : -1;
+      } else {
+        deco::printf(fvec3::Red(), "ork.ecs.player: --editscript unknown label <%s> (PAGE/UP/DOWN/LEFT/RIGHT)\n",
+                     ese.label.c_str());
+        continue;
       }
-      devkey_events.push_back(dke);
+      editor_events.push_back(ese);
     }
-    deco::printf(fvec3::Yellow(), "ork.ecs.player: --devkeys-script parsed %zu event(s)\n", devkey_events.size());
+    deco::printf(fvec3::Yellow(), "ork.ecs.player: --editscript parsed %zu event(s)\n", editor_events.size());
   }
-  int devkey_tick = 0;
-  if (devkeys)
-    update_keys_hud(); // seed the legend with the default cycle state (before any keypress)
+  int editor_tick = 0;
 
   // --pysysnotify: parse "TIME:EVENT:field=value,...;..." into scripted PythonSystem
   // messages fired on the update thread once abstime reaches TIME. The player owns NO
@@ -867,27 +1561,8 @@ int main(int argc, char** argv, char** envp) {
     ////////////////////////////////////////////
     // 2. the C++ wire step (materializeAll + by-name component patching)
     ////////////////////////////////////////////
-    auto artifacts = materializeAndWireScene(scenedata, ctx);
-    ////////////////////////////////////////////
-    // [M] derive the material-cycle labels from scene DATA (the terrain drawable's reflected
-    // debug_material_assets) — no hardcoded mode table. Label = the asset-name suffix after
-    // "_dbg_". Empty list => the [M] cycle is a no-op (logged once here).
-    ////////////////////////////////////////////
-    {
-      auto dbg_assets = terrainDebugMaterialAssets(scenedata);
-      matmode_labels.assign(1, std::string("declared"));
-      for (const auto& a : dbg_assets) {
-        auto pos = a.rfind("_dbg_");
-        matmode_labels.push_back(pos != std::string::npos ? a.substr(pos + 5) : a);
-      }
-      if (dbg_assets.empty())
-        deco::printf(fvec3::Yellow(),
-                     "ork.ecs.player: no terrain debug materials declared -- [M] is a no-op\n");
-      else
-        deco::printf(fvec3::Green(),
-                     "ork.ecs.player: [M] terrain material cycle -> %zu debug mode(s)\n",
-                     dbg_assets.size());
-    }
+    auto artifacts  = materializeAndWireScene(scenedata, ctx);
+    scene_artifacts = artifacts; // the editor pages resolve live materials out of it (CLOUDS)
     if (want_ssaa > 1) { // host display preference -> the SG screen node (link copies userparams)
       for (const auto& it : scenedata->getSystemDatas())
         if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
@@ -895,21 +1570,17 @@ int main(int argc, char** argv, char** envp) {
       deco::printf(fvec3::Yellow(), "ork.ecs.player: ssaa<%d>\n", want_ssaa);
     }
     ////////////////////////////////////////////
-    // --vr: select the VR render model (FWDPBRVRDM). The XR device was selected pre-Vulkan
-    // from ORKID_VR_DRIVER and, by now (post graphics-init), is _active iff its session came
-    // up. Forcing the preset here (a user scene param, like ssaa above) routes BOTH the
-    // compositor (presetForwardPBRVRDM) and the SceneGraphSystem VR-device wiring.
+    // --vr: select the VR render model. The preset string FWDPBRVRDM resolves to the
+    // single-pass stereo output node (presetForwardPBRSPVR); a device without multiview
+    // throws there rather than degrading. The XR device was selected pre-Vulkan from
+    // ORKID_VR_DRIVER and, by now (post graphics-init), is _active iff its session came up.
+    // Forcing the preset here (a user scene param, like ssaa above) routes BOTH the
+    // compositor and the SceneGraphSystem VR-device wiring.
     //
     // The runtime check picks the DEVICE, not the render model: with a live runtime the
     // active XR device drives the HMD; with none, SceneGraphSystem registers a NoVr device
     // and the output node's desktop-mirror blit IS the presentation (side-by-side stereo).
     // --vr therefore always means stereo — a request for VR is never answered with mono.
-    //
-    // PRECEDENCE with ORKID_FORCE_DMVR (below): none needed here — both arms set the SAME
-    // preset param, so the two levers cannot disagree at this level. Where they DO meet is
-    // inside the preset resolver (scenegraph.cpp): ORKID_FORCE_DMVR is capability- AND
-    // autoselect-immune by its own charter (it means "this node", not "the best node"), so
-    // it beats ORKID_SPVR=1 and FWDPBRVRDM stays literal DualMonoVr.
     ////////////////////////////////////////////
     if (want_vr) {
       auto vrdev      = ::ork::lev2::orkidvr::device();
@@ -920,54 +1591,183 @@ int main(int argc, char** argv, char** envp) {
           if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
             sgd->setUserSceneParam("preset", std::string("FWDPBRVRDM"));
         // perf HUD goes to its VR path: content -> offscreen RT -> head-locked panel in
-        //  both eyes (DualMonoVr node). The pad L1 (left bumper) toggles it (see onUpdate).
+        //  both eyes. The pad bumpers step its page ring, R1 forward / L1 back (see onUpdate).
         perfhud._vrmode = true;
         deco::printf(fvec3::Green(),
-                     "ork.ecs.player: --vr ACTIVE — XR runtime up, render model FWDPBRVRDM\n");
+                     "ork.ecs.player: --vr ACTIVE — XR runtime up, preset FWDPBRVRDM (single-pass stereo node)\n");
       } else {
         // NO RUNTIME -> NoVR STEREO. Same render model, same preset param; SceneGraphSystem
         //  sees no device that ownsHmdPresentation and registers a NoVrDevice, whose
         //  __compositeStereo is a no-op — the output node's desktop mirror presents both eyes.
-        //  Routing through the preset param (rather than an output node reached by hand) is
-        //  what keeps the ORKID_SPVR autoselect in the loop: the resolver decides dual-mono
-        //  vs single-pass from this string.
+        //  Routing through the preset param (rather than an output node reached by hand) keeps
+        //  the resolver the single place the VR output node is chosen.
         for (const auto& it : scenedata->getSystemDatas())
           if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
             sgd->setUserSceneParam("preset", std::string("FWDPBRVRDM"));
         perfhud._vrmode = true;
         deco::printf(fvec3::Yellow(),
-                     "ork.ecs.player: --vr: no XR runtime, using NoVR stereo (DMVR) — render model FWDPBRVRDM on a NoVr device\n");
+                     "ork.ecs.player: --vr: no XR runtime, NoVR stereo — preset FWDPBRVRDM (single-pass stereo node) on a NoVr device\n");
       }
-    }
-    // ORKID_FORCE_DMVR (eye-pass verification): force the DualMonoVr preset on desktop so
-    //  SceneGraphSystem spins up a NoVr device and runs the REAL DM composite (+ _drawHudPanel)
-    //  headless — no HMD needed. Independent of --vr's openxr gate.
-    if (force_dmvr) {
-      for (const auto& it : scenedata->getSystemDatas())
-        if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second))
-          sgd->setUserSceneParam("preset", std::string("FWDPBRVRDM"));
-      perfhud._vrmode = true;
-      deco::printf(fvec3::Yellow(), "ork.ecs.player: ORKID_FORCE_DMVR — desktop NoVr DMVR preview (eye-pass verification)\n");
     }
     deco::printf(
         fvec3::Green(),
         "ork.ecs.player: materialized + wired (%zu artifacts)\n",
         artifacts->_themap.size());
     ////////////////////////////////////////////
-    // 2b. --devkeys: splice the player-owned ACES+HSVG chain into the SG system data
-    // BEFORE bind (the reflected _postfx_nodes/_postfx_order are consumed at _onLink).
-    // additive with any scene-declared chain (e.g. "ssss"). NodeCompositor gpuInits
+    // 2b. POST CHAIN SELF-DEFENSE. The HUD POST page edits the reflected "aces" / "hsvg"
+    // nodes, and it is now the ONLY tone/grade surface the player has. Most scenes
+    // declare one of the pair and not the other (Scene.sky() attaches the tone stage;
+    // nothing attaches a grade), which would bring the page up with half its rows and no
+    // way to say why. Attach the MISSING half here, default-constructed: HSVG's defaults
+    // are an identity grade and ACES' authored exposure is the 1.0 the scene library
+    // ships, so an unedited frame is the frame it was. SCENE-AUTHORED NODES WIN — only an
+    // absent name is filled, and both calls are idempotent besides.
+    // ORDER is append, so a filled-in grade lands AFTER the tone stage. Not a preference:
+    // ps_hsvg clamps value to 1, so an identity grade ahead of the tonemap would clip the
+    // HDR frame instead of passing it through.
+    // BEFORE bind (the reflected _postfx_nodes/_postfx_order are consumed at _onLink),
+    // and additive with any scene-declared chain (e.g. "ssss"). NodeCompositor gpuInits
     // registered nodes for us — we never gpuInit these ourselves.
     ////////////////////////////////////////////
-    if (devkeys) {
-      for (const auto& it : scenedata->getSystemDatas())
-        if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second)) {
-          sgd->addPostFxNode("aces", aces_node);
-          sgd->addPostFxNode("hsvg", hsvg_node);
-          sgd->appendPostFxOrder("aces");
-          sgd->appendPostFxOrder("hsvg");
+    for (const auto& it : scenedata->getSystemDatas()) {
+      auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second);
+      if (not sgd)
+        continue;
+      std::string attached;
+      auto attach_if_absent = [&](const std::string& name, lev2::compositorpostnode_ptr_t node) {
+        if (sgd->_postfx_nodes.count(name))
+          return;
+        sgd->addPostFxNode(name, node);
+        sgd->appendPostFxOrder(name);
+        attached += attached.empty() ? name : ("+" + name);
+      };
+      attach_if_absent("aces", std::make_shared<PostFxNodeACES>());
+      attach_if_absent("hsvg", std::make_shared<PostFxNodeHSVG>());
+      if (not attached.empty())
+        deco::printf(fvec3::Yellow(),
+                     "ork.ecs.player: scene declares no <%s> postfx node — "
+                     "attached the engine default so the HUD POST page can edit it\n",
+                     attached.c_str());
+    }
+    ////////////////////////////////////////////
+    // 2b-2. SCENE IDENTITY + PRESENTATION MODE — what the saved editor values are keyed
+    // to. The source is a path TOKEN (<ork_data>/scenes/scn_x.py), so it expands against
+    // THIS machine's workspace; the raw token would answer a filesystem test falsely, so
+    // nothing may probe it before expandPaths.
+    //
+    // The MODE is the render model, read back from the preset the arms above resolved —
+    // not from want_vr — so a scene that names a VR preset itself lands in the same bucket
+    // as --vr does. Both VR preset strings route to the single-pass stereo node.
+    ////////////////////////////////////////////
+    for (const auto& it : scenedata->getSystemDatas())
+      if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second)) {
+        const auto& up = sgd->userSceneParams();
+        auto        pi = up.find("preset");
+        if (pi != up.end() and pi->second.isA<std::string>() and
+            (pi->second.get<std::string>() == "FWDPBRVRDM" or
+             pi->second.get<std::string>() == "FWDPBRSPVR"))
+          vr_presentation = true;
+      }
+    {
+      std::string raw = scenedata->_sceneScriptPath.c_str();
+      if (raw.empty()) {
+        deco::printf(fvec3::Yellow(),
+                     "ork.ecs.player: this .ecs carries no scene source — editor values cannot be "
+                     "saved or loaded for it (the composer sets SceneData.scene_script_path)\n");
+      } else {
+        std::string abs = ork::file::expandPaths(raw);
+        if (not std::filesystem::exists(abs)) {
+          deco::printf(fvec3::Yellow(),
+                       "ork.ecs.player: scene source <%s> does not resolve on this machine (<%s>) — "
+                       "editor values are not persisted this run\n",
+                       raw.c_str(), abs.c_str());
+        } else {
+          editor_state_path  = EditorStateIO::sidecarPath(abs);
+          auto slash         = abs.find_last_of('/');
+          editor_state_scene = (slash == std::string::npos) ? abs : abs.substr(slash + 1);
+          deco::printf(fvec3::Green(),
+                       "ork.ecs.player: scene source <%s> — editor values <%s> mode<%s>\n",
+                       editor_state_scene.c_str(), editor_state_path.c_str(),
+                       editorStateModeKey(vr_presentation));
         }
-      deco::printf(fvec3::Yellow(), "ork.ecs.player: --devkeys injected ACES+HSVG postfx chain\n");
+      }
+    }
+    ////////////////////////////////////////////
+    // 2b-3. THE WALKER'S SPAWN — the SpawnData whose archetype carries a character
+    // controller. Found BEFORE the pages are registered, because the spawn rows seed
+    // themselves from the transform it holds: that authored value is the rows' tier 2, and
+    // therefore what a stale saved spawn is measured against.
+    //
+    // The eye height, follow distance and capsule size come from the same archetype: the
+    // character answers a camera RAY (an eye and a look), and turning that back into the
+    // spawn's own currency — the capsule CENTRE, which is what the transform holds — needs
+    // all three.
+    ////////////////////////////////////////////
+    for (const auto& kv : scenedata->GetSceneObjects()) {
+      auto sd = std::dynamic_pointer_cast<SpawnData>(kv.second);
+      if (not sd)
+        continue;
+      auto ccd = sd->typedComponent<CharacterControllerComponentData>();
+      if (not ccd)
+        continue;
+      walker_spawn       = sd;
+      spawn_eye_height   = ccd->_eyeHeight;
+      spawn_cam_distance = ccd->_camDistance;
+      if (auto bod = sd->typedComponent<BulletObjectComponentData>())
+        if (auto cap = std::dynamic_pointer_cast<BulletShapeCapsuleData>(bod->_shapedata))
+          spawn_half_capsule = 0.5f * cap->mfExtent + cap->mfRadius; // btCapsuleShape total height
+      auto xf   = sd->transform();
+      spawn_x   = xf->_translation.x;
+      spawn_y   = xf->_translation.y;
+      spawn_z   = xf->_translation.z;
+      auto fwd  = xf->_rotation.transform(fvec3(0, 0, -1)); // the walker's zero heading is -Z
+      spawn_yaw = atan2f(fwd.x, -fwd.z);
+      deco::printf(fvec3::Green(),
+                   "ork.ecs.player: walker <%s> spawns at (%.1f %.1f %.1f) yaw %.3f — the spawn is editable\n",
+                   kv.first.c_str(), double(spawn_x), double(spawn_y), double(spawn_z), double(spawn_yaw));
+      break;
+    }
+    ////////////////////////////////////////////
+    // 2c. HUD EDITOR PAGES — see register_editor_pages(). AFTER the post-chain fill-in,
+    // so the POST page binds whichever chain the frame will actually run.
+    ////////////////////////////////////////////
+    register_editor_pages();
+    ////////////////////////////////////////////
+    // 2d. THE SAVED SPAWN, applied BEFORE THE SIMULATION EXISTS. This is the whole reason
+    // the spawn is persisted as scene data rather than replayed as a message: written here
+    // it is simply where the character is born — no teleport, no physics to fight, no first
+    // second of the run spent somewhere the owner did not choose.
+    //
+    // The file's own anomalies are NOT printed here; the load in updateInit reads the same
+    // file and reports every one of them, and saying it twice would only make a duplicated
+    // line look like a duplicated fault. What this block reports is its own act.
+    ////////////////////////////////////////////
+    if (walker_spawn and not editor_state_path.empty()) {
+      EditorStateReport rep;
+      auto saved = EditorStateIO::readSaved(
+          editor_state_path, vr_presentation, perfhud._pages, editor_baselines, rep);
+      auto pick = [&saved](const char* id, float& out) -> bool {
+        auto it = saved.find(id);
+        if (it == saved.end() or it->second._kind != HudEditProp::FLOAT)
+          return false;
+        out = it->second._f;
+        return true;
+      };
+      float sx = spawn_x, sy = spawn_y, sz = spawn_z, syaw = spawn_yaw;
+      bool  moved = pick("spawn x", sx);
+      moved       = pick("spawn y", sy) or moved;
+      moved       = pick("spawn z", sz) or moved;
+      bool turned = pick("spawn yaw", syaw);
+      if (moved or turned) {
+        auto xf          = walker_spawn->transform();
+        xf->_translation = fvec3(sx, sy + kSpawnApplyLift, sz);
+        spawn_heading_send = turned ? syaw : 0.0f;
+        deco::printf(fvec3::Green(),
+                     "ork.ecs.player: saved spawn applied before the simulation — (%.1f %.1f %.1f) "
+                     "+%.1fm lift, yaw %.3f (scene authored %.1f %.1f %.1f)\n",
+                     double(sx), double(sy), double(sz), double(kSpawnApplyLift), double(syaw),
+                     double(spawn_x), double(spawn_y), double(spawn_z));
+      }
     }
     ////////////////////////////////////////////
     // 3. standard ECS lifecycle (trace-ecs shape)
@@ -1004,20 +1804,72 @@ int main(int argc, char** argv, char** envp) {
       pysystem = controller->findSystem<PythonSystem>();
     if (bullet_mode)
       bulletsystem = controller->findSystemWithClassName("BulletSystem");
-    if (devkeys)
-      update_keys_hud(); // re-seed: [B] phys n/a -> OFF now that bullet_mode is known
+    // the FOLIAGE row's notify target; only ever resolved for a scene that declared
+    // visgroups, which is also the only case in which the page exists.
+    if (push_foliage_state)
+      hypermeshsystem = controller->findSystemWithClassName("HypermeshSystem");
     if (physics_debug) {
       if (bullet_mode) {
-        // flag-driven startup enable: same TOGGLE_DEBUG_DRAW path as the [B] devkey, fired
+        // flag-driven startup enable: the TOGGLE_DEBUG_DRAW path, fired
         // once before the first tick drains — wireframe is up by first-lit (snapshot-gateable).
         controller->systemNotify(bulletsystem, "TOGGLE_DEBUG_DRAW"_tok, std::make_shared<DataTable>());
-        phys_dbg_on = true;
-        if (devkeys)
-          update_keys_hud(); // legend shows [B] phys: ON from frame 0
         deco::printf(fvec3::Green(), "ork.ecs.player: --physics-debug ON (Bullet debug wireframe)\n");
       } else {
         deco::printf(fvec3::Yellow(), "ork.ecs.player: --physics-debug requested but the scene declares no BulletSystem\n");
       }
+    }
+    ////////////////////////////////////////////
+    // SAVED EDITOR VALUES — applied on the simulation's POST-ACTIVATE edge, NOT here.
+    //
+    // Here is too early, and silently so. A row that writes a live object (the atmosphere,
+    // the postfx nodes) takes at any time, but a row that drives a SYSTEM — time of day and
+    // the cloud decks, which message the scene's PythonSystem — would reach a system whose
+    // SCRIPT DOES NOT EXIST YET: that script's state is built in the python system's
+    // CONSTRUCTOR, which the transport FSM runs in the COMPOSE phase, ticks after
+    // startSimulation() returns. The message landed on a system with no state to change and
+    // the script's own init then adopted the scene's authored clock — the saved hour loaded,
+    // reported, and did nothing.
+    //
+    // POST-ACTIVATE is the first moment every system, script and component in the scene is
+    // live and no tick has run yet, so it is the first moment at which "apply the saved
+    // values" means ALL of them rather than most of them. One shot per simulation.
+    ////////////////////////////////////////////
+    {
+      auto applied = std::make_shared<bool>(false);
+      controller->_onUpdPostActivate.push_back([&, applied](Simulation*) {
+        if (*applied)
+          return;
+        *applied = true;
+        if (not editor_state_path.empty()) {
+          auto rep = EditorStateIO::load(editor_state_path, vr_presentation, perfhud._pages, editor_baselines);
+          for (const auto& l : rep._lines)
+            deco::printf(fvec3::Yellow(), "ork.ecs.player: %s\n", l.c_str());
+          deco::printf(rep._ok ? fvec3::Green() : fvec3::Red(),
+                       "ork.ecs.player: editor values <%s>: %s\n",
+                       editorStateModeKey(vr_presentation), rep._summary.c_str());
+        }
+        // THE RESTORED HEADING, owed to the character since 2d, and owed the same edge: a
+        // TurnStep only lands once the character COMPONENT is staged. A fresh character's
+        // heading is exactly zero — the capsule is rotation-locked and the controller
+        // ignores the spawn rotation — so one discrete step IS the absolute facing. Sent
+        // only when a saved yaw survived the re-authoring check, so a scene with no saved
+        // spawn behaves as if none of this existed.
+        controller_ptr_t c;
+        {
+          std::lock_guard<std::mutex> lock(ctl_mutex);
+          c = controller;
+        }
+        send_spawn_heading(c, charsystem);
+        // and hand the deck script the state the sky is actually in — the rows hold the
+        // scene's launch state with any saved value already applied over it.
+        if (push_cloud_state)
+          push_cloud_state();
+        // and re-assert the chosen foliage set: a fresh simulation staged every member at
+        // its DECLARED launch visibility, so without this the scene's default is what is
+        // drawn while the row (restored from the saved editor state) claims otherwise.
+        if (push_foliage_state)
+          push_foliage_state();
+      });
     }
     deco::printf(fvec3::Green(), "ork.ecs.player: simulation STARTED%s\n",
                  walk_mode ? " [WALK MODE: W/S move, A/D strafe, arrows turn/pitch, SPACE jump, P pause]" : "");
@@ -1033,9 +1885,33 @@ int main(int argc, char** argv, char** envp) {
   // S1 gamepad state-forwarding (update thread). Lazily created only when the scene has a
   // PythonSystem to consume it; the PYTHON input script owns the pad->locomotion mapping.
   gamepaddevice_ptr_t gamepad;
-  // HUD toggle (VR): host-side rising edge on L1 (left bumper), plain button. Independent
-  //  of the pad->python forwarding below (the L1 bit still forwards as a GamepadButton).
+  // HUD pad controls: host-side rising edges on the two BUMPERS (R1 forward, L1 back —
+  //  the pad analogue of ` and SHIFT-`) and on R3 (right stick click, forward). Page 0 in
+  //  the ring IS hidden, so there is no separate show/hide. Independent of the pad->python
+  //  forwarding below (the bits still forward as GamepadButtons; no scene binds them).
   bool gp_l1_hud_prev = false;
+  bool gp_r1_hud_prev = false;
+  bool gp_r3_hud_prev = false;
+  // HUD EDITOR input (see the key/pad registries at the top of this file). The cursor
+  //  LEFT/RIGHT hold state is written on the MAIN thread and read on the update thread,
+  //  which is the one that ticks the auto-repeat — hence the atomic. Selection (cursor
+  //  up/down, DPAD up/down) is a per-press edge and needs no hold state.
+  std::atomic<int> edit_key_dir{0};
+  bool gp_dpu_prev = false;
+  bool gp_dpd_prev = false;
+  bool gp_cross_prev = false;
+  double prev_upd_time = -1.0;
+  // The bits the HUD EDITOR OWNS while a page is up, masked out of the python forward
+  //  (see below). DPAD_UP/DOWN move the selection; CROSS is the activate gesture — and
+  //  it is masked for the WHOLE edit window, not only on rows it can activate: a press
+  //  that opens a color and also fires the scene's weapon is one button doing two jobs.
+  //  Page 0 (no editor page) forwards everything, so fire is untouched where it lives.
+  uint32_t gp_hud_mask = 0;
+  for (size_t i = 0; i < kNumGamepadButtons; i++)
+    if (kGamepadButtonOrder[i] == GamepadButtonId::DPAD_UP or
+        kGamepadButtonOrder[i] == GamepadButtonId::DPAD_DOWN or
+        kGamepadButtonOrder[i] == GamepadButtonId::CROSS)
+      gp_hud_mask |= (1u << i);
   bool gp_connected_latch = false; // forward only after the pad reports connected once
   bool gp_prev_connected  = false; // send one final frame on the connected->disconnected edge
   uint32_t gp_prev_buttons = 0;    // for button edge-diff (release-all on disconnect)
@@ -1053,6 +1929,11 @@ int main(int argc, char** argv, char** envp) {
   int gp_fwd_btn = 0, gp_fwd_axes = 0;
   double gp_fwd_live_t0 = -1.0;
   bool gp_fwd_btn_wasnz = false, gp_fwd_axes_wasnz = false;
+  // "set spawn here" — the character's camera ray, asked and read on THIS thread (the one
+  //  the request drains on, so the answer needs no locking). Update-thread state only.
+  response_ref_t spawn_probe_ref;
+  bool           spawn_probe_active = false;
+  int            spawn_probe_ticks  = 0;
   ezapp->onUpdate([&](ui::updatedata_ptr_t updata) {
     abstime = updata->_abstime;
     if (auto_roundtrip > 0.0f and not auto_rt_fired and abstime >= auto_roundtrip) {
@@ -1092,15 +1973,14 @@ int main(int argc, char** argv, char** envp) {
         }
       }
       if (auto_yaw > 0.0f) {
-        constexpr int KEY_RIGHT = 262; // GLFW code the walk input script maps to TurnInput
         if (not ay_down and abstime >= 1.0) {
           ay_down = true;
-          send_key(KEY_RIGHT, 1);
+          send_key(KEY_CURSOR_RIGHT, 1); // the code the walk input script maps to TurnInput
           deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOYAW begin\n");
         }
         if (ay_down and not ay_up and abstime >= 1.0 + auto_yaw) {
           ay_up = true;
-          send_key(KEY_RIGHT, 0);
+          send_key(KEY_CURSOR_RIGHT, 0);
           deco::printf(fvec3::Yellow(), "ork.ecs.player: AUTOYAW end\n");
         }
       }
@@ -1115,21 +1995,77 @@ int main(int argc, char** argv, char** envp) {
     // (zero traffic when no pad); on disconnect every held button is released and one final
     // connected=0 frame is sent so the script can zero its inputs.
     // Sample the pad when the scene forwards it to python OR when the VR perf HUD needs
-    //  the L2 toggle. On a keyboardless VR rig this is the only way to raise the HUD.
-    bool hud_pad = perfhud._vrmode.load();
-    if (pysys_mode or hud_pad) {
+    //  the L1 toggle. On a keyboardless VR rig this is the only way to raise the HUD.
+    bool hud_pad  = perfhud._vrmode.load();
+    bool hud_edit = perfhud.editorActive(); // an editor page claims the dpad + triggers
+    int  pad_adj_dir = 0;
+    if (pysys_mode or hud_pad or hud_edit) {
       if (not gamepad)
         gamepad = GamepadDevice::instance(); // linux: spins up the joydev reader thread
       GamepadState gp = gamepad->sample();
-      // HUD toggle (VR): host-side L1 (left bumper) rising edge. Consumed HERE; the L1 bit
-      //  ALSO forwards to python as a GamepadButton (walk sprint moved to R1-only so this
-      //  toggle doesn't blip sprint) — no input conflict.
-      if (hud_pad) {
+      // HUD EDITOR PAGES: DPAD up/down move the selection (per press edge), L2/R2 adjust
+      //  the selected property (held; PerfHud::editAdjustHold owns the repeat). Consumed
+      //  host-side ONLY while an editor page is up. The two dpad bits are masked out of
+      //  the python forward for exactly that window, so the script sees a clean release
+      //  edge on the way in and a fresh press edge on the way out — never a stuck hold.
+      //  The triggers need no masking: no scene script binds them (walk_input_system.py's
+      //  fire moved to CROSS).
+      if (hud_edit and gp.connected) {
+        bool du = gp.buttonDown(GamepadButtonId::DPAD_UP);
+        bool dd = gp.buttonDown(GamepadButtonId::DPAD_DOWN);
+        if (du and not gp_dpu_prev)
+          perfhud.editSelect(-1);
+        if (dd and not gp_dpd_prev)
+          perfhud.editSelect(+1);
+        gp_dpu_prev = du;
+        gp_dpd_prev = dd;
+        // CROSS (PS4 X) is the ACTIVATE gesture: it opens/closes a COLOR row's sub-editor
+        //  and FIRES an ACTION row (editSelectedIsActivatable covers both). It never
+        //  reaches the scene while a page is up — see gp_hud_mask — so the same press
+        //  cannot both work the HUD and shoot.
+        bool cx = gp.buttonDown(GamepadButtonId::CROSS);
+        if (cx and not gp_cross_prev and perfhud.editSelectedIsActivatable())
+          perfhud.editActivate();
+        gp_cross_prev = cx;
+        if (gp.r2 > 0.35f)
+          pad_adj_dir += 1;
+        if (gp.l2 > 0.35f)
+          pad_adj_dir -= 1;
+      } else {
+        gp_dpu_prev   = false;
+        gp_dpd_prev   = false;
+        gp_cross_prev = false;
+      }
+      // HUD page ring: R3 (right stick click) rising edge, the pad analogue of ` ~ — same
+      //  ring, desktop and VR. Consumed HERE; the bit ALSO forwards to python as a
+      //  GamepadButton (the right stick is unbound scene-side) — no input conflict.
+      {
+        bool r3 = gp.connected and gp.buttonDown(GamepadButtonId::R3);
+        if (r3 and not gp_r3_hud_prev) {
+          perfhud.cyclePage();
+          deco::printf(fvec3::Cyan(), "ork.ecs.player: [pad R3] perf HUD page %d\n",
+                       perfhud._page.load());
+        }
+        gp_r3_hud_prev = r3;
+      }
+      // THE BUMPERS ARE THE PAGE RING, one per direction: R1 steps FORWARD, L1 steps BACK
+      //  (the pad twins of ` and SHIFT-`), wrapping through the hidden page 0 the same way
+      //  in both directions. Desktop AND VR — in the headset this is the only way to reach
+      //  a page. Both are DEDICATED host buttons: no scene script may bind them (jump lives
+      //  on TRIANGLE), so a press here has exactly one meaning.
+      {
+        bool r1 = gp.connected and gp.buttonDown(GamepadButtonId::R1);
+        if (r1 and not gp_r1_hud_prev) {
+          perfhud.cyclePage(+1);
+          deco::printf(fvec3::Cyan(), "ork.ecs.player: [pad R1] perf HUD page<%d>\n",
+                       perfhud._page.load());
+        }
+        gp_r1_hud_prev = r1;
         bool l1 = gp.connected and gp.buttonDown(GamepadButtonId::L1);
         if (l1 and not gp_l1_hud_prev) {
-          perfhud.toggleShown();
-          deco::printf(fvec3::Cyan(), "ork.ecs.player: [pad L1] perf HUD %s\n",
-                       perfhud._mode.load() ? "ON" : "OFF");
+          perfhud.cyclePage(-1);
+          deco::printf(fvec3::Cyan(), "ork.ecs.player: [pad L1] perf HUD page<%d>\n",
+                       perfhud._page.load());
         }
         gp_l1_hud_prev = l1;
       }
@@ -1143,19 +2079,21 @@ int main(int argc, char** argv, char** envp) {
           c = controller;
         }
         if (c) {
-          // button edge transitions (on disconnect gp.buttons==0 releases everything held)
-          uint32_t changed = gp.buttons ^ gp_prev_buttons;
+          // button edge transitions (on disconnect gp.buttons==0 releases everything held).
+          // While an editor page owns the dpad, its up/down bits read as RELEASED here.
+          uint32_t fwd_buttons = hud_edit ? (gp.buttons & ~gp_hud_mask) : gp.buttons;
+          uint32_t changed     = fwd_buttons ^ gp_prev_buttons;
           for (size_t i = 0; i < kNumGamepadButtons; i++) {
             uint32_t bit = (1u << i);
             if (not(changed & bit))
               continue;
             auto btntab             = std::make_shared<DataTable>();
             (*btntab)["button"_tok] = std::make_shared<CrcString>(uint64_t(kGamepadButtonOrder[i]));
-            (*btntab)["down"_tok]   = int((gp.buttons & bit) ? 1 : 0);
+            (*btntab)["down"_tok]   = int((fwd_buttons & bit) ? 1 : 0);
             c->systemNotify(pysystem, "GamepadButton"_tok, btntab);
             gp_fwd_btn++;
           }
-          gp_prev_buttons = gp.buttons;
+          gp_prev_buttons = fwd_buttons;
           // analog snapshot — rate-limited (see gp_sent_axes above): change-driven at
           // <=60Hz + 100ms heartbeat + always the disconnect edge. NOT per-tick.
           const float ax_now[6] = {gp.lx, gp.ly, gp.rx, gp.ry, gp.l2, gp.r2};
@@ -1202,6 +2140,44 @@ int main(int argc, char** argv, char** envp) {
       }
       } // if (pysys_mode) — pad->python forwarding
     }
+    // HUD EDITOR held-adjust tick — ONE repeat machine for both sources (cursor keys set
+    // edit_key_dir on the main thread, the pad sets pad_adj_dir just above); the keyboard
+    // wins a tie because it is the more deliberate input. A slider repeats while held, an
+    // enum steps once per press; PerfHud::editAdjustHold owns both policies.
+    {
+      double dt     = (prev_upd_time < 0.0) ? 0.0 : std::max(0.0, abstime - prev_upd_time);
+      prev_upd_time = abstime;
+      int dir       = edit_key_dir.load();
+      if (dir == 0)
+        dir = pad_adj_dir;
+      perfhud.editAdjustHold(dir, dt);
+    }
+    // --editscript (test hook): scripted HUD editor input at update-tick FRAME, through
+    // the SAME calls a key or a pad press makes.
+    if (not editor_events.empty()) {
+      for (auto& ev : editor_events) {
+        if (ev.fired or editor_tick < ev.frame)
+          continue;
+        ev.fired = true;
+        switch (ev.action) {
+          case EditorScriptEvent::PAGE:
+            perfhud.cyclePage();
+            break;
+          case EditorScriptEvent::SELECT:
+            perfhud.editSelect(ev.arg);
+            break;
+          case EditorScriptEvent::ADJUST:
+            perfhud._pages.editAdjust(perfhud._page.load(), ev.arg);
+            break;
+          case EditorScriptEvent::COLOR:
+            perfhud.editActivate();
+            break;
+        }
+        deco::printf(fvec3::Cyan(), "ork.ecs.player: [editscript] %s @ tick %d -> page %d\n",
+                     ev.label.c_str(), editor_tick, perfhud._page.load());
+      }
+      editor_tick++;
+    }
     // --pysysnotify (test hook): scripted messages to the scene's PythonSystem once
     // abstime reaches each entry's time. SECONDS, not ticks: a gate and a movie script
     // are written in the time a human would describe (hold ']' for three seconds), and
@@ -1235,24 +2211,6 @@ int main(int argc, char** argv, char** envp) {
         c->systemNotify(pys, CrcString(ev.event.c_str()), tab);
         deco::printf(fvec3::Yellow(), "ork.ecs.player: [pysysnotify] t=%.3f %s (%zu field(s))\n",
                      abstime, ev.event.c_str(), ev.fields.size());
-      }
-    }
-    // --devkeys-script (test hook): fire scripted dev keys through the SAME handler once
-    // the update tick reaches each event's frame. CMDR sets roundtrip_requested — the very
-    // atomic the real Cmd+R handler sets — proving post-round-trip keys still act.
-    if (devkeys and not devkey_events.empty()) {
-      devkey_tick++;
-      for (auto& dke : devkey_events) {
-        if (dke.fired or devkey_tick < dke.frame)
-          continue;
-        dke.fired = true;
-        if (dke.cmdr) {
-          deco::printf(fvec3::Yellow(), "ork.ecs.player: [devkeys-script] CMDR round-trip @ tick %d\n", devkey_tick);
-          roundtrip_requested = true;
-        } else {
-          deco::printf(fvec3::Yellow(), "ork.ecs.player: [devkeys-script] key<%c> @ tick %d\n", char(dke.keycode), devkey_tick);
-          fire_devkey(dke.keycode);
-        }
       }
     }
     ////////////////////////////////////////////
@@ -1305,12 +2263,19 @@ int main(int argc, char** argv, char** envp) {
         sys_ref_t fresh_bullet;
         if (bullet_mode)
           fresh_bullet = fresh->findSystemWithClassName("BulletSystem"); // [B]/--physics-debug: re-resolve on restart
+        // the FOLIAGE row's target moves with the controller like every other system ref;
+        // the chosen set is then re-asserted on the fresh simulation's post-activate edge
+        // (push_foliage_state), the same place the clone's other host-driven state lands.
+        sys_ref_t fresh_hm;
+        if (push_foliage_state)
+          fresh_hm = fresh->findSystemWithClassName("HypermeshSystem");
         {
           std::lock_guard<std::mutex> lock(ctl_mutex);
           dead_controllers.push_back(controller);
           controller = fresh;
           sgsystem   = fresh_sgsys;
           bulletsystem = fresh_bullet;
+          hypermeshsystem = fresh_hm;
         }
         c          = fresh;
         sgsys_local = fresh_sgsys;
@@ -1322,11 +2287,86 @@ int main(int argc, char** argv, char** envp) {
           (*fbsize_data)["height"_tok] = fb_h.load();
           c->systemNotify(sgsys_local, SceneGraphSystem::UpdateFramebufferSize, fbsize_data);
         }
+        // the fresh character's heading is zero again — re-issue the restored facing on the
+        // same POST-ACTIVATE edge the first start used (before then there is no staged
+        // component to step). A no-op when nothing was restored. The saved VALUES are not
+        // re-loaded here: they are already live, and a reload would throw away every edit
+        // made since the run began.
+        {
+          auto sent = std::make_shared<bool>(false);
+          fresh->_onUpdPostActivate.push_back([&, sent](Simulation*) {
+            if (*sent)
+              return;
+            *sent = true;
+            controller_ptr_t cc;
+            {
+              std::lock_guard<std::mutex> lock(ctl_mutex);
+              cc = controller;
+            }
+            send_spawn_heading(cc, charsystem);
+            // same edge, same reason: the clone staged the foliage sets at their declared
+            // launch visibility, so the row's choice has to be re-sent onto it.
+            if (push_foliage_state)
+              push_foliage_state();
+          });
+        }
+        spawn_probe_active = false; // any in-flight probe belonged to the dead simulation
         deco::printf(fvec3::Green(), "ork.ecs.player: simulation RESTARTED\n");
         break;
       }
       default:
         break;
+    }
+    ////////////////////////////////////////////
+    // "SET SPAWN HERE" — ask the character where it is, then fill the four spawn rows from
+    // the answer. Both halves live here because this is the thread the request drains on:
+    // the row (fired from the key on the main thread or CROSS on this one) only raises the
+    // flag, the ask goes out on the next tick, and the answer is read on the one after.
+    // A character that never answers is NAMED — the row would otherwise sit on its last
+    // value looking freshly set.
+    ////////////////////////////////////////////
+    if (spawn_probe_want.exchange(false)) {
+      if (walk_mode) {
+        spawn_probe_ref    = c->systemRequest(charsystem, CharacterControllerSystem::CameraRay._token,
+                                              std::make_shared<DataTable>());
+        spawn_probe_ticks  = 0;
+        spawn_probe_active = true;
+      } else {
+        spawn_row_state.store(SPAWN_NOWALKER);
+        deco::printf(fvec3::Yellow(), "ork.ecs.player: set spawn here — this scene has no walker to stand anywhere\n");
+      }
+    }
+    if (spawn_probe_active) {
+      auto answer = c->systemResponseTable(spawn_probe_ref);
+      if (answer) {
+        const auto& tab = *answer;
+        const fvec3 eye = tab["pos"_tok].get<fvec3>();
+        const fvec3 dir = tab["dir"_tok].get<fvec3>();
+        const fvec3 up(0, 1, 0);
+        // THE RAY IS A CAMERA, THE ROW IS A SPAWN. Step forward along the ray by the follow
+        // distance (which puts the horizontal position exactly on the character in both
+        // camera modes — the fwd terms cancel), drop the eye height to the feet, then rise
+        // by half the capsule to reach the transform's own origin. First person (every
+        // terrain walker) is exact in all three axes; a follow camera's Y carries the
+        // pitch's share of the orbit, which the ground-snap owns anyway.
+        const fvec3 feet   = eye + dir * spawn_cam_distance - up * spawn_eye_height;
+        auto        clampf = [](float v, float lim) { return std::min(lim, std::max(-lim, v)); };
+        spawn_x   = clampf(feet.x, kSpawnXZLimit);
+        spawn_y   = clampf(feet.y + spawn_half_capsule, kSpawnYLimit);
+        spawn_z   = clampf(feet.z, kSpawnXZLimit);
+        spawn_yaw = clampf(atan2f(dir.x, -dir.z), kSpawnYawLimit);
+        spawn_probe_active = false;
+        spawn_row_state.store(SPAWN_SET);
+        deco::printf(fvec3::Green(),
+                     "ork.ecs.player: spawn set to (%.1f %.1f %.1f) yaw %.3f — save all to keep it\n",
+                     double(spawn_x), double(spawn_y), double(spawn_z), double(spawn_yaw));
+      } else if (++spawn_probe_ticks > kSpawnProbeTicks) {
+        spawn_probe_active = false;
+        spawn_row_state.store(SPAWN_NOANSWER);
+        deco::printf(fvec3::Red(),
+                     "ork.ecs.player: set spawn here — the character never answered (no camera ray); "
+                     "the spawn rows are unchanged\n");
+      }
     }
     ////////////////////////////////////////////
     // camera from the EzUiCam. payload MUST be a shared_ptr<DataTable> — the system
@@ -1353,23 +2393,42 @@ int main(int argc, char** argv, char** envp) {
   //////////////////////////////////////////////////////////
 
   ezapp->onUiEvent([&](ui::event_constptr_t ev) -> ui::HandlerResult {
+    // '-' / '=' RELEASE always ends the HUD editor's held-adjust — and is never consumed,
+    // so the sky clock's own key-up bookkeeping stays whole even if the page opened while
+    // the key was already down (its scrub map pops an unheld key safely).
+    if (ev->_eventcode == ui::EventCode::KEY_UP and
+        (ev->miKeyCode == KEY_EDIT_DEC or ev->miKeyCode == KEY_EDIT_INC))
+      edit_key_dir = 0;
     if (ev->_eventcode == ui::EventCode::KEY_DOWN) {
-      // '~' / '`' (grave) cycles the perf HUD: OFF -> TEXT -> TEXT+GRAPH. Handle it
-      // BEFORE the walk/PythonSystem key-forwarding below so the scene can't swallow it.
+      // '~' / '`' (grave) steps the perf HUD page ring: OFF -> 1 FRAME -> 2 GPU ->
+      // 3 PASSES -> 4 CULL -> 5 SYSTEMS -> OFF. Handle it BEFORE the walk/PythonSystem key-forwarding
+      // below so the scene can't swallow it.
       if (ev->miKeyCode == '`' or ev->miKeyCode == '~') {
-        perfhud.cycleMode();
+        // SHIFT steps the ring BACKWARD (the same ring, wrapping the same way), so a
+        // long ring is reachable from either end without cycling all the way round.
+        perfhud.cyclePage(ev->mbSHIFT ? -1 : +1);
         return ui::HandlerResult();
       }
-      // --devkeys: bare E/G/T/H/M/B/R drive the viewer-look controls. Consumed here (before
-      // the walk/PythonSystem forward below) ONLY when --devkeys AND only for keys we OWN;
-      // every other key (incl. the EzUiCam X/C/V pan/dolly/zoom chords) falls through
-      // untouched to the uicam handler below. Flagless these all fall through, so behavior
-      // is byte-identical to today. Cmd+R stays the round-trip (SUPER block below); none of
-      // E/G/T/H/M/R collide with a walk movement key or a camera modifier.
-      if (devkeys and not ev->mbSUPER) {
+      // HUD EDITOR PAGES (desktop), MODAL — consumed ONLY while an editor page is up.
+      // '[' / ']' move the selection; '-' / '=' start the held-adjust the update thread
+      // ticks (a repeat here would be the OS's, not ours). THE CURSOR KEYS ARE NOT HERE:
+      // they stay the scene's rotation (owner aug08), so you can keep steering while a
+      // page is open.
+      if (perfhud.editorActive() and not ev->mbSUPER) {
         int kc = ev->miKeyCode;
-        if (kc == 'E' or kc == 'G' or kc == 'T' or kc == 'H' or kc == 'M' or kc == 'B' or kc == 'R') {
-          fire_devkey(kc);
+        if (kc == KEY_EDIT_PREV or kc == KEY_EDIT_NEXT) {
+          perfhud.editSelect(kc == KEY_EDIT_PREV ? -1 : +1);
+          return ui::HandlerResult();
+        }
+        if (kc == KEY_EDIT_DEC or kc == KEY_EDIT_INC) {
+          edit_key_dir = (kc == KEY_EDIT_INC) ? +1 : -1;
+          return ui::HandlerResult();
+        }
+        // '\' opens/closes the selected COLOR row's H/S/V sub-editor — the desktop echo of
+        // the pad's CROSS. Consumed ONLY on a color row, so off one it still reaches the
+        // scene's sky-clock pause, like the other four editor keys.
+        if (kc == KEY_EDIT_COLOR and perfhud.editSelectedIsActivatable()) {
+          perfhud.editActivate();
           return ui::HandlerResult();
         }
       }
@@ -1500,22 +2559,28 @@ int main(int argc, char** argv, char** envp) {
                 "unreflected or unstable state in the live scene!\n",
                 js_a.size(),
                 js_b.size());
-          // --devkeys STALENESS FIX: the clone deserialized FRESH aces/hsvg node
-          // instances (the reflected postfx chain round-trips through JSON), so the
-          // player's held pointers would go stale after the restart. Re-point the
-          // clone's entries back to the player-owned originals BEFORE wiring, so the
-          // key handlers keep driving the live chain. (Byte-compare above already ran
-          // on the pristine clone, so this doesn't perturb the serdes audit.)
-          if (devkeys) {
-            for (const auto& it : fresh->getSystemDatas())
-              if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second)) {
-                if (sgd->_postfx_nodes.count("aces"))
-                  sgd->_postfx_nodes["aces"] = aces_node;
-                if (sgd->_postfx_nodes.count("hsvg"))
-                  sgd->_postfx_nodes["hsvg"] = hsvg_node;
-              }
-          }
-          materializeAndWireScene(fresh, ctx);
+          // STALENESS FIX for the HUD editor pages: the clone deserialized FRESH
+          // atmosphere / aces / hsvg instances (all three round-trip through JSON), while
+          // the page closures hold the objects resolved at the FIRST bind — so the clone
+          // has to run on those instances or every row would silently drive a scene that
+          // is no longer rendering. (Byte-compare above already ran on the pristine clone,
+          // so this perturbs no audit.)
+          for (const auto& it : fresh->getSystemDatas())
+            if (auto sgd = std::dynamic_pointer_cast<SceneGraphSystemData>(it.second)) {
+              if (hud_atmosphere and sgd->hasUserSceneParam("SkyAtmosphere"))
+                sgd->setUserSceneParam("SkyAtmosphere", hud_atmosphere);
+              if (hud_aces and sgd->_postfx_nodes.count("aces"))
+                sgd->_postfx_nodes["aces"] = hud_aces;
+              if (hud_hsvg and sgd->_postfx_nodes.count("hsvg"))
+                sgd->_postfx_nodes["hsvg"] = hud_hsvg;
+            }
+          auto fresh_artifacts = materializeAndWireScene(fresh, ctx);
+          scene_artifacts      = fresh_artifacts;
+          // the clone's deck materials are NEW objects — re-bind the CLOUDS page's band /
+          // radiance generators onto them, or the base row would move the clone's shells
+          // while the coverage band it compensates stayed on the discarded material.
+          if (bind_cloud_materials)
+            bind_cloud_materials(fresh, fresh_artifacts);
           {
             std::lock_guard<std::mutex> lock(ctl_mutex);
             pending_fresh = fresh;
@@ -1689,9 +2754,6 @@ int main(int argc, char** argv, char** envp) {
         ora_fut = nullptr; ora_buf = nullptr; ora_phase = 4;
       }
     }
-    // --devkeys key legend — same post-movie-pump placement; upper-left (no perfhud overlap).
-    // Drawn BEFORE the offscreen snapshot capture below so the HUD lands in --snapshot PNGs.
-    keyshud.draw(drwev->GetTarget());
     framecounter++;
     if (fps_timer.SecsSinceStart() > 5.0f) {
       float FPS = float(framecounter) / fps_timer.SecsSinceStart();

@@ -8,9 +8,8 @@
 //  RtGroup and never learn that the scene was rendered layered.
 //
 // texelFetch at gl_FragCoord, never a filtered sample: this copy must not be a
-//  resample. The per-eye downsample that follows is the same one DualMonoVr
-//  runs, so any filtering here would show up as a parity delta against it.
-//  Dither belongs to that downsample (it owns the 8-bit store), not here.
+//  resample. Dither belongs to the per-eye downsample that follows (it owns the
+//  8-bit store), not here.
 ///////////////////////////////////////////////////////////////
 fxconfig fxcfg_default {
   glsl_version = "330";

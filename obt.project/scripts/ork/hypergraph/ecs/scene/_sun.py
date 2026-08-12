@@ -64,17 +64,21 @@ class SunMixin:
   def sun(self, name="sun", *, color=vec3(1), intensity=4.0,
           elevation=45.0, azimuth=30.0, cascades=4,
           shadow_map_size=2048, shadow_max_distance=250.0,
-          shadow_bias=2e-4, pcf_dither=1.0,
+          shadow_bias=0.05, pcf_dither=1.0,
           shadow_snapshot_interval=None,
+          shadow_refresh_angle_deg=None, shadow_refresh_distance=None,
+          shadow_refresh_max_secs=None,
           shadow_snapshot_bands_per_frame=None, shadow_crossfade_frames=None,
           shadow_crossfade_secs=None,
           shadow_band_radius=None, shadow_band_ratio=None,
           shadow_band_res_ratio=None, shadow_jitter_texels=None,
+          cullsets=None, band_cullsets=None,
           shadow_caster=True, priority=10.0,
           cloud_shadow_strength=None, cloud_shadow_extent=None,
           cloud_shadow_softness=None, cloud_shadow_depth=None,
-          cloud_shadow_map_size=None,
+          cloud_shadow_map_size=None, cloud_shadow_refresh_frames=None,
           cloud_extinction=None, cloud_disc_softness=None,
+          cloud_ibl_weight=None, cascade_ibl_weight=None, cascade_floor=None,
           animate_orbit=None, celestial=None):
     """Declare a directional SUN: a DirectionalLightData carried as the
     `drawable` of a SceneGraph node, aimed by the entity orientation.
@@ -113,7 +117,13 @@ class SunMixin:
                                 CelestialSnapshot.sun_light_angles() returns
                                 (elevation, -astronomical_azimuth) precisely so
                                 its output can be passed straight in.
-    cascades                  — shadowCascadeCount (number of world bands, 2..4).
+    cascades                  — shadowCascadeCount (number of world bands, 2..5).
+                                The ladder is geometric off shadow_band_radius /
+                                shadow_band_ratio, so a fifth band is a km-scale
+                                one at the stock knobs (10/40/160/640/2560 m) —
+                                what the haze march and the distant ground need
+                                to be shadowed at all. Past 5 is a hard error,
+                                not a clamp.
     shadow_map_size           — per-cascade shadow map resolution.
     shadow_max_distance       — toward-light extrusion depth of each band's ortho
                                 box (how far a caster may stand off a band and
@@ -142,7 +152,42 @@ class SunMixin:
                                 shadow_crossfade_frames > 0 (a hard swap would
                                 show the offset as crawl, so the engine forces it
                                 to 0 there). None/0 = off, the shipped fit.
-    shadow_bias / pcf_dither  — depth bias + PCF dither knobs.
+    cullsets / band_cullsets  — CULLSETS: which caster families each band's
+                                shadow pass looks at. A cullset is a NAMED list
+                                of families and every band subscribes to exactly
+                                one; the engine culls a set ONCE against the
+                                union of only ITS bands' radii and draws only its
+                                families in those bands.
+
+                                    cullsets      = {"near": ["terrain",
+                                                              "instanced",
+                                                              "other"],
+                                                     "far":  ["terrain"]},
+                                    band_cullsets = ["near","near","near",
+                                                     "near","far"],
+
+                                The families are the engine's: "terrain" (the
+                                terrain chunks), "instanced" (GPU-culled
+                                scattered instances — a forest's trees, grass,
+                                rocks), "other" (everything else: props, models,
+                                particles), and "all" as shorthand for the three.
+                                band_cullsets has one name PER BAND, so its
+                                length must equal `cascades`.
+
+                                WHY: with one union volume and one survivor list,
+                                a km-scale outer band drags every scattered
+                                instance in that whole radius into EVERY band's
+                                depth pass. Subscribing the outer band to a
+                                terrain-only set leaves the canopy in the near
+                                set's small volume and lets the far band draw
+                                mountains alone. Declaring neither is the engine
+                                default: one implicit all-families set, byte for
+                                byte the behavior of a scene that never heard of
+                                cullsets.
+    shadow_bias / pcf_dither  — constant depth bias in WORLD METRES (the slack
+                                under which a receiver stays lit; the evaluator
+                                converts it per band, so one number means the
+                                same distance in every cascade) + PCF dither.
     shadow_snapshot_interval  — SECONDS between cascade snapshots. The cascade
                                 fit, the shadow cull and the per-cascade depth
                                 passes are held between ticks and the maps are
@@ -161,6 +206,27 @@ class SunMixin:
                                 across will out-run its own near band.
                                 Scene.moon() INHERITS this value (one sky, one
                                 cadence: the moon holds the cascade all night).
+    shadow_refresh_angle_deg / shadow_refresh_distance / shadow_refresh_max_secs
+                              — the REFRESH GATE, consulted only when no
+                                interval is declared above. Undeclared, a
+                                cadence of "every frame" redraws four identical
+                                depth passes for a viewer standing still under a
+                                still sun; the gate takes a new snapshot when the
+                                light has TURNED past the angle (default 0.1
+                                deg), or the viewer has WALKED past the distance
+                                from the anchor the bands are centered on
+                                (default 0.5 m), or the caster set has changed.
+                                NOTHING MOVED = NO REFIT: a frozen sun over a
+                                parked viewer does zero cascade work. The
+                                ceiling is the CASTERS' clock — wind and walkers
+                                move nothing the other triggers can see — and it
+                                is OFF by default (0), because a wall-clock
+                                refit costs a full fit + cull + four depth
+                                passes for shimmer in leaves; declare a rate to
+                                buy that back. All three at 0 disarms the gate
+                                entirely: refit every frame, the pre-gate
+                                behavior. A declared interval overrides the lot
+                                (the declaration is the cadence).
     shadow_snapshot_bands_per_frame — how many cascade bands ONE frame may
                                 render. None/0 = all of them (the whole snapshot
                                 lands in the frame it is taken, which is what
@@ -208,6 +274,15 @@ class SunMixin:
                                 altitude at the lowest sun the scene shows.
     cloud_shadow_map_size     — cookie resolution (default 512, mipped). Softness
                                 comes from the LOD bias, not from starving this.
+    cloud_shadow_refresh_frames — how many frames ONE cookie fill serves
+                                (default 4; 1 = refill every frame). The fill
+                                redraws every deck and regenerates a mip chain
+                                to capture a kilometers-wide slab of cloud that
+                                is then read through a blurring LOD bias —
+                                nothing in it changes in a frame. The held
+                                cookie keeps its own matrix, so the shadow stays
+                                put on the ground while the viewer moves; a
+                                DISARM (strength 0, decks gone) is never held.
     cloud_extinction          — the BEAM's Beer-Lambert optical depth at full
                                 cookie occlusion: transmittance = exp(-tau*a).
                                 It is the beam's, not the ground's and not the
@@ -226,6 +301,19 @@ class SunMixin:
                                 a transit edge across the sun is crisp in life,
                                 so the disc reads a much sharper tap than
                                 cloud_shadow_softness gives the dirt.
+    cloud_ibl_weight          — how much of the CLOUD shadow reaches the
+                                ambient/IBL term (default 0.65). A cloud
+                                occludes a broad wedge of sky, so it dims the
+                                sky light itself; with the env term carrying
+                                most of a daylit frame's energy, a cookie
+                                confined to the direct beam does not read at
+                                all. Short of 1 on purpose: sky light still
+                                arrives from beyond the cloud.
+    cascade_ibl_weight        — the same dial for the CASCADE shadow, default 0
+                                and meant to stay there: a tree occludes the sun
+                                disc, not the dome, and "cascades never touch
+                                the env term" is an asserted engine invariant.
+                                Nonzero is scene experimentation.
     shadow_caster             — whether the sun casts shadows at all.
     priority                  — rank among directional lights. The renderer
                                 sorts them descending by this and resolves the
@@ -287,6 +375,14 @@ class SunMixin:
     light.pcfDither          = float(pcf_dither)
     if shadow_snapshot_interval is not None:
       light.shadowSnapshotInterval = float(shadow_snapshot_interval)
+    # Refresh gate — only consulted when no interval is declared (see the
+    # engine header): what makes an UNDECLARED cadence take a new snapshot.
+    if shadow_refresh_angle_deg is not None:
+      light.shadowRefreshAngleDeg = float(shadow_refresh_angle_deg)
+    if shadow_refresh_distance is not None:
+      light.shadowRefreshDistance = float(shadow_refresh_distance)
+    if shadow_refresh_max_secs is not None:
+      light.shadowRefreshMaxSecs = float(shadow_refresh_max_secs)
     if shadow_snapshot_bands_per_frame is not None:
       light.shadowSnapshotBandsPerFrame = int(shadow_snapshot_bands_per_frame)
     if shadow_crossfade_frames is not None:
@@ -304,6 +400,55 @@ class SunMixin:
       light.shadowBandResRatio = float(shadow_band_res_ratio)
     if shadow_jitter_texels is not None:
       light.shadowJitterTexels = float(shadow_jitter_texels)
+    # CULLSETS. Declared as a dict + a list here and carried as two flat strings
+    # on the light (which is what rides the reflected .ecs into the player
+    # process). Validated on BOTH sides: this side so a typo is a python error at
+    # the authoring line that made it, the engine side because a hand-edited .ecs
+    # must fail just as loudly.
+    if (cullsets is None) != (band_cullsets is None):
+      raise ValueError(
+        f"Scene.sun({name!r}): cullsets and band_cullsets go together — sets with "
+        f"no per-band subscription list (or the reverse) name nothing.")
+    if cullsets is not None:
+      known = {"terrain", "instanced", "other", "all"}
+      if not isinstance(cullsets, dict) or not cullsets:
+        raise ValueError(f"Scene.sun({name!r}): cullsets must be a non-empty dict "
+                         f"of set-name -> list of family tokens.")
+      decls = []
+      for setname, families in cullsets.items():
+        if isinstance(families, str):
+          families = [families]
+        if not families:
+          raise ValueError(f"Scene.sun({name!r}): cullset {setname!r} declares no "
+                           f"families — a band subscribed to it would draw nothing.")
+        for fam in families:
+          if fam not in known:
+            raise ValueError(f"Scene.sun({name!r}): cullset {setname!r} names unknown "
+                             f"caster family {fam!r} — known: {sorted(known)}")
+        decls.append(f"{setname}=" + ",".join(families))
+      if isinstance(band_cullsets, str):
+        band_cullsets = [band_cullsets]
+      if len(band_cullsets) != int(cascades):
+        raise ValueError(f"Scene.sun({name!r}): band_cullsets has "
+                         f"{len(band_cullsets)} entries but cascades={int(cascades)} "
+                         f"— one set name PER BAND.")
+      for bandname in band_cullsets:
+        if bandname not in cullsets:
+          raise ValueError(f"Scene.sun({name!r}): band subscribes to cullset "
+                           f"{bandname!r}, which is not declared in cullsets.")
+      # Older engine binaries predate the reflected cull-set properties (the
+      # cascade-cullsets slice). A declaring scene on such a binary should say WHY
+      # it cannot honor the declaration and keep the classic every-caster shadows,
+      # not die in reflection with a bare AttributeError deep under Scene.sun().
+      if not hasattr(light, "shadowCullSets"):
+        print(f"[SUN] Scene.sun({name!r}): this engine binary predates shadow "
+              f"cull-sets (DirectionalLightData.shadowCullSets missing) — "
+              f"declarations IGNORED, every band draws all casters. Run against a "
+              f"staging built from this source to get the declared cull-sets.",
+              flush=True)
+      else:
+        light.shadowCullSets     = ";".join(decls)
+        light.shadowBandCullSets = ",".join(band_cullsets)
     # Cloud shadows: strength 0 (the engine default) disarms the whole cookie
     # path, so a scene that says nothing here pays nothing.
     if cloud_shadow_strength is not None:
@@ -316,10 +461,18 @@ class SunMixin:
       light.cloudShadowDepth = float(cloud_shadow_depth)
     if cloud_shadow_map_size is not None:
       light.cloudShadowMapSize = int(cloud_shadow_map_size)
+    if cloud_shadow_refresh_frames is not None:
+      light.cloudShadowRefreshFrames = int(cloud_shadow_refresh_frames)
     if cloud_extinction is not None:
       light.cloudExtinction = float(cloud_extinction)
     if cloud_disc_softness is not None:
       light.cloudDiscSoftness = float(cloud_disc_softness)
+    if cloud_ibl_weight is not None:
+      light.cloudShadowIblWeight = float(cloud_ibl_weight)
+    if cascade_ibl_weight is not None:
+      light.cascadeShadowIblWeight = float(cascade_ibl_weight)
+    if cascade_floor is not None:
+      light.cascadeShadowFloor = float(cascade_floor)
 
     # ENSEMBLE CADENCE. The snapshot interval belongs to the SKY, not to one
     # light: at night the MOON holds the cascade, so a cadence that died at the

@@ -9,7 +9,7 @@
 # sits where the shadows say the sun is.
 #
 #   ork.scene.viewer.py scn_procsky            # window: WASD move, cursor turn
-#   ork.scene.viewer.py scn_procsky --vr       # DMVR (both eyes share one LUT)
+#   ork.scene.viewer.py scn_procsky --vr       # stereo (both eyes share one LUT)
 #
 # Pass sky_source="baked" to the self.sky() call below to A/B the same scene
 # against the equirect envmap — that envmap is still what lights the scene

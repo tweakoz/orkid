@@ -118,7 +118,6 @@ struct RtGroup final {
   uint64_t _usage = "user"_crcu; 
   rendertarget_rtgroup_ptr_t _rendertarget;
   TextureArraySliceRef* _slice = nullptr;
-  SampleProfilerSeries* _profiler_series = nullptr;
 };
 
 struct RtgSet {

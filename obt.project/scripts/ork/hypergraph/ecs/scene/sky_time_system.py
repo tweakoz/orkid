@@ -14,10 +14,13 @@
 # keys points its PythonSystem at its own copy of this script — no recompile,
 # same as walk_input_system.py's map. Chosen from the FREE pool; the taken set
 # at the time of writing is camera Z/X/C/V, walk W/A/S/D + cursors + SPACE + '/'
-# + SHIFT + CAPSLOCK, and the player's own `/~, P, Cmd+arrows, Cmd+R plus the
-# --devkeys block E/G/T/H/M/B/R (registered in ork.ecs/examples/c++/player/
-# main.cpp, whose option string + keyshud legend is the fleet's de-facto key
-# registry — the sky keys are listed there too).
+# + SHIFT + CAPSLOCK, and the player's own `/~, P, Cmd+arrows, Cmd+R -- plus FIVE OF
+# THESE KEYS, '[' ']' '-' '=' '\' -- WHILE A HUD EDITOR PAGE IS UP ('[' ']' pick the row,
+# '-' '=' edit it, '\' opens a color; the editor borrows them for the duration, since the
+# page showing time of day supersedes them; the key-up
+# still arrives here, and the pop below tolerates a key it never saw go down). The
+# player's own ork.ecs/examples/c++/player/main.cpp header is the fleet's de-facto key
+# registry — the sky keys are listed there too.
 #
 #   ]  scrub the sky FORWARD while held      (SCRUB_HOURS_PER_SEC clock hrs/sec)
 #   [  scrub the sky BACKWARD while held

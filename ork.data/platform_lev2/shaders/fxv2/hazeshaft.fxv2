@@ -1,0 +1,409 @@
+///////////////////////////////////////////////////////////////////////////////
+// QUARTER-RES SUN SHAFTS — the shadowed arm of the aerial-perspective march,
+// lifted out of the forward fragment and run at half width x half height.
+//
+// WHY THIS IS EXACT AND NOT A CHEAT. The per-step terrain occlusion enters
+// skyAerialPerspectiveShadowed only as a LINEAR factor on the direct
+// single-scatter term, and the transmittance does not read it at all. So
+//
+//     shadowed_inscatter == unshadowed_inscatter - loss
+//
+// identically (skytools.i2, skyAerialPerspectiveShadowLoss). Mode 2 therefore
+// leaves the FULL-RES forward march completely intact — ambient fold,
+// multi-scatter, extinction, all of it, per fragment — and moves only `loss`,
+// the smooth low-frequency shaft term, to a quarter-res target that a screen-
+// space pass then subtracts back off. Nothing about the haze is approximated;
+// what is approximated is the RESOLUTION of the shaft edges, and that is the
+// one thing 32 cascade fetches per fragment were buying.
+//
+// THREE PASSES:
+//   hzs_depthmirror — full-res R32F copy of the prepass scene depth.
+//   hzs_march       — quarter-res. Reconstructs the world position behind each
+//                     low-res pixel from that depth and marches the loss.
+//   hzs_composite   — full-res, additive, writing NEGATIVE radiance. Bilateral
+//                     upsample of the loss, subtracted from the opaque image.
+//
+// WHY THE MIRROR EXISTS, AND IT IS NOT AN OPTIMIZATION. The composite draws
+// from INSIDE the colour pass, and that pass owns the scene-depth buffer as its
+// depth attachment. A fragment that samples the very image its own render pass
+// has attached has no dependency ordering against the pass's other accesses to
+// it, and the values it reads are not reproducible: measured, two captures of
+// an identical scene disagreed on ~650-950 pixels (up to 24 levels of 255),
+// concentrated in the shaft interior where the bilateral keys live, at msaa 0
+// and msaa 4 alike, while the loss target and the depth image were each proven
+// byte-identical across the same frames. Pointing the composite's depth sampler
+// at a copy that no pass has attached — changing nothing else — made both
+// captures byte-identical. So the mirror is what makes mode 2 frame-stable, and
+// frame stability is not negotiable in a stereo engine.
+//
+// The mirror is a bit-exact copy: it is rasterized at the depth image's own
+// resolution and samples it at exact texel centres, so every later fetch (the
+// march's, the composite's centre and its four neighbours) lands on the same
+// values, filtered the same way, that a fetch of the depth image would have.
+//
+// STEREO. Both passes are multiview under single-pass stereo: the target is a
+// 2-layer group, ofx_viewIndex picks the eye's unprojection out of ublk_stereo
+// and the eye's depth layer, and each eye subtracts its own layer. That is only
+// possible because these are OUR fragments — the shared forward lighting chain
+// deliberately never touches ublk_stereo (pbrtools.i2), so the composite could
+// not have lived there and stayed per-eye correct for the ptex3d and terrain
+// families, which pass the MONO eye position into that chain by design.
+//
+// SKY IS MASKED, NOT MARCHED. The sky dome takes its haze from
+// skyHazeSkyOverlay, never from the surface march, so a loss subtracted at a
+// pixel with no scene depth would darken sky the inline mode leaves alone. Both
+// passes test the far/cleared depth and produce exactly nothing there.
+//
+// ACCEPTED LIMIT (v1): the subtraction lands after the opaque image is complete
+// and before std_transparent, so transparent surfaces carry no shaft term of
+// their own in this mode (they still blend over correctly-shafted opaques), and
+// opaque forward materials that never call the lighting chain (the unlit
+// families) are darkened by it. Mode 1 remains the reference look.
+//
+// NO TEMPORAL ANYTHING. Not a frame of history, by VR law.
+///////////////////////////////////////////////////////////////////////////////
+fxconfig fxcfg_default {
+  import "orkshader://stdtools.i2";
+  import "orkshader://mathtools.i2";
+  import "orkshader://skytools.i2";
+  import "orkshader://sunairtools.i2";
+  import "orkshader://stereotools.i2";
+}
+///////////////////////////////////////////////////////////////////////////////
+// A8 — every value the passes read that is not a step count arrives here.
+//  HzsEyePos   : the MONO eye (the stereo stages read spvr_eyepos instead).
+//  HzsLowDim   : xy = loss-target dims, zw = 1/dims. The upsample's texel grid.
+//  HzsGeom     : x = the far-depth test (a scene pixel's depth is strictly
+//                    below it; at or above it there is no scene and no shaft),
+//                y = bilateral RELATIVE depth tolerance — a fraction of the
+//                    centre pixel's own eye distance, so one number holds from
+//                    a doorway to a mountain,
+//                z = 1 when the low-res target carries per-eye layers.
+///////////////////////////////////////////////////////////////////////////////
+uniform_block ublk_hazeshaft (descriptor_set 0) {
+  vec4 HzsEyePos;
+  vec4 HzsLowDim;
+  vec4 HzsGeom;
+}
+///////////////////////////////////////////////////////////////////////////////
+sampler_set sset_hazeshaft_mono (descriptor_set 0) {
+  sampler2D HzsDepthMap;   // the prepass single-sample scene depth
+  sampler2D HzsLossMap;    // rgb = shadow-loss radiance (composite only)
+}
+sampler_set sset_hazeshaft_stereo (descriptor_set 0) {
+  sampler2DArray HzsDepthMapArray; // one layer per eye
+  sampler2DArray HzsLossMapArray;
+}
+///////////////////////////////////////////////////////////////////////////////
+vertex_interface vif_HZS {
+  inputs {
+    vec4 position : POSITION;
+    vec4 vtxcolor : COLOR0;
+    vec2 uv0 : TEXCOORD0;
+  }
+  outputs {
+    vec2 frg_uv;
+  }
+}
+fragment_interface fif_HZS : vif_HZS {
+  outputs { vec4 out_clr; }
+}
+///////////////////////////////////////////////////////////////////////////////
+state_block sb_hzs_march : default {
+  BlendMode = OFF;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+// The composite writes NEGATIVE radiance into a pass it does not own and must
+// not read: dst = dst + (-loss) is the only read-modify-write a fragment shader
+// gets on its own attachment.
+state_block sb_hzs_composite : default {
+  BlendMode = ADDITIVE;
+  DepthTest = OFF;
+  CullTest  = OFF;
+}
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_hzs : lib_math {
+  // NDC z runs 0..1 here (the convention every unprojection in this engine
+  // uses — see ps_forward_skybox_mono).
+  //
+  // THE Y FLIP IS LOAD-BEARING. uv comes from gl_FragCoord, which counts DOWN
+  // from the top, while clip-space y counts UP: without the negation this
+  // reconstructs the vertically MIRRORED world position, and the shafts it
+  // marches are real, full-strength, and in the wrong half of the frame.
+  // Measured with the flip missing: the loss landed correctly on 18% of the
+  // shafted pixels — the band straddling the mirror axis, where the two
+  // reconstructions nearly coincide — and was absent on the other 77%. The
+  // shape of that failure (exact where it appears, missing elsewhere, centred
+  // on the frame's midline) is what identifies it as a mirror rather than as a
+  // magnitude bug, and it is why this is a comment and not a one-liner.
+  vec3 _hzs_unproject(mat4 ivp, vec2 uv, float depth) {
+    vec4 xyzw = vec4(uv.x * 2.0 - 1.0, 1.0 - uv.y * 2.0, depth, 1.0);
+    xyzw      = ivp * xyzw;
+    return xyzw.xyz / xyzw.w;
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+vertex_shader vs_hzs        //
+  : vif_HZS                 //
+  : ublk_std_matrices {     //
+  gl_Position = mvp * position;
+  frg_uv      = uv0;
+}
+///////////////////////////////////////////////////////////////////////////////
+// DEPTH MIRROR — full res, one texel in one texel out. HzsDepthMap is bound to
+// the live depth image HERE and to this mirror in the two passes below.
+///////////////////////////////////////////////////////////////////////////////
+fragment_shader ps_hzs_depthmirror //
+  : fif_HZS                        //
+  : ublk_std_matrices              //
+  : ublk_hazeshaft                 //
+  : uset_std_viewport              //
+  : sset_hazeshaft_mono {          //
+  vec2 uv = gl_FragCoord.xy * InvViewportSize;
+  out_clr = vec4(textureLod(HzsDepthMap, uv, 0).r, 0.0, 0.0, 0.0);
+}
+///////////////////////////////////////////////////////////////////////////////
+fragment_shader ps_hzs_depthmirror_stereo //
+  : fif_HZS                               //
+  : ublk_std_matrices                     //
+  : ublk_hazeshaft                        //
+  : uset_std_viewport                     //
+  : sset_hazeshaft_stereo {               //
+  vec2 uv = gl_FragCoord.xy * InvViewportSize;
+  out_clr = vec4(textureLod(HzsDepthMapArray, vec3(uv, float(ofx_viewIndex)), 0).r, 0.0, 0.0, 0.0);
+}
+///////////////////////////////////////////////////////////////////////////////
+// MARCH — quarter res. One low-res pixel = one eye ray, marched for its loss.
+///////////////////////////////////////////////////////////////////////////////
+fragment_shader ps_hzs_march //
+  : fif_HZS                  //
+  : ublk_std_matrices        //
+  : ublk_hazeshaft           //
+  : uset_std_viewport        //
+  : sset_hazeshaft_mono      //
+  : lib_hzs                  //
+  : lib_sun_air {            //
+  vec2 uv    = gl_FragCoord.xy * InvViewportSize;
+  float d    = textureLod(HzsDepthMap, uv, 0).r;
+  if (d >= HzsGeom.x) {
+    out_clr = vec4(0.0);        // no scene here — the sky owns this pixel
+    return;
+  }
+  vec3 eyepos = HzsEyePos.xyz;
+  vec3 wpos   = _hzs_unproject(inv_vp, uv, d);
+  SunAirSteps hsh = _sun_air_shadow_steps(eyepos, wpos);
+  vec3 loss = skyAerialPerspectiveShadowLoss(eyepos, wpos, normalize(SkySunDirection.xyz), hsh._s03, hsh._s47);
+  // A is left SPARE (the bilateral key is re-derived from the depth map, which
+  // costs four point fetches and keeps this channel free for a future co-tenant).
+  out_clr = vec4(loss, 0.0);
+}
+///////////////////////////////////////////////////////////////////////////////
+fragment_shader ps_hzs_march_stereo //
+  : fif_HZS                         //
+  : ublk_std_matrices               //
+  : ublk_hazeshaft                  //
+  : ublk_stereo                     //
+  : uset_std_viewport               //
+  : sset_hazeshaft_stereo           //
+  : lib_hzs                         //
+  : lib_sun_air {                   //
+  int view    = ofx_viewIndex;
+  vec2 uv     = gl_FragCoord.xy * InvViewportSize;
+  float d     = textureLod(HzsDepthMapArray, vec3(uv, float(view)), 0).r;
+  if (d >= HzsGeom.x) {
+    out_clr = vec4(0.0);
+    return;
+  }
+  // this eye's ray, this eye's unprojection — the march is view-dependent
+  // through the ray direction, so nothing here may be shared across eyes.
+  vec3 eyepos = spvr_eyepos[view].xyz;
+  vec3 wpos   = _hzs_unproject(spvr_inv_vp[view], uv, d);
+  SunAirSteps hsh = _sun_air_shadow_steps(eyepos, wpos);
+  vec3 loss = skyAerialPerspectiveShadowLoss(eyepos, wpos, normalize(SkySunDirection.xyz), hsh._s03, hsh._s47);
+  out_clr = vec4(loss, 0.0);
+}
+///////////////////////////////////////////////////////////////////////////////
+// COMPOSITE — full res, additive, negative.
+//
+// The upsample is a 2x2 bilinear neighbourhood weighted by DEPTH SIMILARITY:
+// a low-res texel whose scene sat at a different distance marched a different
+// ray and its loss does not belong to this pixel. When every weight dies (a
+// depth discontinuity — a trunk edge against a distant valley) the nearest tap
+// in depth is taken whole rather than blending across the silhouette, which is
+// what keeps shafts from bleeding through foreground geometry.
+///////////////////////////////////////////////////////////////////////////////
+libblock lib_hzs_upsample : lib_hzs {
+  // eye distance behind a uv, in world units — the bilateral key. Derived, not
+  // stored: the low-res pass sampled THIS depth map at THIS texel centre, so
+  // re-deriving reproduces its key exactly and leaves the loss target's alpha free.
+  float _hzs_key(mat4 ivp, vec3 eyepos, vec2 uv, float depth) {
+    return length(_hzs_unproject(ivp, uv, depth) - eyepos);
+  }
+  vec3 _hzs_upsample(mat4 ivp, vec3 eyepos, vec2 uv, float d_center,
+                     vec4 lo00, vec4 lo10, vec4 lo01, vec4 lo11,
+                     float d00, float d10, float d01, float d11,
+                     vec2 uv00, vec2 uv10, vec2 uv01, vec2 uv11,
+                     vec2 frac) {
+    float k_center = _hzs_key(ivp, eyepos, uv, d_center);
+    float tol      = max(k_center * HzsGeom.y, 1e-3);
+
+    float bw[4];
+    bw[0] = (1.0 - frac.x) * (1.0 - frac.y);
+    bw[1] = frac.x * (1.0 - frac.y);
+    bw[2] = (1.0 - frac.x) * frac.y;
+    bw[3] = frac.x * frac.y;
+
+    vec3 lo[4];
+    lo[0] = lo00.rgb; lo[1] = lo10.rgb; lo[2] = lo01.rgb; lo[3] = lo11.rgb;
+
+    float dk[4];
+    dk[0] = abs(_hzs_key(ivp, eyepos, uv00, d00) - k_center);
+    dk[1] = abs(_hzs_key(ivp, eyepos, uv10, d10) - k_center);
+    dk[2] = abs(_hzs_key(ivp, eyepos, uv01, d01) - k_center);
+    dk[3] = abs(_hzs_key(ivp, eyepos, uv11, d11) - k_center);
+
+    // a tap whose scene is FARTHER than the tolerance contributes nothing; the
+    // ramp keeps the transition from becoming a visible one-texel step.
+    vec3 acc  = vec3(0.0);
+    float sum = 0.0;
+    for (int i = 0; i < 4; i++) {
+      float w = bw[i] * max(1.0 - dk[i] / tol, 0.0);
+      acc += lo[i] * w;
+      sum += w;
+    }
+    if (sum > 1e-5)
+      return acc / sum;
+
+    // every neighbour is across a discontinuity — take the closest in depth
+    // whole. Blending here is what produces halos around trunks.
+    int best     = 0;
+    float bestdk = dk[0];
+    for (int i = 1; i < 4; i++) {
+      if (dk[i] < bestdk) {
+        bestdk = dk[i];
+        best   = i;
+      }
+    }
+    return lo[best];
+  }
+}
+///////////////////////////////////////////////////////////////////////////////
+fragment_shader ps_hzs_composite //
+  : fif_HZS                      //
+  : ublk_std_matrices            //
+  : ublk_hazeshaft               //
+  : uset_std_viewport            //
+  : sset_hazeshaft_mono          //
+  : lib_hzs_upsample {           //
+  vec2 uv       = gl_FragCoord.xy * InvViewportSize;
+  float d       = textureLod(HzsDepthMap, uv, 0).r;
+  if (d >= HzsGeom.x)
+    discard;                     // sky: byte-identical to the inline modes
+  vec3 eyepos   = HzsEyePos.xyz;
+  vec2 lp       = uv * HzsLowDim.xy - vec2(0.5);
+  vec2 lbase    = floor(lp);
+  vec2 lfrac    = lp - lbase;
+  vec2 uv00     = (lbase + vec2(0.5, 0.5)) * HzsLowDim.zw;
+  vec2 uv10     = (lbase + vec2(1.5, 0.5)) * HzsLowDim.zw;
+  vec2 uv01     = (lbase + vec2(0.5, 1.5)) * HzsLowDim.zw;
+  vec2 uv11     = (lbase + vec2(1.5, 1.5)) * HzsLowDim.zw;
+  vec3 loss = _hzs_upsample(
+      inv_vp, eyepos, uv, d,
+      textureLod(HzsLossMap, uv00, 0),
+      textureLod(HzsLossMap, uv10, 0),
+      textureLod(HzsLossMap, uv01, 0),
+      textureLod(HzsLossMap, uv11, 0),
+      textureLod(HzsDepthMap, uv00, 0).r,
+      textureLod(HzsDepthMap, uv10, 0).r,
+      textureLod(HzsDepthMap, uv01, 0).r,
+      textureLod(HzsDepthMap, uv11, 0).r,
+      uv00, uv10, uv01, uv11, lfrac);
+  out_clr = vec4(-loss, 0.0);
+}
+///////////////////////////////////////////////////////////////////////////////
+fragment_shader ps_hzs_composite_stereo //
+  : fif_HZS                             //
+  : ublk_std_matrices                   //
+  : ublk_hazeshaft                      //
+  : ublk_stereo                         //
+  : uset_std_viewport                   //
+  : sset_hazeshaft_stereo               //
+  : lib_hzs_upsample {                  //
+  int view      = ofx_viewIndex;
+  float layer   = float(view);
+  vec2 uv       = gl_FragCoord.xy * InvViewportSize;
+  float d       = textureLod(HzsDepthMapArray, vec3(uv, layer), 0).r;
+  if (d >= HzsGeom.x)
+    discard;
+  mat4 ivp      = spvr_inv_vp[view];
+  vec3 eyepos   = spvr_eyepos[view].xyz;
+  vec2 lp       = uv * HzsLowDim.xy - vec2(0.5);
+  vec2 lbase    = floor(lp);
+  vec2 lfrac    = lp - lbase;
+  vec2 uv00     = (lbase + vec2(0.5, 0.5)) * HzsLowDim.zw;
+  vec2 uv10     = (lbase + vec2(1.5, 0.5)) * HzsLowDim.zw;
+  vec2 uv01     = (lbase + vec2(0.5, 1.5)) * HzsLowDim.zw;
+  vec2 uv11     = (lbase + vec2(1.5, 1.5)) * HzsLowDim.zw;
+  vec3 loss = _hzs_upsample(
+      ivp, eyepos, uv, d,
+      textureLod(HzsLossMapArray, vec3(uv00, layer), 0),
+      textureLod(HzsLossMapArray, vec3(uv10, layer), 0),
+      textureLod(HzsLossMapArray, vec3(uv01, layer), 0),
+      textureLod(HzsLossMapArray, vec3(uv11, layer), 0),
+      textureLod(HzsDepthMapArray, vec3(uv00, layer), 0).r,
+      textureLod(HzsDepthMapArray, vec3(uv10, layer), 0).r,
+      textureLod(HzsDepthMapArray, vec3(uv01, layer), 0).r,
+      textureLod(HzsDepthMapArray, vec3(uv11, layer), 0).r,
+      uv00, uv10, uv01, uv11, lfrac);
+  out_clr = vec4(-loss, 0.0);
+}
+///////////////////////////////////////////////////////////////////////////////
+technique hazeshaft_depthmirror {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_hzs;
+    fragment_shader = ps_hzs_depthmirror;
+    state_block     = sb_hzs_march;
+  }
+}
+technique hazeshaft_depthmirror_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_hzs;
+    fragment_shader = ps_hzs_depthmirror_stereo;
+    state_block     = sb_hzs_march;
+  }
+}
+technique hazeshaft_march {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_hzs;
+    fragment_shader = ps_hzs_march;
+    state_block     = sb_hzs_march;
+  }
+}
+technique hazeshaft_march_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_hzs;
+    fragment_shader = ps_hzs_march_stereo;
+    state_block     = sb_hzs_march;
+  }
+}
+technique hazeshaft_composite {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_hzs;
+    fragment_shader = ps_hzs_composite;
+    state_block     = sb_hzs_composite;
+  }
+}
+technique hazeshaft_composite_stereo {
+  fxconfig = fxcfg_default;
+  pass p0 {
+    vertex_shader   = vs_hzs;
+    fragment_shader = ps_hzs_composite_stereo;
+    state_block     = sb_hzs_composite;
+  }
+}

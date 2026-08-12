@@ -29,6 +29,7 @@
 //
 #include <ork/lev2/gfx/material_pbr.inl>
 #include <ork/lev2/gfx/renderer/NodeCompositor/pbr_common.h>
+#include <ork/lev2/gfx/renderer/NodeCompositor/sky_atmosphere.h>
 #include <ork/util/logger.h>
 
 OIIO_NAMESPACE_USING
@@ -216,6 +217,14 @@ FxPipeline::statelambda_t createForwardLightingLambda(const PBRMaterial* mtl) {
       // complete whether or not a deck published a cookie this frame.
       FXI->bindParamTexture(mtl->_parSunCookie, lmgr->_sun_cookie.get());
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // bind AERIAL PERSPECTIVE state (SKYLIGHT lane B) — the haze march in
+    // lib_sky. ONE binder, shared with the lighting-free pipelines that carry
+    // it as their own state lambda (material_pbr_misc.cpp).
+    ///////////////////////////////////////////////////////////////////////////
+
+    bindSkyHazeState(mtl, RCID);
 
     ///////////////////////////////////////////////////////////////////////////
     // bind Color/Normal/Metallic/Roughness/AO Texture Array
@@ -416,6 +425,18 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     pipeline->bindParam(this->_paramMVP, "RCFD_Camera_MVP_Mono"_crcsh);
     pipeline->addStateLambda(createBasicStateLambda(this));
     pipeline->addStateLambda(l_rsi);
+    // AERIAL PERSPECTIVE, on the ONE forward pipeline with no lighting lambda to
+    // fold it into. The opt-in is DECLARATION: a generated surface that calls
+    // skyAerialPerspective inherits lib_sky into every one of its fragments,
+    // cookie fragment included, so SkyRadii resolving is exactly the question
+    // "does this material's shader have a sky block to feed". This pass runs
+    // BEFORE the sky LUTs are published, so the binder lands on its disarmed
+    // path here by construction (gate 0, default LUT textures) — which is the
+    // right answer for the cookie anyway: it measures surface-to-sun
+    // transmittance, and haze between the VIEWER and the surface is not part of
+    // that.
+    if (this->_parSkyRadii)
+      pipeline->addStateLambda(createSkyHazeStateLambda(this));
     pipeline->_material_ptr = (GfxMaterial*)this;
     pipeline->_rasterstate  = this->_rasterstate;
     return pipeline;
@@ -452,12 +473,11 @@ fxpipeline_ptr_t PBRMaterial::_createFxPipelineFWD(const FxPipelinePermutation& 
     pipeline->addStateLambda(l_rsi);
     pipeline->addStateLambda(l_ssao);
     // (atlas + ImpCenter/ImpGrid bound per-draw in the bucket loop — see note above; shared material.)
-    // A2C: the impostor FS writes silhouette coverage as alpha -> MSAA coverage mask (order-independent edge
-    // AA). Depth-write stays ON (l_rsi) so impostors still occlude correctly; the distance fade is a hashed
-    // screen-door discard in the FS (both order-independent — no back-to-front sort needed).
-    pipeline->addStateLambda([this](const RenderContextInstData&) {
-      const_cast<PBRMaterial*>(this)->_rasterstate->setAlphaToCoverage(true);
-    });
+    // A2C (the impostor FS writes silhouette coverage as alpha -> MSAA coverage mask) is declared by the
+    // technique's OWN state block, sb_ptex_impostor. It cannot be set here: l_rsi leaves the material
+    // rasterstate at priority 0 and the effective-state resolution gives an equal-priority state block the
+    // win, so a state lambda setting it was discarded every draw — and it mutated the SHARED material
+    // rasterstate, which a doubleSided material (priority 1<<20) would then have carried onto its MESH tiers.
     pipeline->_material_ptr = (GfxMaterial*)this;
     pipeline->_rasterstate  = this->_rasterstate;
     // the generated-material arms return before the FWDSEL announcement below, so they carry

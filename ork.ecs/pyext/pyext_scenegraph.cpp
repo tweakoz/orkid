@@ -450,7 +450,21 @@ void pyinit_scenegraph(py::module& module_ecs) {
           [](hypermeshcomponentdata_ptr_t hcd, std::string val) { hcd->_layername = val; })
       .def_property("nodename",
           [](hypermeshcomponentdata_ptr_t hcd) -> std::string { return hcd->_nodename; },
-          [](hypermeshcomponentdata_ptr_t hcd, std::string val) { hcd->_nodename = val; });
+          [](hypermeshcomponentdata_ptr_t hcd, std::string val) { hcd->_nodename = val; })
+      // NOT A SHADOW CASTER — keeps this hypermesh off the depth_prepass layer,
+      // which is also the sun-cascade caster set (see the header).
+      .def_property("skip_auto_dpp",
+          [](hypermeshcomponentdata_ptr_t hcd) -> bool { return hcd->_skipAutoDpp; },
+          [](hypermeshcomponentdata_ptr_t hcd, bool val) { hcd->_skipAutoDpp = val; })
+      // MUTUALLY-EXCLUSIVE PRESENTATION SET (see the header): every hypermesh sharing a
+      // visgroup flips together on HypermeshSystem's SET_VISGROUP. `visible` is the LAUNCH
+      // state — a member declared invisible builds nothing at all until it is switched on.
+      .def_property("visgroup",
+          [](hypermeshcomponentdata_ptr_t hcd) -> std::string { return hcd->_visgroup; },
+          [](hypermeshcomponentdata_ptr_t hcd, std::string val) { hcd->_visgroup = val; })
+      .def_property("visible",
+          [](hypermeshcomponentdata_ptr_t hcd) -> bool { return hcd->_visible; },
+          [](hypermeshcomponentdata_ptr_t hcd, bool val) { hcd->_visible = val; });
   /////////////////////////////////////////////////////////////////////////////////
   // HypermeshSystemData — minimal marker (auto-declared via the component's
   // DoRegisterWithScene; declarable explicitly via declareSystem("HypermeshSystem")).

@@ -55,7 +55,7 @@ class MoonMixin:
   def moon(self, name="moon", *, sun="sun", color=MOON_COLOR,
            intensity=MOON_INTENSITY, priority=MOON_PRIORITY,
            cascades=4, shadow_map_size=2048, shadow_max_distance=250.0,
-           shadow_bias=2e-4, pcf_dither=1.0,
+           shadow_bias=0.05, pcf_dither=1.0,
            shadow_caster=True):
     """Declare the MOON for a scene that already declared a celestial sun.
 
@@ -132,6 +132,11 @@ class MoonMixin:
     light.cloudShadowMapSize  = sun_light.cloudShadowMapSize
     light.cloudExtinction     = sun_light.cloudExtinction
     light.cloudDiscSoftness   = sun_light.cloudDiscSoftness
+    # ...including how much of the SKY term the deck takes: the cascade holder
+    # owns that too, so a moon that kept the engine default would double the
+    # night's cloud darkening the moment it took the cascade from a sun the
+    # scene had dialled down.
+    light.cloudShadowIblWeight = sun_light.cloudShadowIblWeight
 
     # First-frame pose from the model, so frame 0 is already the real sky.
     q = _celestial.CelestialModel.from_config(cfg).at(0.0).moon_quat()

@@ -53,6 +53,54 @@ constexpr size_t KNUMSSAONOISEFRAMES = 60;
 static logchannel_ptr_t logchan_pbrcom = logger()->configureChannel("PBRCOM", fvec3(0.8, 0.8, 0.5), false);
 
 ///////////////////////////////////////////////////////////////////////////////
+// DIRECT DIFFUSE BRDF registry — ONE table, read by the crc resolver, the name
+// resolver (which is the crc resolver plus a hash) and the error text, so a
+// model added here is immediately reachable from the scene DSL, the pyext and
+// the editor row with nothing else to update.
+///////////////////////////////////////////////////////////////////////////////
+namespace {
+struct DiffuseBrdfEntry {
+  const char* _name;
+  DiffuseBrdfModel _model;
+};
+static const DiffuseBrdfEntry kDiffuseBrdfTable[] = {
+    {"LAMBERT", DiffuseBrdfModel::LAMBERT},
+    {"OREN_NAYAR", DiffuseBrdfModel::OREN_NAYAR},
+    {"BURLEY", DiffuseBrdfModel::BURLEY},
+};
+} // namespace
+///////////////////////////////////////////////////////////////////////////////
+bool diffuseBrdfModelFromCrc(uint64_t crc, DiffuseBrdfModel& out_) {
+  for (const auto& item : kDiffuseBrdfTable) {
+    if (CrcString(item._name).hashed() == crc) {
+      out_ = item._model;
+      return true;
+    }
+  }
+  return false;
+}
+///////////////////////////////////////////////////////////////////////////////
+bool diffuseBrdfModelFromName(const std::string& name, DiffuseBrdfModel& out_) {
+  return diffuseBrdfModelFromCrc(CrcString(name.c_str()).hashed(), out_);
+}
+///////////////////////////////////////////////////////////////////////////////
+const char* diffuseBrdfModelName(DiffuseBrdfModel model) {
+  for (const auto& item : kDiffuseBrdfTable)
+    if (item._model == model)
+      return item._name;
+  return "?";
+}
+///////////////////////////////////////////////////////////////////////////////
+std::string diffuseBrdfModelValidSet() {
+  std::string rval;
+  for (const auto& item : kDiffuseBrdfTable) {
+    if (not rval.empty())
+      rval += ", ";
+    rval += item._name;
+  }
+  return rval;
+}
+///////////////////////////////////////////////////////////////////////////////
 CommonStuff::CommonStuff() {
 
   _radiance_maps = std::make_shared<RadianceMaps>();

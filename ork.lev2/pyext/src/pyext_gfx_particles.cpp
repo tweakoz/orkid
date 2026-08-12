@@ -216,7 +216,12 @@ void pyinit_gfx_particles(py::module& module_lev2) {
         [](ptc::freestyleparticlematerial_ptr_t m, float v) { m->_emission_lum_power = v; })
       .def_property("emission_tint",
         [](ptc::freestyleparticlematerial_ptr_t m) -> fvec3 { return m->_emission_tint; },
-        [](ptc::freestyleparticlematerial_ptr_t m, fvec3 v) { m->_emission_tint = v; });
+        [](ptc::freestyleparticlematerial_ptr_t m, fvec3 v) { m->_emission_tint = v; })
+      // soft-particle depth fade distance (eye units); 0 = off. Only bites when
+      // the shader opted in via ctx.soft_fade() in the fragment DSL.
+      .def_property("soft_fade_distance",
+        [](ptc::freestyleparticlematerial_ptr_t m) -> float { return m->_soft_fade_distance; },
+        [](ptc::freestyleparticlematerial_ptr_t m, float v) { m->_soft_fade_distance = v; });
   type_codec->registerStdCodec<ptc::freestyleparticlematerial_ptr_t>(mtl_freestyle_type);
   /////////////////////////////////////////////////////////////////////////////
   auto mtl_texvol_type = //

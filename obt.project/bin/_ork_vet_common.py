@@ -285,3 +285,306 @@ def magenta_cast(rgb, strong=0.15, tile=32):
             if v > best:
                 best = v; wy, wx = y, x
     return area, tint, (wy, wx), best
+
+
+# ------------------------------------------------- foliage "cotton" family ---
+# Promoted from the ad-hoc cotton probe used in the tree-canopy whitening
+# episode. THE LESSON THAT SHAPES THIS CODE: the probe's headline number was a
+# self-normalizing contrast RATIO (bright mask taken at the region p95, compared
+# against the local darks) -- it read ~2.5 both while the canopy was blown out
+# and after the defect collapsed, because BOTH sides of the ratio moved with it.
+# Everything gated here is therefore an ABSOLUTE measure: a fixed luminance
+# floor, a population fraction, a blob density. Ratios stay INFO forever.
+
+def saturation(rgb):
+    """HSV-style saturation (max-min)/max of an RGB float image."""
+    mx = rgb.max(-1)
+    mn = rgb.min(-1)
+    return np.where(mx > 1e-6, (mx - mn) / np.maximum(mx, 1e-6), 0.0)
+
+
+def _label4(mask, max_iter=1024):
+    """4-connected component labels (numpy-only; no scipy dependency).
+
+    Max-index propagation to a fixed point. Returns (labels, converged).
+    """
+    lab = np.where(mask, np.arange(mask.size).reshape(mask.shape) + 1, 0)
+    for _ in range(max_iter):
+        n = lab.copy()
+        n[:-1, :] = np.maximum(n[:-1, :], lab[1:, :])
+        n[1:, :] = np.maximum(n[1:, :], lab[:-1, :])
+        n[:, :-1] = np.maximum(n[:, :-1], lab[:, 1:])
+        n[:, 1:] = np.maximum(n[:, 1:], lab[:, :-1])
+        n[~mask] = 0
+        if np.array_equal(n, lab):
+            return lab, True
+        lab = n
+    return lab, False
+
+
+def _depth4(mask, maxd=8):
+    """City-block distance to the mask boundary (1 = rim), capped at maxd."""
+    d = np.zeros(mask.shape, np.int32)
+    cur = mask.copy()
+    for _ in range(maxd):
+        d[cur] += 1
+        e = cur.copy()
+        e[:-1, :] &= cur[1:, :]
+        e[1:, :] &= cur[:-1, :]
+        e[:, :-1] &= cur[:, 1:]
+        e[:, 1:] &= cur[:, :-1]
+        e[0, :] = False; e[-1, :] = False; e[:, 0] = False; e[:, -1] = False
+        cur = e
+        if not cur.any():
+            break
+    return d
+
+
+def _dark_context(L, cand, block=32):
+    """Per-pixel local context luminance: block mean of the NON-candidate pixels.
+
+    This is what keeps a bright sky (or any large bright field) from reading as
+    cotton: a canopy puff sits in dark foliage, sky sits in more sky. Excluding
+    the candidate pixels from their own context is what makes it work on a puff
+    that fills most of its block.
+    """
+    h, w = L.shape
+    by = (h + block - 1) // block
+    bx = (w + block - 1) // block
+    ctx = np.zeros(L.shape, np.float64)
+    for j in range(by):
+        y0, y1 = j * block, min(h, (j + 1) * block)
+        for i in range(bx):
+            x0, x1 = i * block, min(w, (i + 1) * block)
+            tile_l = L[y0:y1, x0:x1]
+            m = ~cand[y0:y1, x0:x1]
+            ctx[y0:y1, x0:x1] = tile_l[m].mean() if m.any() else tile_l.mean()
+    return ctx
+
+
+def cotton_metrics(rgb, lum_floor=0.25, max_sat=0.25, ctx_max=0.25,
+                   min_blob_px=12, uniform_tol=0.15, rim_depth=2, core_depth=4,
+                   max_blob_frac=0.005, field_texture=0.009):
+    """Uniform canopy-whitening ("cotton") measurement on a rendered still.
+
+    Pipeline (each stage is a DISCRIMINATOR, not a re-tuned brightness knob):
+      1. fixed-mask candidates: absolute luminance floor AND low saturation --
+         cotton is white, sunlit foliage is not.
+      2. dark local context: candidates whose surroundings are dark canopy.
+         Bright sky / bright ground / HDR blowout live in bright context and
+         drop out here -- this is the anti-false-FAIL stage.
+      3. size band: below min_blob_px is a render speck; above max_blob_frac of
+         the probed area it is a FIELD, not a puff. A field is then judged on
+         its internal TEXTURE: sky through a canopy gap is bright, desaturated,
+         ringed by dark trunks and SMOOTH, while whitened canopy keeps its leaf
+         structure. Smooth fields are dropped from every measure (they are sky);
+         textured fields stay in fixedmask_frac, which is the gate for merged
+         whole-canopy whitening that never resolves into discrete puffs.
+      4. blob structure + rim-vs-core profile: a blob whose CORE is much
+         brighter than its rim is a specular glint (CORE_BRIGHT); a blob whose
+         rim is much brighter is an alpha/edge fringe (EDGE_FRINGE). Neither is
+         cotton. Cotton is flat across the blob (UNIFORM) or too thin to profile
+         (THIN -- the shape the real defect took on leaf strands).
+
+    Returns a dict of absolute measures + INFO-only descriptives + the worst
+    (largest) cotton blob's centroid for the crop.
+    """
+    L = luma(rgb)
+    S = saturation(rgb)
+    npx = float(L.size)
+    cand = (L >= lum_floor) & (S <= max_sat)
+    ctx = _dark_context(L, cand)
+    fixed = cand & (ctx < ctx_max)
+
+    out = {
+        'cand_frac': float(cand.mean()),
+        'fixedmask_frac': float(fixed.mean()),
+        'lum_p95': float(np.percentile(L, 95)),
+        'area_frac': 0.0, 'blob_count': 0, 'blob_density': 0.0,
+        'median_blob_px': 0, 'signature': 'none',
+        'blob_lum': 0.0, 'blob_sat': 0.0, 'ctx_lum': float(L[~cand].mean() if (~cand).any() else 0.0),
+        'lum_ratio': 0.0, 'worst': None, 'converged': True,
+        'field_smooth': 0, 'field_smooth_frac': 0.0,
+        'field_textured': 0, 'field_textured_frac': 0.0,
+        'buckets': {'UNIFORM': 0, 'THIN': 0, 'CORE_BRIGHT': 0, 'EDGE_FRINGE': 0},
+    }
+    if not fixed.any():
+        return out
+
+    lab, conv = _label4(fixed)
+    out['converged'] = conv
+    ids, cnt = np.unique(lab[lab > 0], return_counts=True)
+    cap = max_blob_frac * npx
+
+    # FIELDS (oversize blobs): smooth = sky seen through the canopy, drop it;
+    # textured = whitened canopy that merged into one region, keep it.
+    resid = np.abs(L - _median_win(L, 1))
+    smooth = np.zeros(fixed.shape, bool)
+    for i in ids[cnt > cap]:
+        m = lab == i
+        tex = float(resid[m].mean())
+        if tex < field_texture:
+            smooth |= m
+            out['field_smooth'] += 1
+            out['field_smooth_frac'] += float(m.mean())
+        else:
+            out['field_textured'] += 1
+            out['field_textured_frac'] += float(m.mean())
+    if smooth.any():
+        fixed = fixed & ~smooth
+        out['fixedmask_frac'] = float(fixed.mean())
+
+    keep = ids[(cnt >= min_blob_px) & (cnt <= cap)]
+    if keep.size == 0:
+        return out
+    depth = _depth4(fixed)
+
+    cot = np.zeros(fixed.shape, bool)
+    sizes = []
+    falloffs = []
+    best_px, best_id = 0, None
+    for i in keep:
+        m = lab == i
+        # rim is sampled ONE pixel inside the boundary: the depth-1 ring is the
+        # antialiased/partial-coverage edge, and reading it makes every blob with
+        # a soft edge look core-bright.
+        rim = m & (depth == rim_depth)
+        core = m & (depth >= core_depth)
+        if rim.sum() < 6 or core.sum() < 6:
+            kind = 'THIN'          # unprofilable strand: counts as cotton
+        else:
+            el = float(L[rim].mean())
+            cl = float(L[core].mean())
+            drop = (el - cl) / max(el, 1e-6)
+            falloffs.append(drop)
+            kind = ('EDGE_FRINGE' if drop > uniform_tol else
+                    ('UNIFORM' if drop >= -uniform_tol else 'CORE_BRIGHT'))
+        out['buckets'][kind] += 1
+        if kind in ('UNIFORM', 'THIN'):
+            cot |= m
+            n = int(m.sum())
+            sizes.append(n)
+            if n > best_px:
+                best_px, best_id = n, i
+
+    out['area_frac'] = float(cot.mean())
+    out['blob_count'] = len(sizes)
+    out['blob_density'] = float(len(sizes) / (npx / 1e6))
+    if sizes:
+        out['median_blob_px'] = int(np.median(sizes))
+        out['blob_lum'] = float(L[cot].mean())
+        out['blob_sat'] = float(S[cot].mean())
+        bg = ~cand
+        if bg.any():
+            # SELF-NORMALIZING -- INFO ONLY. Never gate on this (see header).
+            out['lum_ratio'] = float(L[cot].mean() / max(L[bg].mean(), 1e-6))
+        ys, xs = np.nonzero(lab == best_id)
+        out['worst'] = (int(ys.mean()), int(xs.mean()), best_px)
+    if falloffs:
+        mf = float(np.median(falloffs))
+        out['signature'] = ('EDGE_FRINGE' if mf > uniform_tol else
+                            ('UNIFORM' if mf >= -uniform_tol else 'CORE_BRIGHT'))
+        out['median_falloff'] = mf
+    elif sizes:
+        out['signature'] = 'THIN'
+    return out
+
+
+# --------------------------------------------- impostor-atlas check family ---
+def load_rgba(path):
+    """Load a PNG as (rgb, alpha) float64 0..1; opaque alpha if the file has none."""
+    from PIL import Image
+    im = Image.open(path)
+    a = np.asarray(im.convert('RGBA')).astype(np.float64)
+    peak = 65535.0 if a.max() > 255 else 255.0
+    a = a / peak
+    return a[..., :3], a[..., 3]
+
+
+def atlas_fringe(rgb, alpha, bg_hi=0.02, fg_lo=0.98, bright_margin=0.10):
+    """White-bleed measurement on an impostor atlas.
+
+    Fully-TRANSPARENT texels still get filtered into the silhouette by mip
+    generation and bilinear taps, so their RGB must be no brighter than the
+    silhouette they border. Bright background texels are the authoring defect
+    that shows up as a white halo (and as whitened canopy at LOD range).
+
+    Measured AGAINST THE SPRITE'S OWN FOREGROUND, not an absolute dark
+    assumption: a correctly authored atlas edge-extends the silhouette colour
+    outward, so a legitimately light sprite has a legitimately light background
+    and an absolute luminance ceiling would false-FAIL it. This is NOT the
+    self-normalizing trap that sank the cotton contrast ratio -- painting the
+    background white does not move the foreground, so bg-minus-fg is a true
+    differential. Returns a dict.
+    """
+    bg = alpha < bg_hi
+    fg = alpha > fg_lo
+    edge = ~bg & ~fg
+    L = luma(rgb)
+    out = {'coverage': float((alpha > 0.5).mean()),
+           'bg_frac': float(bg.mean()), 'edge_frac': float(edge.mean()),
+           'fg_frac': float(fg.mean()), 'has_bg': bool(bg.any()),
+           'bg_lum': 0.0, 'bg_bright_frac': 0.0, 'edge_lum': 0.0,
+           'fg_lum': float(L[fg].mean()) if fg.any() else 0.0,
+           'fg_bright_end': float(np.percentile(L[fg], 95)) if fg.any() else 1.0,
+           'bg_excess': 0.0, 'worst': None}
+    if bg.any():
+        out['bg_lum'] = float(L[bg].mean())
+        # sparse hot texels a MEAN would hide: brighter than anything the sprite
+        # itself is (its own p95 plus a margin).
+        out['bg_bright_frac'] = float((L[bg] > out['fg_bright_end'] + bright_margin).mean())
+        out['bg_excess'] = out['bg_lum'] - out['fg_lum']
+        Lb = np.where(bg, L, 0.0)
+        tile = max(16, min(Lb.shape) // 32)
+        h, w = Lb.shape
+        best = -1.0
+        for y in range(0, h - tile + 1, tile):
+            for x in range(0, w - tile + 1, tile):
+                v = float(Lb[y:y + tile, x:x + tile].mean())
+                if v > best:
+                    best, wy, wx = v, y, x
+        if best >= 0:
+            out['worst'] = (wy, wx, best)
+    if edge.any():
+        out['edge_lum'] = float(L[edge].mean())
+    return out
+
+
+def mip_drift(rgb, alpha, levels=4, min_weight=0.02):
+    """Box-filter mip chain: naive vs alpha-weighted downsample divergence.
+
+    A naive (unweighted) box mip averages transparent background texels INTO the
+    silhouette; the alpha-weighted mip averages only what is actually there. The
+    gap between them is the value error the sampler will show at LOD range -- it
+    is what turns a green canopy white a few mips down. Measured over texels
+    that still carry coverage (weight > min_weight), per channel, as the maximum
+    absolute luminance divergence over the chain.
+    Returns (max_drift, per_level list of (level, drift, naive_lum, weighted_lum)).
+    """
+    n_rgb = rgb.copy()
+    w_rgb = rgb * alpha[..., None]
+    w_a = alpha.copy()
+    n_a = alpha.copy()
+    rows = []
+    worst = 0.0
+    for lv in range(1, levels + 1):
+        def box(x):
+            h = (x.shape[0] // 2) * 2
+            w = (x.shape[1] // 2) * 2
+            x = x[:h, :w]
+            return (x[0::2, 0::2] + x[1::2, 0::2] + x[0::2, 1::2] + x[1::2, 1::2]) * 0.25
+        if min(n_rgb.shape[0], n_rgb.shape[1]) < 2:
+            break
+        n_rgb = box(n_rgb)
+        w_rgb = box(w_rgb)
+        w_a = box(w_a)
+        n_a = box(n_a)
+        m = w_a > min_weight
+        if not m.any():
+            break
+        naive = luma(n_rgb)[m]
+        weighted = luma(w_rgb / np.maximum(w_a, 1e-6)[..., None])[m]
+        d = float(np.abs(naive - weighted).mean())
+        worst = max(worst, d)
+        rows.append((lv, d, float(naive.mean()), float(weighted.mean())))
+    return worst, rows

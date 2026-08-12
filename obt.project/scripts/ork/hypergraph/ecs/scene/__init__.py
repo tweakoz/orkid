@@ -31,7 +31,6 @@ from orkengine.core import vec3, vec4
 from orkengine.core import Transform as _CoreTransform
 
 from ork.hypergraph.ecs.scene.assets import _ASSET_REGISTRY, _materialize as _materialize_asset
-from ork.renderoverrides import depth_prepass_override
 
 # Trigger registration of every concrete-named asset wrapper that physically
 # lives in ork.hypergraph.assets/<category>/<name>.py (post-refactor location
@@ -74,6 +73,57 @@ def _effective_layers(preset, user_layers):
     if l not in out:
       out.append(l)
   return out
+
+
+###############################################################################
+# Direct diffuse BRDF — which lobe the analytic lights (point, spot, sun) use.
+# The names are the TOKEN spelling and mirror pbr::DiffuseBrdfModel; the crc of
+# the name is the identity C++ resolves, so tokens.OREN_NAYAR and "OREN_NAYAR"
+# are one declaration. Absent means the engine default (oren-nayar).
+#
+# What lands in the scene params is the NAME, not the token: an .ecs carries
+# scene params through a JSON svar that knows string/number/bool only, and a
+# name is also the thing a human reads in the file.
+###############################################################################
+
+_DIFFUSE_BRDF_MODELS = ("LAMBERT", "OREN_NAYAR", "BURLEY")
+
+_DIFFUSE_BRDF_BY_CRC = None
+
+
+def _diffuse_brdf_by_crc():
+  """crc -> name, built through the CrcStringProxy — the SAME flyweight a scene's
+  tokens.X comes from, so the two hashes are the same machinery and not two
+  spellings of it. (CrcString itself takes no string from python; the proxy is
+  the only python-side hasher.)"""
+  global _DIFFUSE_BRDF_BY_CRC
+  if _DIFFUSE_BRDF_BY_CRC is None:
+    from orkengine.core import CrcStringProxy
+    proxy = CrcStringProxy()
+    _DIFFUSE_BRDF_BY_CRC = {
+      getattr(proxy, name).hashed: name for name in _DIFFUSE_BRDF_MODELS}
+  return _DIFFUSE_BRDF_BY_CRC
+
+
+def _resolve_diffuse_brdf(value):
+  """token (tokens.OREN_NAYAR) or name -> canonical name. Refuses anything else
+  here, at compose time, naming the valid set."""
+  valid = ", ".join(_DIFFUSE_BRDF_MODELS)
+  name = value if isinstance(value, str) else None
+  if name is None:
+    hashed = getattr(value, "hashed", None)
+    if hashed is None:
+      raise TypeError(
+        f"scenegraph(diffuse_brdf=...) wants a token (tokens.OREN_NAYAR) or a "
+        f"name; got {type(value).__name__}. valid: {valid}")
+    name = _diffuse_brdf_by_crc().get(hashed)
+    if name is None:
+      raise ValueError(
+        f"scenegraph(diffuse_brdf=crc:{hashed}) names no diffuse lobe. valid: {valid}")
+  if name not in _DIFFUSE_BRDF_MODELS:
+    raise ValueError(
+      f"scenegraph(diffuse_brdf={name}) names no diffuse lobe. valid: {valid}")
+  return name
 
 
 ###############################################################################
@@ -121,16 +171,13 @@ class _SystemDecl:
       setattr(sysdata, k, v)
     for method, args, kwargs in self.sub_calls:
       getattr(sysdata, method)(*args, **kwargs)
-    # ORKID_DPP — the ENGINE-LEVEL depth-prepass override, applied here and not
-    # at scenegraph() because this is the last word: declareParams is dict
+    # DEPTH PREPASS — an ENGINE INVARIANT, ON for every ECS scene. Written here
+    # and not at scenegraph() because this is the last word: declareParams is dict
     # assignment and sub_calls run in order, so any mixin that amended the params
-    # (sky, cloud deck, a scene appending its own declareParams) has already run.
-    # Unset writes nothing, so an unset environment is byte-identical to the
-    # authored scene. See ork.renderoverrides for why the knob exists.
+    # (sky, cloud deck, a scene appending its own declareParams) has already run,
+    # and the invariant is not something a mixin gets to lose.
     if self.typename == "SceneGraphSystem":
-      dpp = depth_prepass_override()
-      if dpp is not None:
-        sysdata.declareParams({"DepthPrepass": dpp})
+      sysdata.declareParams({"DepthPrepass": True})
     self._lowered = sysdata
     return sysdata
 
@@ -398,6 +445,10 @@ class SceneGraphHandle:
       #   registry — round-trips into the zero-Python player).
       aux_channels = params_dict.pop("aux_channels", None)
       postfx       = params_dict.pop("postfx",       None)
+      # diffuse_brdf=tokens.OREN_NAYAR — resolved (and refused) at compose time;
+      # see _resolve_diffuse_brdf. Omitted keeps the engine default.
+      if "diffuse_brdf" in params_dict:
+        params_dict["diffuse_brdf"] = _resolve_diffuse_brdf(params_dict["diffuse_brdf"])
       if aux_channels:
         self._aux_channels = [str(c) for c in aux_channels]
         params_dict["AuxChannels"] = ",".join(self._aux_channels)
@@ -507,6 +558,14 @@ class SceneGraphHandle:
           call_kwargs["transform"] = spec["transform"]
         if "modcolor" in spec:
           call_kwargs["modcolor"] = spec["modcolor"]
+        # Opt out of the automatic depth_prepass-layer add (NodeDef._skipAutoDepthPrepass).
+        # The depth_prepass layer is ALSO the shadow-caster set (sun cascades + spot maps
+        # enqueue it), so this removes the node from the prepass AND from shadow casting
+        # in one move. Color-pass depth stays correct without prepass membership (the
+        # forward pass tests LEQUALS, never EQUAL). Stars/_cloud_deck previously had to
+        # use manual declareNodeOnLayer calls to reach this flag.
+        if "skip_auto_dpp" in spec:
+          call_kwargs["skip_auto_dpp"] = bool(spec["skip_auto_dpp"])
         cdecl.sub_calls.append(("declareNodeOnLayer", (), call_kwargs))
     return cdecl
 
@@ -595,6 +654,10 @@ class Scene(TerrainMixin, WalkerMixin, ProjectilesMixin, SunMixin, MoonMixin,
     # head of Pass 2 (Scene.build). M2b.4.
     self._asset_gens = []
     self._built      = False
+    # The sky's implied cloud decks: staged in Pass 1, declared at the head of
+    # Pass 2 unless the scene declared decks of its own (see CloudDeckMixin).
+    self._staged_cloud_decks   = None
+    self._cloud_decks_declared = False
     # Asset DSL namespace: self.asset.<GenName>("name", **kwargs).
     # See ork/ecs/scene/assets.py for the registry of available gens.
     self.asset = _AssetNamespace(self)
@@ -904,6 +967,11 @@ class Scene(TerrainMixin, WalkerMixin, ProjectilesMixin, SunMixin, MoonMixin,
     if self._built:
       raise RuntimeError("Scene.build(sd) called twice on the same instance")
     self._built = True
+
+    # The sky's implied deck set, if the scene never declared its own. Runs
+    # BEFORE the asset/system walk below so its assets, entities and launch
+    # state lower like any other Pass-1 declaration.
+    self.declare_staged_cloud_decks()
 
     # M2b.4: lazy-declare AssetSystem if any reflected asset gens were
     # registered in Pass 1. Queues a declareAssetGen sub-call per gen
